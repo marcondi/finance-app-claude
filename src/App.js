@@ -24,16 +24,33 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import { supabase } from './supabaseClient';
 
 const defaultCategories = [
-  { id: 'cat-1', name: 'Alimentação', color: '#ef4444', type: 'expense', user_id: null },
-  { id: 'cat-2', name: 'Transporte', color: '#f59e0b', type: 'expense', user_id: null },
-  { id: 'cat-3', name: 'Moradia', color: '#8b5cf6', type: 'expense', user_id: null },
-  { id: 'cat-4', name: 'Lazer', color: '#ec4899', type: 'expense', user_id: null },
-  { id: 'cat-5', name: 'Saúde', color: '#14b8a6', type: 'expense', user_id: null },
-  { id: 'cat-6', name: 'Educação', color: '#3b82f6', type: 'expense', user_id: null },
-  { id: 'cat-7', name: 'Salário', color: '#10b981', type: 'income', user_id: null },
-  { id: 'cat-8', name: 'Freelance', color: '#22c55e', type: 'income', user_id: null },
-  { id: 'cat-9', name: 'Investimentos', color: '#059669', type: 'income', user_id: null },
-  { id: 'cat-10', name: 'Poupança', color: '#6366f1', type: 'income', user_id: null },
+  // RECEITAS
+  { id: 'cat-1', name: 'Salário', color: '#10b981', type: 'income', user_id: null },
+  { id: 'cat-2', name: 'Investimentos', color: '#059669', type: 'income', user_id: null },
+  { id: 'cat-3', name: 'Cartão alimentação', color: '#22c55e', type: 'income', user_id: null },
+  { id: 'cat-4', name: 'Férias', color: '#14b8a6', type: 'income', user_id: null },
+  { id: 'cat-5', name: '13º Salário', color: '#0ea5e9', type: 'income', user_id: null },
+  { id: 'cat-6', name: 'Poupança', color: '#6366f1', type: 'income', user_id: null },
+  { id: 'cat-7', name: 'Freelance', color: '#84cc16', type: 'income', user_id: null },
+  
+  // DESPESAS
+  { id: 'cat-8', name: 'Alimentação', color: '#ef4444', type: 'expense', user_id: null },
+  { id: 'cat-9', name: 'Moradia', color: '#8b5cf6', type: 'expense', user_id: null },
+  { id: 'cat-10', name: 'Transporte', color: '#f59e0b', type: 'expense', user_id: null },
+  { id: 'cat-11', name: 'Saúde', color: '#14b8a6', type: 'expense', user_id: null },
+  { id: 'cat-12', name: 'Outros', color: '#6b7280', type: 'expense', user_id: null },
+  { id: 'cat-13', name: 'Advogada', color: '#7c3aed', type: 'expense', user_id: null },
+  { id: 'cat-14', name: 'Cartão Crédito Caixa', color: '#dc2626', type: 'expense', user_id: null },
+  { id: 'cat-15', name: 'Cartão Crédito C6', color: '#9333ea', type: 'expense', user_id: null },
+  { id: 'cat-16', name: 'Cartão Crédito Merc. Pago', color: '#0891b2', type: 'expense', user_id: null },
+  { id: 'cat-17', name: 'Cartão Crédito Neon', color: '#f97316', type: 'expense', user_id: null },
+  { id: 'cat-18', name: 'Intenet+Balcão', color: '#0284c7', type: 'expense', user_id: null },
+  { id: 'cat-19', name: 'Aux. Mãe', color: '#ec4899', type: 'expense', user_id: null },
+  { id: 'cat-20', name: 'Fisioterapia Mãe', color: '#db2777', type: 'expense', user_id: null },
+  { id: 'cat-21', name: 'Empréstimo', color: '#b91c1c', type: 'expense', user_id: null },
+  { id: 'cat-22', name: 'Energia', color: '#eab308', type: 'expense', user_id: null },
+  { id: 'cat-23', name: 'Lazer', color: '#ec4899', type: 'expense', user_id: null },
+  { id: 'cat-24', name: 'Educação', color: '#3b82f6', type: 'expense', user_id: null },
 ];
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -92,18 +109,31 @@ export default function FinanceApp() {
       
       // Se não houver categorias, criar as padrões
       if (!cats || cats.length === 0) {
-        const categoriesToInsert = defaultCategories.map(cat => ({
-          ...cat,
-          user_id: null
-        }));
+        const categoriesToInsert = defaultCategories.map(cat => {
+          const { id, ...rest } = cat; // Remove o ID fixo
+          return {
+            ...rest,
+            id: generateId(), // Gera ID único
+            user_id: null
+          };
+        });
         
         const { data: newCats, error: insertError } = await supabase
           .from('finance_categories')
           .insert(categoriesToInsert)
           .select();
         
-        if (insertError) throw insertError;
-        setCategories(newCats);
+        if (insertError) {
+          console.error('Erro ao inserir categorias:', insertError);
+          // Se der erro, tenta carregar novamente (pode ser que já existam)
+          const { data: existingCats } = await supabase
+            .from('finance_categories')
+            .select('*')
+            .or(`user_id.eq.${currentUser.id},user_id.is.null`);
+          setCategories(existingCats || []);
+        } else {
+          setCategories(newCats);
+        }
       } else {
         setCategories(cats);
       }
@@ -467,6 +497,7 @@ export default function FinanceApp() {
             
             scheduledList.push({
               ...baseScheduled,
+              id: generateId(), // ADICIONAR ID ÚNICO
               due_date: scheduledDate.toISOString().split('T')[0]
             });
           }
@@ -649,11 +680,13 @@ export default function FinanceApp() {
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border ${
+                size="8"
+                className={`w-full px-4 py-2 rounded-lg border overflow-y-auto ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                style={{ maxHeight: '200px' }}
               >
                 <option value="">Selecione uma categoria</option>
                 {availableCategories.map(cat => (
@@ -1020,8 +1053,9 @@ export default function FinanceApp() {
           '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
         ];
         
+        // Gerar IDs únicos para categorias
         const processedCategories = (imported.categories || []).map((cat, index) => ({
-          id: cat.id,
+          id: generateId(), // Gera ID único em vez de usar o ID do backup
           name: cat.name,
           color: cat.color || defaultColors[index % defaultColors.length],
           type: cat.type,
@@ -1041,11 +1075,13 @@ export default function FinanceApp() {
           parent_id: t.parentId || t.parent_id || null
         }));
         
-        // Inserir categorias
+        // Inserir categorias apenas as que não existem (por nome)
         const existingCategoryNames = categories.map(c => c.name.toLowerCase());
         const newCategories = processedCategories.filter(
           cat => !existingCategoryNames.includes(cat.name.toLowerCase())
         );
+        
+        let categoryMapping = {}; // Mapear IDs antigos para novos
         
         if (newCategories.length > 0) {
           const { data: insertedCats, error: catsError } = await supabase
@@ -1054,14 +1090,35 @@ export default function FinanceApp() {
             .select();
           
           if (catsError) throw catsError;
+          
+          // Criar mapeamento de categoria antiga para nova
+          imported.categories.forEach((oldCat, index) => {
+            const newCat = insertedCats.find(c => c.name === oldCat.name);
+            if (newCat) {
+              categoryMapping[oldCat.id] = newCat.id;
+            }
+          });
+          
           setCategories([...categories, ...insertedCats]);
         }
         
+        // Atualizar category_id nas transações para usar os IDs novos
+        const mappedTransactions = processedTransactions.map(t => {
+          // Procurar a categoria correspondente no mapeamento ou nas existentes
+          const existingCat = categories.find(c => c.name === imported.categories.find(ic => ic.id === t.category_id)?.name);
+          const newCatId = categoryMapping[t.category_id] || existingCat?.id || t.category_id;
+          
+          return {
+            ...t,
+            category_id: newCatId
+          };
+        });
+        
         // Inserir transações
-        if (processedTransactions.length > 0) {
+        if (mappedTransactions.length > 0) {
           const { data: insertedTrans, error: transError } = await supabase
             .from('finance_transactions')
-            .insert(processedTransactions)
+            .insert(mappedTransactions)
             .select();
           
           if (transError) throw transError;
@@ -1070,14 +1127,20 @@ export default function FinanceApp() {
         
         // Inserir agendamentos
         if (imported.scheduled && imported.scheduled.length > 0) {
-          const processedScheduled = imported.scheduled.map(s => ({
-            user_id: currentUser.id,
-            amount: s.amount,
-            description: s.description,
-            category_id: s.category || s.categoryId || s.category_id,
-            due_date: s.dueDate || s.due_date,
-            is_paid: s.isPaid || s.is_paid || false
-          }));
+          const processedScheduled = imported.scheduled.map(s => {
+            const existingCat = categories.find(c => c.name === imported.categories.find(ic => ic.id === (s.category || s.categoryId || s.category_id))?.name);
+            const newCatId = categoryMapping[s.category || s.categoryId || s.category_id] || existingCat?.id;
+            
+            return {
+              id: generateId(), // ADICIONAR ID ÚNICO
+              user_id: currentUser.id,
+              amount: s.amount,
+              description: s.description,
+              category_id: newCatId,
+              due_date: s.dueDate || s.due_date,
+              is_paid: s.isPaid || s.is_paid || false
+            };
+          });
           
           const { data: insertedSched, error: schedError } = await supabase
             .from('finance_scheduled')
@@ -1088,7 +1151,7 @@ export default function FinanceApp() {
           setScheduled([...scheduled, ...insertedSched]);
         }
 
-        alert(`✅ Dados importados com sucesso!\n\n📊 ${processedTransactions.length} transações\n🏷️ ${newCategories.length} novas categorias`);
+        alert(`✅ Dados importados com sucesso!\n\n📊 ${mappedTransactions.length} transações\n🏷️ ${newCategories.length} novas categorias`);
         
         await loadUserData();
       } catch (error) {
