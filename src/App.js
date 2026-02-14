@@ -1367,7 +1367,14 @@ export default function FinanceApp() {
         {view === 'dashboard' && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+              {/* Card Entradas - Clicável */}
+              <button
+                onClick={() => {
+                  setView('transactions');
+                  setFilterType('income');
+                }}
+                className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white hover:bg-gray-50'} rounded-xl shadow-lg p-6 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl cursor-pointer text-left`}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                     Entradas
@@ -1376,12 +1383,19 @@ export default function FinanceApp() {
                     <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
                 </div>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                <p className="text-3xl font-bold text-green-600">
                   {formatCurrency(income)}
                 </p>
-              </div>
+              </button>
 
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+              {/* Card Saídas - Clicável */}
+              <button
+                onClick={() => {
+                  setView('transactions');
+                  setFilterType('expense');
+                }}
+                className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white hover:bg-gray-50'} rounded-xl shadow-lg p-6 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl cursor-pointer text-left`}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                     Saídas
@@ -1390,12 +1404,19 @@ export default function FinanceApp() {
                     <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
                   </div>
                 </div>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                <p className="text-3xl font-bold text-red-600">
                   {formatCurrency(expenses)}
                 </p>
-              </div>
+              </button>
 
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+              {/* Card Saldo - Clicável */}
+              <button
+                onClick={() => {
+                  setView('transactions');
+                  setFilterType('all');
+                }}
+                className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white hover:bg-gray-50'} rounded-xl shadow-lg p-6 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl cursor-pointer text-left`}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                     Saldo
@@ -1404,10 +1425,10 @@ export default function FinanceApp() {
                     <DollarSign className={`w-5 h-5 ${balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`} />
                   </div>
                 </div>
-                <p className={`text-3xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-3xl font-bold ${balance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                   {formatCurrency(balance)}
                 </p>
-              </div>
+              </button>
             </div>
 
             {expensesByCategory.length > 0 && (
