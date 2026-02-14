@@ -18,10 +18,13 @@ import {
   AlertCircle,
   Check,
   X,
-  Calendar
+  Calendar,
+  FileText,
+  FileSpreadsheet
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
+import * as XLSX from 'xlsx';
 
 const defaultCategories = [
   // RECEITAS
@@ -1162,6 +1165,157 @@ export default function FinanceApp() {
     reader.readAsText(file);
   };
 
+  const handleExportPDF = () => {
+    try {
+      // Criar conteúdo HTML para o PDF
+      const periodo = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { text-align: center; color: #1e40af; }
+            h2 { color: #374151; margin-top: 20px; }
+            .periodo { text-align: center; color: #6b7280; margin-bottom: 30px; }
+            .resumo { margin: 20px 0; }
+            .resumo-item { padding: 10px; margin: 5px 0; border-radius: 8px; }
+            .entrada { background: #dcfce7; color: #166534; font-weight: bold; }
+            .saida { background: #fee2e2; color: #991b1b; font-weight: bold; }
+            .saldo-positivo { background: #dbeafe; color: #1e40af; font-weight: bold; }
+            .saldo-negativo { background: #fee2e2; color: #991b1b; font-weight: bold; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background: #1e40af; color: white; padding: 12px; text-align: left; }
+            td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+            tr:nth-child(even) { background: #f9fafb; }
+            .tipo-entrada { color: #059669; font-weight: bold; }
+            .tipo-saida { color: #dc2626; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h1>📊 Relatório Financeiro</h1>
+          <p class="periodo">Período: ${periodo}</p>
+          
+          <h2>Resumo</h2>
+          <div class="resumo">
+            <div class="resumo-item entrada">Entradas: ${formatCurrency(income)}</div>
+            <div class="resumo-item saida">Saídas: ${formatCurrency(expenses)}</div>
+            <div class="resumo-item ${balance >= 0 ? 'saldo-positivo' : 'saldo-negativo'}">
+              Saldo: ${formatCurrency(balance)}
+            </div>
+          </div>
+          
+          <h2>Transações</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${currentMonthTransactions.map(t => {
+                const cat = categories.find(c => c.id === t.category_id);
+                return `
+                  <tr>
+                    <td>${formatDate(t.date)}</td>
+                    <td>${t.description}</td>
+                    <td>${cat?.name || '-'}</td>
+                    <td class="${t.type === 'income' ? 'tipo-entrada' : 'tipo-saida'}">
+                      ${t.type === 'income' ? 'Entrada' : 'Saída'}
+                    </td>
+                    <td>${formatCurrency(t.amount)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `;
+      
+      // Abrir em nova janela para imprimir como PDF
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // Aguardar carregamento e abrir diálogo de impressão
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+      
+      alert('✅ Janela de impressão aberta! Use "Salvar como PDF" nas opções da impressora.');
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      alert('❌ Erro ao exportar PDF: ' + error.message);
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const periodo = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      
+      // Aba 1: Resumo
+      const wsResumo = XLSX.utils.aoa_to_sheet([
+        ['RELATÓRIO FINANCEIRO'],
+        [`Período: ${periodo}`],
+        [],
+        ['TIPO', 'VALOR'],
+        ['Entradas', income],
+        ['Saídas', expenses],
+        ['Saldo', balance]
+      ]);
+      
+      // Aba 2: Transações (formato tabela)
+      const transData = currentMonthTransactions.map(t => {
+        const cat = categories.find(c => c.id === t.category_id);
+        return {
+          Data: t.date,
+          Descrição: t.description,
+          Categoria: cat?.name || '-',
+          Tipo: t.type === 'income' ? 'Entrada' : 'Saída',
+          Valor: t.amount
+        };
+      });
+      
+      const wsTransacoes = XLSX.utils.json_to_sheet(transData);
+      
+      // Adicionar ref de tabela para Excel reconhecer
+      if (!wsTransacoes['!ref']) {
+        wsTransacoes['!ref'] = 'A1:E' + (transData.length + 1);
+      }
+      
+      // Aba 3: Categorias
+      const catData = expensesByCategory.map(cat => ({
+        Categoria: cat.name,
+        Tipo: 'Despesa',
+        'Total Gasto': cat.value
+      }));
+      
+      const wsCategorias = XLSX.utils.json_to_sheet(catData);
+      
+      // Criar workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
+      XLSX.utils.book_append_sheet(wb, wsTransacoes, 'Transações');
+      XLSX.utils.book_append_sheet(wb, wsCategorias, 'Categorias');
+      
+      // Exportar
+      const fileName = `relatorio-${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      alert('✅ Relatório Excel exportado com sucesso!\n\nDica: No Excel, selecione os dados e vá em Inserir > Tabela Dinâmica para análises avançadas.');
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      alert('❌ Erro ao exportar Excel: ' + error.message);
+    }
+  };
+
   const deleteTransaction = async (id) => {
     try {
       const { error } = await supabase
@@ -1586,7 +1740,7 @@ export default function FinanceApp() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <button
                 onClick={() => setShowTransactionModal(true)}
                 className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-colors"
@@ -1596,13 +1750,29 @@ export default function FinanceApp() {
               </button>
 
               <button
+                onClick={handleExportPDF}
+                className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-colors"
+              >
+                <FileText className="w-5 h-5" />
+                Exportar PDF
+              </button>
+
+              <button
+                onClick={handleExportExcel}
+                className="flex items-center justify-center gap-3 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-colors"
+              >
+                <FileSpreadsheet className="w-5 h-5" />
+                Exportar Excel
+              </button>
+
+              <button
                 onClick={handleExport}
                 className={`flex items-center justify-center gap-3 ${
                   darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                 } font-semibold py-4 rounded-xl shadow-lg transition-colors`}
               >
                 <Download className="w-5 h-5" />
-                Exportar Dados
+                Exportar Backup
               </button>
 
               <label className={`flex items-center justify-center gap-3 ${
