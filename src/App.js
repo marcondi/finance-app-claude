@@ -1582,8 +1582,8 @@ export default function FinanceApp() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* Banner de Agenda */}
-        {(todayEvents.length > 0 || tomorrowEvents.length > 0) && (
+        {/* Banner de Agenda - Apenas no Dashboard */}
+        {view === 'dashboard' && (todayEvents.length > 0 || tomorrowEvents.length > 0) && (
           <div className={`mb-6 rounded-xl backdrop-blur-sm ${
             darkMode 
               ? 'bg-blue-900/20 border border-blue-700/30' 
@@ -1673,31 +1673,43 @@ export default function FinanceApp() {
         )}
 
         <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => {
-              const newDate = new Date(currentDate);
-              newDate.setMonth(newDate.getMonth() - 1);
-              setCurrentDate(newDate);
-            }}
-            className={`p-2 rounded-lg ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-600'} shadow`}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          
-          <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-            {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
-          </h2>
-          
-          <button
-            onClick={() => {
-              const newDate = new Date(currentDate);
-              newDate.setMonth(newDate.getMonth() + 1);
-              setCurrentDate(newDate);
-            }}
-            className={`p-2 rounded-lg ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-600'} shadow`}
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                const newDate = new Date(currentDate);
+                newDate.setMonth(newDate.getMonth() - 1);
+                setCurrentDate(newDate);
+              }}
+              className={`p-2 rounded-lg ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-600'} shadow`}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            
+            <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+              {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+            </h2>
+            
+            <button
+              onClick={() => {
+                const newDate = new Date(currentDate);
+                newDate.setMonth(newDate.getMonth() + 1);
+                setCurrentDate(newDate);
+              }}
+              className={`p-2 rounded-lg ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-600'} shadow`}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          {view === 'transactions' && (
+            <button
+              onClick={() => setShowTransactionModal(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
+            >
+              <Plus className="w-5 h-5" />
+              Nova Transação
+            </button>
+          )}
         </div>
 
         {upcomingDueDates.length > 0 && view === 'dashboard' && (
@@ -1993,30 +2005,6 @@ export default function FinanceApp() {
         {view === 'transactions' && (
           <>
             <div className="space-y-4 mb-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className={`relative flex-1 max-w-md`}>
-                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                  <input
-                    type="text"
-                    placeholder="Buscar por descrição ou categoria..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                      darkMode 
-                        ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
-                        : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
-                </div>
-
-                <button
-                  onClick={() => setShowTransactionModal(true)}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
-                >
-                  <Plus className="w-5 h-5" />
-                  Nova Transação
-                </button>
-              </div>
 
               <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
                 <div className="flex flex-col md:flex-row gap-4">
