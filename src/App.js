@@ -16,7 +16,6 @@ import {
   Trash2,
   Search,
   AlertCircle,
-  Check,
   X,
   Calendar,
   FileText,
@@ -1451,46 +1450,7 @@ export default function FinanceApp() {
     }
   };
 
-  const payScheduled = async (scheduledItem) => {
-    try {
-      const newTransaction = {
-        id: generateId(),
-        user_id: currentUser.id,
-        type: 'expense',
-        amount: scheduledItem.amount,
-        description: scheduledItem.description,
-        category_id: scheduledItem.category_id,
-        date: new Date().toISOString().split('T')[0],
-        is_recurring: false,
-        recurring_months: null,
-        parent_id: null
-      };
-
-      const { data: transData, error: transError } = await supabase
-        .from('finance_transactions')
-        .insert([newTransaction])
-        .select();
-      
-      if (transError) throw transError;
-
-      const { error: schedError } = await supabase
-        .from('finance_scheduled')
-        .update({ is_paid: true })
-        .eq('id', scheduledItem.id);
-      
-      if (schedError) throw schedError;
-
-      setTransactions([...transactions, ...transData]);
-      setScheduled(scheduled.map(s =>
-        s.id === scheduledItem.id ? { ...s, is_paid: true } : s
-      ));
-    } catch (error) {
-      console.error('Erro ao marcar como pago:', error);
-      alert('Erro ao marcar como pago: ' + error.message);
-    }
-  };
-
-  if (loading) {
+ if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-xl">Carregando...</div>
