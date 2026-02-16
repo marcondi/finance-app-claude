@@ -16,6 +16,7 @@ import {
   Trash2,
   Search,
   AlertCircle,
+  Check,
   X,
   Calendar,
   FileText,
@@ -94,12 +95,55 @@ export default function FinanceApp() {
   const [goalInput, setGoalInput] = useState('');
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [loadingCalendar, setLoadingCalendar] = useState(false);
+  const [calendarFilter, setCalendarFilter] = useState('week'); // 'today', 'tomorrow', 'week', 'month'
+  const [todayEvents, setTodayEvents] = useState([]);
+  const [tomorrowEvents, setTomorrowEvents] = useState([]);
 
   useEffect(() => {
     if (currentUser) {
       loadUserData();
+      loadBannerEvents(); // Carregar eventos do banner
     }
   }, [currentUser]);
+
+  const loadBannerEvents = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.provider_token) return;
+
+      const now = new Date();
+      const endOfToday = new Date(now);
+      endOfToday.setHours(23, 59, 59, 999);
+
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      const endOfTomorrow = new Date(tomorrow);
+      endOfTomorrow.setHours(23, 59, 59, 999);
+
+      // Buscar eventos de hoje
+      const todayResponse = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${endOfToday.toISOString()}&orderBy=startTime&singleEvents=true&maxResults=3`,
+        {
+          headers: { Authorization: `Bearer ${session.provider_token}` }
+        }
+      );
+      const todayData = await todayResponse.json();
+      setTodayEvents(todayData.items || []);
+
+      // Buscar eventos de amanhã
+      const tomorrowResponse = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${tomorrow.toISOString()}&timeMax=${endOfTomorrow.toISOString()}&orderBy=startTime&singleEvents=true&maxResults=3`,
+        {
+          headers: { Authorization: `Bearer ${session.provider_token}` }
+        }
+      );
+      const tomorrowData = await tomorrowResponse.json();
+      setTomorrowEvents(tomorrowData.items || []);
+    } catch (error) {
+      console.error('Erro ao carregar eventos do banner:', error);
+    }
+  };
 
   const loadUserData = async () => {
     setLoading(true);
@@ -1450,7 +1494,46 @@ export default function FinanceApp() {
     }
   };
 
- if (loading) {
+  const payScheduled = async (scheduledItem) => {
+    try {
+      const newTransaction = {
+        id: generateId(),
+        user_id: currentUser.id,
+        type: 'expense',
+        amount: scheduledItem.amount,
+        description: scheduledItem.description,
+        category_id: scheduledItem.category_id,
+        date: new Date().toISOString().split('T')[0],
+        is_recurring: false,
+        recurring_months: null,
+        parent_id: null
+      };
+
+      const { data: transData, error: transError } = await supabase
+        .from('finance_transactions')
+        .insert([newTransaction])
+        .select();
+      
+      if (transError) throw transError;
+
+      const { error: schedError } = await supabase
+        .from('finance_scheduled')
+        .update({ is_paid: true })
+        .eq('id', scheduledItem.id);
+      
+      if (schedError) throw schedError;
+
+      setTransactions([...transactions, ...transData]);
+      setScheduled(scheduled.map(s =>
+        s.id === scheduledItem.id ? { ...s, is_paid: true } : s
+      ));
+    } catch (error) {
+      console.error('Erro ao marcar como pago:', error);
+      alert('Erro ao marcar como pago: ' + error.message);
+    }
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-xl">Carregando...</div>
@@ -1539,6 +1622,96 @@ export default function FinanceApp() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* Banner de Agenda */}
+        {(todayEvents.length > 0 || tomorrowEvents.length > 0) && (
+          <div className={`mb-6 rounded-xl backdrop-blur-sm ${
+            darkMode 
+              ? 'bg-blue-900/20 border border-blue-700/30' 
+              : 'bg-blue-50/80 border border-blue-200/50'
+          } p-4 shadow-lg`}>
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                📅 Sua Agenda
+              </h3>
+              <button
+                onClick={() => setView('scheduled')}
+                className={`ml-auto text-xs font-medium ${
+                  darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
+                } underline`}
+              >
+                Ver completa →
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Hoje */}
+              <div>
+                <p className={`text-xs font-semibold mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                  📆 Hoje
+                </p>
+                {todayEvents.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {todayEvents.map(event => (
+                      <div
+                        key={event.id}
+                        className={`p-2 rounded-lg ${
+                          darkMode ? 'bg-gray-800/50' : 'bg-white/70'
+                        } backdrop-blur-sm`}
+                      >
+                        <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                          {event.summary || 'Sem título'}
+                        </p>
+                        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          🕐 {event.start?.dateTime 
+                            ? new Date(event.start.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                            : 'Dia inteiro'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                    Nenhum evento
+                  </p>
+                )}
+              </div>
+
+              {/* Amanhã */}
+              <div>
+                <p className={`text-xs font-semibold mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                  ☀️ Amanhã
+                </p>
+                {tomorrowEvents.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {tomorrowEvents.map(event => (
+                      <div
+                        key={event.id}
+                        className={`p-2 rounded-lg ${
+                          darkMode ? 'bg-gray-800/50' : 'bg-white/70'
+                        } backdrop-blur-sm`}
+                      >
+                        <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                          {event.summary || 'Sem título'}
+                        </p>
+                        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          🕐 {event.start?.dateTime 
+                            ? new Date(event.start.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                            : 'Dia inteiro'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                    Nenhum evento
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => {
@@ -2087,72 +2260,172 @@ export default function FinanceApp() {
 
         {view === 'scheduled' && (
           <>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+            <div className="mb-6">
+              <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                 📅 Agenda Google Calendar
               </h2>
-              <button
-                onClick={async () => {
-                  setLoadingCalendar(true);
-                  try {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (!session?.provider_token) {
-                      alert('❌ Faça login com Google para acessar o Calendar!');
-                      return;
-                    }
 
-                    const response = await fetch(
-                      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${new Date().toISOString()}`,
-                      {
-                        headers: {
-                          Authorization: `Bearer ${session.provider_token}`
-                        }
+              {/* Filtros e Sincronizar na mesma linha */}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => {
+                    setCalendarFilter('today');
+                    setCalendarEvents([]);
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    calendarFilter === 'today'
+                      ? 'bg-blue-600 text-white'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  📆 Hoje
+                </button>
+                <button
+                  onClick={() => {
+                    setCalendarFilter('tomorrow');
+                    setCalendarEvents([]);
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    calendarFilter === 'tomorrow'
+                      ? 'bg-blue-600 text-white'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  ☀️ Amanhã
+                </button>
+                <button
+                  onClick={() => {
+                    setCalendarFilter('week');
+                    setCalendarEvents([]);
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    calendarFilter === 'week'
+                      ? 'bg-blue-600 text-white'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  📅 Esta Semana
+                </button>
+                <button
+                  onClick={() => {
+                    setCalendarFilter('month');
+                    setCalendarEvents([]); // Limpa eventos ao trocar filtro
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    calendarFilter === 'month'
+                      ? 'bg-blue-600 text-white'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  🗓️ Este Mês
+                </button>
+
+                <button
+                  onClick={async () => {
+                    setLoadingCalendar(true);
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session?.provider_token) {
+                        alert('❌ Faça login com Google para acessar o Calendar!');
+                        return;
                       }
-                    );
 
-                    const data = await response.json();
-                    setCalendarEvents(data.items || []);
-                  } catch (error) {
-                    console.error('Erro:', error);
-                    alert('❌ Erro ao carregar eventos');
-                  } finally {
-                    setLoadingCalendar(false);
-                  }
-                }}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-              >
-                <Calendar className="w-5 h-5" />
-                {loadingCalendar ? 'Carregando...' : 'Sincronizar Calendar'}
-              </button>
+                      const now = new Date();
+                      let timeMin = now.toISOString();
+                      let timeMax;
+
+                      if (calendarFilter === 'today') {
+                        const endOfDay = new Date(now);
+                        endOfDay.setHours(23, 59, 59, 999);
+                        timeMax = endOfDay.toISOString();
+                      } else if (calendarFilter === 'tomorrow') {
+                        const tomorrow = new Date(now);
+                        tomorrow.setDate(now.getDate() + 1);
+                        tomorrow.setHours(0, 0, 0, 0);
+                        timeMin = tomorrow.toISOString();
+                        const endOfTomorrow = new Date(tomorrow);
+                        endOfTomorrow.setHours(23, 59, 59, 999);
+                        timeMax = endOfTomorrow.toISOString();
+                      } else if (calendarFilter === 'week') {
+                        const endOfWeek = new Date(now);
+                        endOfWeek.setDate(now.getDate() + 7);
+                        timeMax = endOfWeek.toISOString();
+                      } else if (calendarFilter === 'month') {
+                        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+                        timeMax = endOfMonth.toISOString();
+                      }
+
+                      const response = await fetch(
+                        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&orderBy=startTime&singleEvents=true`,
+                        {
+                          headers: {
+                            Authorization: `Bearer ${session.provider_token}`
+                          }
+                        }
+                      );
+
+                      const data = await response.json();
+                      setCalendarEvents(data.items || []);
+                    } catch (error) {
+                      console.error('Erro:', error);
+                      alert('❌ Erro ao carregar eventos');
+                    } finally {
+                      setLoadingCalendar(false);
+                    }
+                  }}
+                  className="ml-auto flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+                >
+                  <Calendar className="w-5 h-5" />
+                  {loadingCalendar ? 'Carregando...' : 'Sincronizar'}
+                </button>
+              </div>
+
+              {/* Mostrar filtro ativo */}
+              <p className={`text-sm mt-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {calendarFilter === 'today' && '📆 Mostrando: Eventos de hoje'}
+                {calendarFilter === 'tomorrow' && '☀️ Mostrando: Eventos de amanhã'}
+                {calendarFilter === 'week' && '📅 Mostrando: Eventos dos próximos 7 dias'}
+                {calendarFilter === 'month' && '🗓️ Mostrando: Eventos deste mês'}
+              </p>
             </div>
 
             <div className="grid gap-4">
               {calendarEvents.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
                   <Calendar className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
-                  <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Clique em "Sincronizar Calendar" para ver seus eventos do Google
+                  <p className={`text-lg mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Selecione um período e clique em "Sincronizar"
+                  </p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    Filtro atual: {calendarFilter === 'today' ? 'Hoje' : calendarFilter === 'tomorrow' ? 'Amanhã' : calendarFilter === 'week' ? 'Esta Semana' : 'Este Mês'}
                   </p>
                 </div>
               ) : (
-                calendarEvents.map(event => (
-                  <div
-                    key={event.id}
-                    className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}
-                  >
-                    <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                      {event.summary || 'Sem título'}
-                    </h3>
-                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      📅 {event.start?.dateTime ? new Date(event.start.dateTime).toLocaleString('pt-BR') : event.start?.date || 'Data não definida'}
+                <>
+                  <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
+                    <p className={`text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {calendarEvents.length} evento{calendarEvents.length !== 1 ? 's' : ''} encontrado{calendarEvents.length !== 1 ? 's' : ''}
                     </p>
-                    {event.description && (
-                      <p className={`text-sm mt-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {event.description}
-                      </p>
-                    )}
                   </div>
-                ))
+                  {calendarEvents.map(event => (
+                    <div
+                      key={event.id}
+                      className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}
+                    >
+                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                        {event.summary || 'Sem título'}
+                      </h3>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        📅 {event.start?.dateTime ? new Date(event.start.dateTime).toLocaleString('pt-BR') : event.start?.date || 'Data não definida'}
+                      </p>
+                      {event.description && (
+                        <p className={`text-sm mt-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          {event.description}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           </>
