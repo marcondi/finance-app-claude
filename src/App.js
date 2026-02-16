@@ -74,6 +74,7 @@ const formatDate = (date) => {
 export default function FinanceApp() {
   const [darkMode, setDarkMode] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [categories, setCategories] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [scheduled, setScheduled] = useState([]);
@@ -92,6 +93,8 @@ export default function FinanceApp() {
   const [aiTips, setAiTips] = useState([]);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -180,7 +183,8 @@ export default function FinanceApp() {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: 'https://finance-app-claude.vercel.app'
+            redirectTo: window.location.origin,
+            scopes: 'https://www.googleapis.com/auth/calendar.events'
           }
         });
 
@@ -194,6 +198,8 @@ export default function FinanceApp() {
     // Verificar se usuário logou com Google
     useEffect(() => {
       const checkGoogleAuth = async () => {
+        if (isLoggingOut) return; // Não verificar se está fazendo logout
+        
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
@@ -238,7 +244,7 @@ export default function FinanceApp() {
       };
 
       checkGoogleAuth();
-    }, []);
+    }, [isLoggingOut]);
 
     const handleAuth = async () => {
       if (isLogin) {
@@ -1534,7 +1540,16 @@ export default function FinanceApp() {
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <button
-                onClick={() => setCurrentUser(null)}
+                onClick={async () => {
+                  try {
+                    setIsLoggingOut(true);
+                    await supabase.auth.signOut();
+                    setCurrentUser(null);
+                  } catch (error) {
+                    console.error('Erro ao fazer logout:', error);
+                    setIsLoggingOut(false);
+                  }
+                }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                   darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 } transition-colors`}
@@ -2114,120 +2129,71 @@ export default function FinanceApp() {
           <>
             <div className="flex justify-between items-center mb-6">
               <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                Contas Agendadas - {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+                📅 Agenda Google Calendar
               </h2>
               <button
-                onClick={() => setShowTransactionModal(true)}
+                onClick={async () => {
+                  setLoadingCalendar(true);
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session?.provider_token) {
+                      alert('❌ Faça login com Google para acessar o Calendar!');
+                      return;
+                    }
+
+                    const response = await fetch(
+                      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${new Date().toISOString()}`,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${session.provider_token}`
+                        }
+                      }
+                    );
+
+                    const data = await response.json();
+                    setCalendarEvents(data.items || []);
+                  } catch (error) {
+                    console.error('Erro:', error);
+                    alert('❌ Erro ao carregar eventos');
+                  } finally {
+                    setLoadingCalendar(false);
+                  }
+                }}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
               >
-                <Plus className="w-5 h-5" />
-                Novo Agendamento
+                <Calendar className="w-5 h-5" />
+                {loadingCalendar ? 'Carregando...' : 'Sincronizar Calendar'}
               </button>
             </div>
 
             <div className="grid gap-4">
-              {(() => {
-                const year = currentDate.getFullYear();
-                const month = currentDate.getMonth();
-                
-                const currentMonthScheduled = scheduled
-                  .filter(s => {
-                    if (s.user_id !== currentUser.id) return false;
-                    
-                    const dateParts = s.due_date.split('-');
-                    const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-                    
-                    return dueDate.getFullYear() === year && dueDate.getMonth() === month;
-                  })
-                  .sort((a, b) => {
-                    const dateA = a.due_date.split('-').map(n => parseInt(n));
-                    const dateB = b.due_date.split('-').map(n => parseInt(n));
-                    const dA = new Date(dateA[0], dateA[1] - 1, dateA[2]);
-                    const dB = new Date(dateB[0], dateB[1] - 1, dateB[2]);
-                    return dA.getTime() - dB.getTime();
-                  });
-                
-                if (currentMonthScheduled.length === 0) {
-                  return (
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
-                      <Calendar className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
-                      <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        Nenhum agendamento para este mês.
+              {calendarEvents.length === 0 ? (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
+                  <Calendar className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+                  <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Clique em "Sincronizar Calendar" para ver seus eventos do Google
+                  </p>
+                </div>
+              ) : (
+                calendarEvents.map(event => (
+                  <div
+                    key={event.id}
+                    className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}
+                  >
+                    <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                      {event.summary || 'Sem título'}
+                    </h3>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      📅 {event.start?.dateTime ? new Date(event.start.dateTime).toLocaleString('pt-BR') : event.start?.date || 'Data não definida'}
+                    </p>
+                    {event.description && (
+                      <p className={`text-sm mt-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {event.description}
                       </p>
-                    </div>
-                  );
-                }
-                
-                return currentMonthScheduled.map(scheduledItem => {
-                  const category = categories.find(c => c.id === scheduledItem.category_id);
-                  
-                  const dateParts = scheduledItem.due_date.split('-');
-                  const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  
-                  const isPastDue = dueDate < today && !scheduledItem.is_paid;
-                  
-                  return (
-                    <div
-                      key={scheduledItem.id}
-                      className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 ${
-                        isPastDue ? 'border-2 border-red-500' : ''
-                      }`}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                              {scheduledItem.description}
-                            </h3>
-                            {scheduledItem.is_paid ? (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                <Check className="w-4 h-4 mr-1" />
-                                Pago
-                              </span>
-                            ) : isPastDue ? (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                <AlertCircle className="w-4 h-4 mr-1" />
-                                Atrasado
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                <Calendar className="w-4 h-4 mr-1" />
-                                Pendente
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-4 text-sm">
-                            <span
-                              className="inline-flex items-center px-3 py-1 rounded-full text-white font-medium"
-                              style={{ backgroundColor: category?.color }}
-                            >
-                              {category?.name}
-                            </span>
-                            <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                              Vencimento: {formatDate(scheduledItem.due_date)}
-                            </span>
-                            <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                              {formatCurrency(scheduledItem.amount)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {!scheduledItem.is_paid && (
-                          <button
-                            onClick={() => payScheduled(scheduledItem)}
-                            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
-                          >
-                            Marcar como Pago
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </>
         )}
