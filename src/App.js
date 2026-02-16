@@ -14,7 +14,6 @@ import {
   Upload,
   Edit2,
   Trash2,
-  Search,
   AlertCircle,
   X,
   Calendar,
@@ -84,7 +83,6 @@ export default function FinanceApp() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [sortBy, setSortBy] = useState('date-desc');
   const [savingsGoal, setSavingsGoal] = useState(0);
@@ -2087,16 +2085,6 @@ export default function FinanceApp() {
                     {(() => {
                       let filtered = currentMonthTransactions;
 
-                      if (searchTerm) {
-                        filtered = filtered.filter(t => {
-                          const category = categories.find(c => c.id === t.category_id);
-                          return (
-                            t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            category?.name.toLowerCase().includes(searchTerm.toLowerCase())
-                          );
-                        });
-                      }
-
                       if (filterType !== 'all') {
                         filtered = filtered.filter(t => t.type === filterType);
                       }
@@ -2172,7 +2160,7 @@ export default function FinanceApp() {
                             <tr>
                               <td colSpan={5} className="text-center py-12">
                                 <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                  {searchTerm || filterType !== 'all'
+                                  {filterType !== 'all'
                                     ? 'Nenhuma transação encontrada com os filtros aplicados.'
                                     : 'Nenhuma transação encontrada neste mês.'}
                                 </p>
@@ -2190,11 +2178,6 @@ export default function FinanceApp() {
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       Mostrando {(() => {
                         let count = currentMonthTransactions;
-                        if (searchTerm) count = count.filter(t => {
-                          const category = categories.find(c => c.id === t.category_id);
-                          return t.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                 category?.name.toLowerCase().includes(searchTerm.toLowerCase());
-                        });
                         if (filterType !== 'all') count = count.filter(t => t.type === filterType);
                         return count.length;
                       })()} de {currentMonthTransactions.length} transações
