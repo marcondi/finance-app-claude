@@ -99,9 +99,95 @@ export default function FinanceApp() {
   useEffect(() => {
     if (currentUser) {
       loadUserData();
-      loadBannerEvents(); // Carregar eventos do banner
+      loadBannerEvents();
+      requestNotificationPermission(); // Pedir permissão para notificações
+      checkUpcomingEvents(); // Verificar eventos próximos
     }
   }, [currentUser]);
+
+  // Pedir permissão para notificações
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+  };
+
+  // Verificar eventos e contas próximas
+  const checkUpcomingEvents = () => {
+    // Verificar a cada 15 minutos
+    const interval = setInterval(() => {
+      checkEventsSoonAndNotify();
+      checkDueDatesAndNotify();
+    }, 15 * 60 * 1000); // 15 minutos
+
+    // Verificar imediatamente ao carregar
+    checkEventsSoonAndNotify();
+    checkDueDatesAndNotify();
+
+    return () => clearInterval(interval);
+  };
+
+  // Notificar eventos em 1 hora
+  const checkEventsSoonAndNotify = async () => {
+    if (Notification.permission !== 'granted') return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.provider_token) return;
+
+      const now = new Date();
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${oneHourLater.toISOString()}&singleEvents=true`,
+        { headers: { Authorization: `Bearer ${session.provider_token}` } }
+      );
+
+      const data = await response.json();
+      const events = data.items || [];
+
+      events.forEach(event => {
+        if (event.start?.dateTime) {
+          const eventTime = new Date(event.start.dateTime);
+          const diffMinutes = Math.floor((eventTime - now) / (1000 * 60));
+
+          if (diffMinutes >= 55 && diffMinutes <= 65) {
+            new Notification('📅 Evento próximo!', {
+              body: `${event.summary} começa em cerca de 1 hora`,
+              icon: '/favicon.ico'
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao verificar eventos:', error);
+    }
+  };
+
+  // Notificar contas vencendo
+  const checkDueDatesAndNotify = () => {
+    if (Notification.permission !== 'granted') return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    todayEvents.forEach(event => {
+      new Notification('💸 Conta vencendo HOJE!', {
+        body: event.summary || 'Evento sem título',
+        icon: '/favicon.ico'
+      });
+    });
+
+    tomorrowEvents.forEach(event => {
+      new Notification('⚠️ Conta vence AMANHÃ!', {
+        body: event.summary || 'Evento sem título',
+        icon: '/favicon.ico'
+      });
+    });
+  };
 
   const loadBannerEvents = async () => {
     try {

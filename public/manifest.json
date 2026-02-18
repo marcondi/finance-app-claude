@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "FinanceApp",
+  "name": "FinanceApp - Controle Financeiro",
+  "description": "Aplicativo de controle financeiro com Google Calendar integrado",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,16 +11,47 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["finance", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Nova Transação",
+      "short_name": "Transação",
+      "description": "Adicionar nova transação",
+      "url": "/?action=new-transaction",
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Ver Agenda",
+      "short_name": "Agenda",
+      "description": "Ver agenda do Google Calendar",
+      "url": "/?view=scheduled",
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
 }
