@@ -85,6 +85,8 @@ export default function FinanceApp() {
   const [editingCategory, setEditingCategory] = useState(null);
   const [filterType, setFilterType] = useState('all');
   const [sortBy, setSortBy] = useState('date-desc');
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [savingsGoal, setSavingsGoal] = useState(0);
   const [showTips, setShowTips] = useState(false);
   const [aiTips, setAiTips] = useState([]);
@@ -100,16 +102,12 @@ export default function FinanceApp() {
     if (currentUser) {
       loadUserData();
       requestNotificationPermission();
-
-      // Aguarda provider_token disponivel apos redirect OAuth do Google.
-      // No login normal (email/senha) nao ha provider_token: inicia direto apos maxAttempts.
+      // Aguarda provider_token do Google OAuth antes de carregar eventos/notificacoes
       const initWithSession = async () => {
         let attempts = 0;
-        const maxAttempts = 10; // ate 5s de espera (10 x 500ms)
-
         const tryInit = async () => {
           const { data: { session } } = await supabase.auth.getSession();
-          if (session?.provider_token || attempts >= maxAttempts) {
+          if (session?.provider_token || attempts >= 10) {
             loadBannerEvents();
             checkUpcomingEvents();
           } else {
@@ -117,13 +115,14 @@ export default function FinanceApp() {
             setTimeout(tryInit, 500);
           }
         };
-
         await tryInit();
       };
-
       initWithSession();
     }
   }, [currentUser]);
+
+  // Resetar pagina ao mudar filtro ou ordenacao
+  useEffect(() => { setCurrentPage(1); }, [filterType, sortBy]);
 
   // Pedir permissão para notificações
   const requestNotificationPermission = async () => {
@@ -2149,7 +2148,7 @@ export default function FinanceApp() {
             </div>
 
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg overflow-hidden`}>
-              <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: '60vh' }}>
+              <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     <tr>
@@ -2241,10 +2240,15 @@ export default function FinanceApp() {
                         }
                       });
 
+                      const totalFiltered = filtered.length;
+                      const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+                      const safePage = Math.min(currentPage, totalPages);
+                      const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
                       return (
                         <>
-                          {filtered.length > 0 ? (
-                            filtered.map(transaction => {
+                          {paginated.length > 0 ? (
+                            paginated.map(transaction => {
                               const category = categories.find(c => c.id === transaction.category_id);
                               return (
                                 <tr key={transaction.id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
@@ -2307,14 +2311,37 @@ export default function FinanceApp() {
                 </table>
 
                 {currentMonthTransactions.length > 0 && (
-                  <div className={`px-6 py-3 border-t ${darkMode ? 'border-gray-700 bg-gray-750' : 'border-gray-200 bg-gray-50'}`}>
-                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Mostrando {(() => {
-                        let count = currentMonthTransactions;
-                        if (filterType !== 'all') count = count.filter(t => t.type === filterType);
-                        return count.length;
-                      })()} de {currentMonthTransactions.length} transações
-                    </p>
+                  <div className={`px-6 py-3 border-t flex flex-wrap items-center justify-end gap-4 ${darkMode ? 'border-gray-700' : 'border-gray-200 bg-gray-50'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Linhas por página:</span>
+                      <select
+                        value={pageSize}
+                        onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                        className={`text-sm px-2 py-1 rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
+                      >
+                        {[10, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                    {(() => {
+                      let count = currentMonthTransactions;
+                      if (filterType !== 'all') count = count.filter(t => t.type === filterType);
+                      const total = count.length;
+                      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                      const safePage = Math.min(currentPage, totalPages);
+                      const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
+                      const to = Math.min(safePage * pageSize, total);
+                      return (
+                        <>
+                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{from}–{to} de {total}</span>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => setCurrentPage(1)} disabled={safePage === 1} className={`px-2 py-1 rounded text-sm font-bold ${safePage === 1 ? 'opacity-30 cursor-not-allowed' : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}>⏮</button>
+                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`px-2 py-1 rounded text-sm font-bold ${safePage === 1 ? 'opacity-30 cursor-not-allowed' : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}>◄</button>
+                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages} className={`px-2 py-1 rounded text-sm font-bold ${safePage === totalPages ? 'opacity-30 cursor-not-allowed' : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}>►</button>
+                            <button onClick={() => setCurrentPage(totalPages)} disabled={safePage === totalPages} className={`px-2 py-1 rounded text-sm font-bold ${safePage === totalPages ? 'opacity-30 cursor-not-allowed' : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}>⏭</button>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
