@@ -2088,69 +2088,42 @@ export default function FinanceApp() {
 
         {view === 'transactions' && (
           <>
-            <div className="space-y-4 mb-6">
-
+            <div className="mb-6">
               <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Tipo de Transação
-                    </label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setFilterType('all')}
-                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                          filterType === 'all'
-                            ? 'bg-blue-600 text-white'
-                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        Todas
-                      </button>
-                      <button
-                        onClick={() => setFilterType('income')}
-                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                          filterType === 'income'
-                            ? 'bg-green-600 text-white'
-                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        💚 Entradas
-                      </button>
-                      <button
-                        onClick={() => setFilterType('expense')}
-                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                          filterType === 'expense'
-                            ? 'bg-red-600 text-white'
-                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        🔴 Saídas
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex-1">
-                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Ordenar por
-                    </label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className={`w-full px-4 py-2 rounded-lg border ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white' 
-                          : 'bg-white border-gray-300 text-gray-900'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    >
-                      <option value="date-desc">📅 Data (mais recente)</option>
-                      <option value="date-asc">📅 Data (mais antiga)</option>
-                      <option value="description-asc">🔤 Descrição (A-Z)</option>
-                      <option value="description-desc">🔤 Descrição (Z-A)</option>
-                      <option value="amount-desc">💰 Valor (maior)</option>
-                      <option value="amount-asc">💰 Valor (menor)</option>
-                    </select>
-                  </div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Tipo de Transação
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setFilterType('all')}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      filterType === 'all'
+                        ? 'bg-blue-600 text-white'
+                        : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Todas
+                  </button>
+                  <button
+                    onClick={() => setFilterType('income')}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      filterType === 'income'
+                        ? 'bg-green-600 text-white'
+                        : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    💚 Entradas
+                  </button>
+                  <button
+                    onClick={() => setFilterType('expense')}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      filterType === 'expense'
+                        ? 'bg-red-600 text-white'
+                        : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    🔴 Saídas
+                  </button>
                 </div>
               </div>
             </div>
@@ -2160,10 +2133,54 @@ export default function FinanceApp() {
                 <table className="w-full">
                   <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
                     <tr>
-                      <th className={`px-6 py-4 text-left text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Data</th>
-                      <th className={`px-6 py-4 text-left text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Descrição</th>
-                      <th className={`px-6 py-4 text-left text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Categoria</th>
-                      <th className={`px-6 py-4 text-right text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Valor</th>
+                      {/* Data — clicável, alterna asc/desc */}
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                        onClick={() => setSortBy(sortBy === 'date-asc' ? 'date-desc' : 'date-asc')}
+                      >
+                        <span className="flex items-center gap-1">
+                          Data
+                          <span className="text-xs">
+                            {sortBy === 'date-asc' ? '↑' : sortBy === 'date-desc' ? '↓' : '↕'}
+                          </span>
+                        </span>
+                      </th>
+                      {/* Descrição — clicável */}
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                        onClick={() => setSortBy(sortBy === 'description-asc' ? 'description-desc' : 'description-asc')}
+                      >
+                        <span className="flex items-center gap-1">
+                          Descrição
+                          <span className="text-xs">
+                            {sortBy === 'description-asc' ? '↑' : sortBy === 'description-desc' ? '↓' : '↕'}
+                          </span>
+                        </span>
+                      </th>
+                      {/* Categoria — clicável */}
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                        onClick={() => setSortBy(sortBy === 'category-asc' ? 'category-desc' : 'category-asc')}
+                      >
+                        <span className="flex items-center gap-1">
+                          Categoria
+                          <span className="text-xs">
+                            {sortBy === 'category-asc' ? '↑' : sortBy === 'category-desc' ? '↓' : '↕'}
+                          </span>
+                        </span>
+                      </th>
+                      {/* Valor — clicável */}
+                      <th
+                        className={`px-6 py-4 text-right text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                        onClick={() => setSortBy(sortBy === 'amount-asc' ? 'amount-desc' : 'amount-asc')}
+                      >
+                        <span className="flex items-center justify-end gap-1">
+                          Valor
+                          <span className="text-xs">
+                            {sortBy === 'amount-asc' ? '↑' : sortBy === 'amount-desc' ? '↓' : '↕'}
+                          </span>
+                        </span>
+                      </th>
                       <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Ações</th>
                     </tr>
                   </thead>
@@ -2189,6 +2206,16 @@ export default function FinanceApp() {
                             return b.amount - a.amount;
                           case 'amount-asc':
                             return a.amount - b.amount;
+                          case 'category-asc': {
+                            const catA = categories.find(c => c.id === a.category_id)?.name || '';
+                            const catB = categories.find(c => c.id === b.category_id)?.name || '';
+                            return catA.localeCompare(catB);
+                          }
+                          case 'category-desc': {
+                            const catA = categories.find(c => c.id === a.category_id)?.name || '';
+                            const catB = categories.find(c => c.id === b.category_id)?.name || '';
+                            return catB.localeCompare(catA);
+                          }
                           default:
                             return 0;
                         }
