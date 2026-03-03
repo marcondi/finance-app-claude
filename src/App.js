@@ -2129,9 +2129,9 @@ export default function FinanceApp() {
             </div>
 
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg overflow-hidden`}>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: '60vh' }}>
                 <table className="w-full">
-                  <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
+                  <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     <tr>
                       {/* Data — clicável, alterna asc/desc */}
                       <th
