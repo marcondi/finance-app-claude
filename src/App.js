@@ -99,9 +99,29 @@ export default function FinanceApp() {
   useEffect(() => {
     if (currentUser) {
       loadUserData();
-      loadBannerEvents();
-      requestNotificationPermission(); // Pedir permissão para notificações
-      checkUpcomingEvents(); // Verificar eventos próximos
+      requestNotificationPermission();
+
+      // Aguarda provider_token disponivel apos redirect OAuth do Google.
+      // No login normal (email/senha) nao ha provider_token: inicia direto apos maxAttempts.
+      const initWithSession = async () => {
+        let attempts = 0;
+        const maxAttempts = 10; // ate 5s de espera (10 x 500ms)
+
+        const tryInit = async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.provider_token || attempts >= maxAttempts) {
+            loadBannerEvents();
+            checkUpcomingEvents();
+          } else {
+            attempts++;
+            setTimeout(tryInit, 500);
+          }
+        };
+
+        await tryInit();
+      };
+
+      initWithSession();
     }
   }, [currentUser]);
 
