@@ -20,7 +20,8 @@ import {
   FileText,
   FileSpreadsheet,
   Settings,
-  ChevronDown
+  ChevronDown,
+  Mail
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
@@ -77,6 +78,7 @@ export default function FinanceApp() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [sendingReport, setSendingReport] = useState(false);
   const [googlePhotoUrl, setGooglePhotoUrl] = useState(null);
   const [categories, setCategories] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -1611,6 +1613,77 @@ export default function FinanceApp() {
     }
   };
 
+  // Enviar relatório mensal por e-mail via Supabase Edge Function
+  const handleSendMonthlyReport = async () => {
+    if (sendingReport) return;
+    setSendingReport(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const now = new Date();
+      const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+        'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+      const month = monthNames[now.getMonth()];
+      const year = now.getFullYear();
+
+      const income   = currentMonthTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const expenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const balance  = income - expenses;
+
+      const txList = currentMonthTransactions
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .map(t => {
+          const cat = categories.find(c => c.id === t.category_id);
+          const [y, m, d] = t.date.split('-');
+          return {
+            date: d + '/' + m + '/' + y,
+            description: t.description,
+            category: cat?.name || '-',
+            amount: t.amount,
+            type: t.type,
+          };
+        });
+
+      const { data: { session: sess2 } } = await supabase.auth.getSession();
+      // Extrair URL base do cliente Supabase (funciona independente de env vars)
+      const supabaseUrl = (supabase).supabaseUrl
+        || (supabase).restUrl?.replace('/rest/v1','')
+        || process.env.REACT_APP_SUPABASE_URL
+        || '';
+
+      const res = await fetch(supabaseUrl + '/functions/v1/send-monthly-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (sess2?.access_token || token || ''),
+          'apikey': (supabase).supabaseKey || process.env.REACT_APP_SUPABASE_ANON_KEY || '',
+        },
+        body: JSON.stringify({
+          to: currentUser.email,
+          userName: currentUser.name || currentUser.email.split('@')[0],
+          month,
+          year,
+          income,
+          expenses,
+          balance,
+          transactions: txList,
+        }),
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        alert('✅ Relatório enviado com sucesso para ' + currentUser.email + '!');
+      } else {
+        alert('❌ Erro ao enviar: ' + JSON.stringify(result.error || result));
+      }
+    } catch (err) {
+      alert('❌ Erro: ' + err.message);
+    } finally {
+      setSendingReport(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -2712,6 +2785,40 @@ export default function FinanceApp() {
                   Importar Dados
                   <input type="file" accept=".json" onChange={(e) => { handleImport(e); setShowSettings(false); }} className="hidden" />
                 </label>
+              </div>
+
+              {/* Relatório mensal por e-mail */}
+              <div className={`mt-5 pt-5 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  RELATÓRIO MENSAL
+                </p>
+                <button
+                  onClick={handleSendMonthlyReport}
+                  disabled={sendingReport}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-colors ${
+                    sendingReport
+                      ? 'bg-blue-400 cursor-not-allowed text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  {sendingReport ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                      </svg>
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4" />
+                      Enviar Relatório por E-mail
+                    </>
+                  )}
+                </button>
+                <p className={`text-xs mt-2 text-center ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  Será enviado para {currentUser?.email}
+                </p>
               </div>
             </div>
           </div>
