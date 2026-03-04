@@ -2840,7 +2840,7 @@ export default function FinanceApp() {
                           <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
                         </div>
                         <div className="flex gap-1">
-                          <button onClick={() => { setEditingCategory(cat); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
+                          <button onClick={() => { setEditingCategory(cat); setShowSettings(false); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
                           <button onClick={() => deleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
                         </div>
                       </div>
@@ -2855,7 +2855,7 @@ export default function FinanceApp() {
                           <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
                         </div>
                         <div className="flex gap-1">
-                          <button onClick={() => { setEditingCategory(cat); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
+                          <button onClick={() => { setEditingCategory(cat); setShowSettings(false); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
                           <button onClick={() => deleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
                         </div>
                       </div>
@@ -2863,7 +2863,7 @@ export default function FinanceApp() {
                   </div>
                 </div>
                 <button
-                  onClick={() => { setEditingCategory(null); setShowCategoryModal(true); }}
+                  onClick={() => { setEditingCategory(null); setShowSettings(false); setShowCategoryModal(true); }}
                   className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
                 >
                   <Plus className="w-4 h-4" />
