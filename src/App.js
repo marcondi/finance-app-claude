@@ -1824,10 +1824,10 @@ export default function FinanceApp() {
         </div>
 
         {upcomingDueDates.length > 0 && view === 'dashboard' && (
-          <div className="mb-6 bg-orange-100 dark:bg-orange-900/30 border border-orange-400 dark:border-orange-700 rounded-lg p-4 flex items-start gap-3">
+          <div className="mb-6 bg-orange-200 dark:bg-orange-900/30 border-2 border-orange-500 dark:border-orange-700 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-orange-700 dark:text-orange-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-orange-900 dark:text-orange-300">
+              <p className="font-semibold text-orange-950 dark:text-orange-300">
                 Atenção: Você tem {upcomingDueDates.length} conta{upcomingDueDates.length > 1 ? 's' : ''} vencendo nos próximos 5 dias.
               </p>
               <button
