@@ -2841,7 +2841,7 @@ export default function FinanceApp() {
                         </div>
                         <div className="flex gap-1">
                           <button onClick={() => { setEditingCategory(cat); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
-                          <button onClick={() => handleDeleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
+                          <button onClick={() => deleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
                         </div>
                       </div>
                     ))}
@@ -2856,7 +2856,7 @@ export default function FinanceApp() {
                         </div>
                         <div className="flex gap-1">
                           <button onClick={() => { setEditingCategory(cat); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
-                          <button onClick={() => handleDeleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
+                          <button onClick={() => deleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
                         </div>
                       </div>
                     ))}
