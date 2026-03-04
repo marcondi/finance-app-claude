@@ -108,8 +108,10 @@ export default function FinanceApp() {
         const tryInit = async () => {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.provider_token || attempts >= 10) {
-            loadBannerEvents();
-            checkUpcomingEvents();
+            // loadBannerEvents retorna os eventos e já dispara notificações
+            // evitando depender do state todayEvents/tomorrowEvents que ainda está vazio
+            const { todayEvts, tomorrowEvts } = await loadBannerEvents();
+            checkUpcomingEvents(todayEvts, tomorrowEvts);
           } else {
             attempts++;
             setTimeout(tryInit, 500);
@@ -131,17 +133,19 @@ export default function FinanceApp() {
     }
   };
 
-  // Verificar eventos e contas próximas
-  const checkUpcomingEvents = () => {
-    // Verificar a cada 15 minutos
+  // Verificar eventos e contas proximas.
+  // todayEvts/tomorrowEvts sao passados diretamente no login para evitar
+  // ler o state React que ainda esta vazio no primeiro render apos OAuth redirect.
+  const checkUpcomingEvents = (todayEvts, tomorrowEvts) => {
+    // Dispara imediatamente com os eventos ja carregados
+    checkEventsSoonAndNotify();
+    checkDueDatesAndNotify(todayEvts, tomorrowEvts);
+
+    // Continua verificando a cada 15 minutos (state ja populado)
     const interval = setInterval(() => {
       checkEventsSoonAndNotify();
       checkDueDatesAndNotify();
-    }, 15 * 60 * 1000); // 15 minutos
-
-    // Verificar imediatamente ao carregar
-    checkEventsSoonAndNotify();
-    checkDueDatesAndNotify();
+    }, 15 * 60 * 1000);
 
     return () => clearInterval(interval);
   };
@@ -183,24 +187,22 @@ export default function FinanceApp() {
     }
   };
 
-  // Notificar contas vencendo
-  const checkDueDatesAndNotify = () => {
+  // Notificar contas vencendo.
+  // Aceita eventos como parametros (chamada no login) ou usa o state (chamadas do intervalo).
+  const checkDueDatesAndNotify = (todayEvts, tomorrowEvts) => {
     if (Notification.permission !== 'granted') return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const eventsToday    = todayEvts    ?? todayEvents;
+    const eventsTomorrow = tomorrowEvts ?? tomorrowEvents;
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-
-    todayEvents.forEach(event => {
+    eventsToday.forEach(event => {
       new Notification('💸 Conta vencendo HOJE!', {
         body: event.summary || 'Evento sem título',
         icon: '/favicon.ico'
       });
     });
 
-    tomorrowEvents.forEach(event => {
+    eventsTomorrow.forEach(event => {
       new Notification('⚠️ Conta vence AMANHÃ!', {
         body: event.summary || 'Evento sem título',
         icon: '/favicon.ico'
@@ -211,7 +213,7 @@ export default function FinanceApp() {
   const loadBannerEvents = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.provider_token) return;
+      if (!session?.provider_token) return { todayEvts: [], tomorrowEvts: [] };
 
       const now = new Date();
       const endOfToday = new Date(now);
@@ -241,9 +243,15 @@ export default function FinanceApp() {
         }
       );
       const tomorrowData = await tomorrowResponse.json();
-      setTomorrowEvents(tomorrowData.items || []);
+      const todayEvts    = todayData.items    || [];
+      const tomorrowEvts = tomorrowData.items || [];
+      setTodayEvents(todayEvts);
+      setTomorrowEvents(tomorrowEvts);
+      // Retorna os eventos para uso imediato (evita depender do state ainda vazio)
+      return { todayEvts, tomorrowEvts };
     } catch (error) {
       console.error('Erro ao carregar eventos do banner:', error);
+      return { todayEvts: [], tomorrowEvts: [] };
     }
   };
 
