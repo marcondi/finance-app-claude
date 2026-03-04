@@ -1709,8 +1709,8 @@ export default function FinanceApp() {
                 </h1>
               </div>
 
-              <nav className="hidden md:flex gap-2">
-                {['dashboard', 'transactions', 'scheduled', 'categories'].map(v => (
+              <nav className="hidden md:flex items-center gap-2">
+                {['dashboard', 'transactions', 'scheduled'].map(v => (
                   <button
                     key={v}
                     onClick={() => setView(v)}
@@ -1720,9 +1720,27 @@ export default function FinanceApp() {
                         : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
-                    {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : v === 'scheduled' ? 'Agenda' : 'Categorias'}
+                    {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : 'Agenda'}
                   </button>
                 ))}
+                {/* Seletor de mês no lugar de Categorias */}
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                  <button
+                    onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }}
+                    className={`p-1 rounded transition-colors ${darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-500 hover:bg-gray-200'}`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className={`text-sm font-semibold min-w-[110px] text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                    {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+                  </span>
+                  <button
+                    onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }}
+                    className={`p-1 rounded transition-colors ${darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-500 hover:bg-gray-200'}`}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </nav>
             </div>
 
@@ -1802,7 +1820,7 @@ export default function FinanceApp() {
           </div>
 
           <div className="flex md:hidden gap-2 mt-4 overflow-x-auto">
-            {['dashboard', 'transactions', 'scheduled', 'categories'].map(v => (
+            {['dashboard', 'transactions', 'scheduled'].map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -1812,9 +1830,21 @@ export default function FinanceApp() {
                     : darkMode ? 'text-gray-300 bg-gray-700' : 'text-gray-600 bg-gray-100'
                 }`}
               >
-                {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : v === 'scheduled' ? 'Agenda' : 'Categorias'}
+                {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : 'Agenda'}
               </button>
             ))}
+            {/* Seletor de mês mobile */}
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border whitespace-nowrap ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+              <button onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }} className={`p-1 rounded ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                {currentDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+              </span>
+              <button onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }} className={`p-1 rounded ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -1910,46 +1940,7 @@ export default function FinanceApp() {
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                const newDate = new Date(currentDate);
-                newDate.setMonth(newDate.getMonth() - 1);
-                setCurrentDate(newDate);
-              }}
-              className={`p-2 rounded-lg ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-600'} shadow`}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            
-            <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
-            </h2>
-            
-            <button
-              onClick={() => {
-                const newDate = new Date(currentDate);
-                newDate.setMonth(newDate.getMonth() + 1);
-                setCurrentDate(newDate);
-              }}
-              className={`p-2 rounded-lg ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-600'} shadow`}
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-
-          {view === 'transactions' && (
-            <button
-              onClick={() => setShowTransactionModal(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
-            >
-              <Plus className="w-5 h-5" />
-              Nova Transação
-            </button>
-          )}
-        </div>
-
+        {/* Banner de alerta - nova posição: antes dos cards */}
         {upcomingDueDates.length > 0 && view === 'dashboard' && (
           <div className="mb-6 bg-orange-200 dark:bg-orange-900/30 border-2 border-orange-500 dark:border-orange-700 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-orange-700 dark:text-orange-400 flex-shrink-0 mt-0.5" />
@@ -1964,6 +1955,19 @@ export default function FinanceApp() {
                 Ver detalhes
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Botão Nova Transação na aba Transações */}
+        {view === 'transactions' && (
+          <div className="flex justify-end mb-6">
+            <button
+              onClick={() => setShowTransactionModal(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Nova Transação
+            </button>
           </div>
         )}
 
@@ -2734,7 +2738,7 @@ export default function FinanceApp() {
       {/* Modal Configurações */}
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className={`w-full max-w-lg rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className={`w-full max-w-lg rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} max-h-[90vh] overflow-y-auto`}>
             <div className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 flex items-center justify-between`}>
               <div className="flex items-center gap-3">
                 <Settings className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
@@ -2819,6 +2823,52 @@ export default function FinanceApp() {
                 <p className={`text-xs mt-2 text-center ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                   Será enviado para {currentUser?.email}
                 </p>
+              </div>
+
+              {/* Categorias dentro das Configurações */}
+              <div className={`mt-5 pt-5 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  CATEGORIAS
+                </p>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className={`rounded-xl p-3 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <p className={`text-xs font-bold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Despesas</p>
+                    {categories.filter(c => c.type === 'expense').map(cat => (
+                      <div key={cat.id} className="flex items-center justify-between py-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{background: cat.color}} />
+                          <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <button onClick={() => { setEditingCategory(cat); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
+                          <button onClick={() => handleDeleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={`rounded-xl p-3 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <p className={`text-xs font-bold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Receitas</p>
+                    {categories.filter(c => c.type === 'income').map(cat => (
+                      <div key={cat.id} className="flex items-center justify-between py-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{background: cat.color}} />
+                          <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <button onClick={() => { setEditingCategory(cat); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
+                          <button onClick={() => handleDeleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setEditingCategory(null); setShowCategoryModal(true); }}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nova Categoria
+                </button>
               </div>
             </div>
           </div>
