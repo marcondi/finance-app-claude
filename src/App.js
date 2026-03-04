@@ -18,7 +18,9 @@ import {
   X,
   Calendar,
   FileText,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Settings,
+  ChevronDown
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
@@ -73,6 +75,9 @@ export default function FinanceApp() {
   const [darkMode, setDarkMode] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [googlePhotoUrl, setGooglePhotoUrl] = useState(null);
   const [categories, setCategories] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [scheduled, setScheduled] = useState([]);
@@ -371,6 +376,7 @@ export default function FinanceApp() {
             if (existingUser && existingUser.length > 0) {
               // Usuário já existe
               setCurrentUser(existingUser[0]);
+              setGooglePhotoUrl(googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null);
             } else {
               // Criar novo usuário
               const newUser = {
@@ -388,6 +394,7 @@ export default function FinanceApp() {
               if (error) throw error;
 
               setCurrentUser(data[0]);
+              setGooglePhotoUrl(googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null);
             }
           } catch (error) {
             console.error('Erro ao processar login Google:', error);
@@ -1647,30 +1654,77 @@ export default function FinanceApp() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Botão modo escuro */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
               >
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-              <button
-                onClick={async () => {
-                  try {
-                    setIsLoggingOut(true);
-                    await supabase.auth.signOut();
-                    setCurrentUser(null);
-                  } catch (error) {
-                    console.error('Erro ao fazer logout:', error);
-                    setIsLoggingOut(false);
-                  }
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                } transition-colors`}
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Sair</span>
-              </button>
+
+              {/* Menu do usuário */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(m => !m)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-colors ${
+                    darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  {/* Avatar */}
+                  {googlePhotoUrl ? (
+                    <img src={googlePhotoUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                      {(currentUser?.name || currentUser?.email || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+                    </div>
+                  )}
+                  <span className="hidden sm:inline text-sm font-medium max-w-[120px] truncate">
+                    {currentUser?.name || currentUser?.email?.split('@')[0] || 'Usuário'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 opacity-60" />
+                </button>
+
+                {/* Dropdown */}
+                {showUserMenu && (
+                  <>
+                    {/* Overlay para fechar */}
+                    <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                    <div className={`absolute right-0 top-full mt-2 w-48 rounded-xl shadow-2xl z-50 py-1 ${
+                      darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                    }`}>
+                      <button
+                        onClick={() => { setShowSettings(true); setShowUserMenu(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                          darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Settings className="w-4 h-4" />
+                        Configurações
+                      </button>
+                      <div className={`my-1 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`} />
+                      <button
+                        onClick={async () => {
+                          setShowUserMenu(false);
+                          try {
+                            setIsLoggingOut(true);
+                            await supabase.auth.signOut();
+                            setCurrentUser(null);
+                          } catch (error) {
+                            console.error('Erro ao fazer logout:', error);
+                            setIsLoggingOut(false);
+                          }
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                          darkMode ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'
+                        }`}
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sair
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -2062,7 +2116,7 @@ export default function FinanceApp() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <button
                 onClick={() => setShowTransactionModal(true)}
                 className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-colors"
@@ -2070,45 +2124,6 @@ export default function FinanceApp() {
                 <Plus className="w-5 h-5" />
                 Adicionar Lançamento
               </button>
-
-              <button
-                onClick={handleExportPDF}
-                className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-colors"
-              >
-                <FileText className="w-5 h-5" />
-                Exportar PDF
-              </button>
-
-              <button
-                onClick={handleExportExcel}
-                className="flex items-center justify-center gap-3 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-colors"
-              >
-                <FileSpreadsheet className="w-5 h-5" />
-                Exportar Excel
-              </button>
-
-              <button
-                onClick={handleExport}
-                className={`flex items-center justify-center gap-3 ${
-                  darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                } font-semibold py-4 rounded-xl shadow-lg transition-colors`}
-              >
-                <Download className="w-5 h-5" />
-                Exportar Backup
-              </button>
-
-              <label className={`flex items-center justify-center gap-3 ${
-                darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-              } font-semibold py-4 rounded-xl shadow-lg transition-colors cursor-pointer`}>
-                <Upload className="w-5 h-5" />
-                Importar Dados
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleImport}
-                  className="hidden"
-                />
-              </label>
             </div>
           </>
         )}
@@ -2642,6 +2657,66 @@ export default function FinanceApp() {
 
       {showTransactionModal && <TransactionModal />}
       {showCategoryModal && <CategoryModal />}
+
+      {/* Modal Configurações */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-lg rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 flex items-center justify-between`}>
+              <div className="flex items-center gap-3">
+                <Settings className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Configurações
+                </h2>
+              </div>
+              <button onClick={() => setShowSettings(false)}>
+                <X className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className={`text-sm font-semibold mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                EXPORTAR / IMPORTAR DADOS
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => { handleExportPDF(); setShowSettings(false); }}
+                  className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition-colors"
+                >
+                  <FileText className="w-4 h-4" />
+                  Exportar PDF
+                </button>
+
+                <button
+                  onClick={() => { handleExportExcel(); setShowSettings(false); }}
+                  className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-colors"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Exportar Excel
+                </button>
+
+                <button
+                  onClick={() => { handleExport(); setShowSettings(false); }}
+                  className={`flex items-center justify-center gap-2 ${
+                    darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                  } font-semibold py-3 rounded-xl transition-colors`}
+                >
+                  <Download className="w-4 h-4" />
+                  Exportar Backup
+                </button>
+
+                <label className={`flex items-center justify-center gap-2 ${
+                  darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                } font-semibold py-3 rounded-xl transition-colors cursor-pointer`}>
+                  <Upload className="w-4 h-4" />
+                  Importar Dados
+                  <input type="file" accept=".json" onChange={(e) => { handleImport(e); setShowSettings(false); }} className="hidden" />
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {showGoalModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
