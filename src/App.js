@@ -1684,6 +1684,56 @@ export default function FinanceApp() {
     }
   };
 
+  // Busca eventos do Google Calendar com base no filtro selecionado
+  const fetchCalendarEvents = async (filter) => {
+    setLoadingCalendar(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.provider_token) {
+        alert('❌ Faça login com Google para acessar o Calendar!');
+        return;
+      }
+
+      const now = new Date();
+      let timeMin = now.toISOString();
+      let timeMax;
+
+      if (filter === 'today') {
+        const endOfDay = new Date(now);
+        endOfDay.setHours(23, 59, 59, 999);
+        timeMax = endOfDay.toISOString();
+      } else if (filter === 'tomorrow') {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        timeMin = tomorrow.toISOString();
+        const endOfTomorrow = new Date(tomorrow);
+        endOfTomorrow.setHours(23, 59, 59, 999);
+        timeMax = endOfTomorrow.toISOString();
+      } else if (filter === 'week') {
+        const endOfWeek = new Date(now);
+        endOfWeek.setDate(now.getDate() + 7);
+        timeMax = endOfWeek.toISOString();
+      } else if (filter === 'month') {
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        timeMax = endOfMonth.toISOString();
+      }
+
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&orderBy=startTime&singleEvents=true`,
+        { headers: { Authorization: `Bearer ${session.provider_token}` } }
+      );
+
+      const data = await response.json();
+      setCalendarEvents(data.items || []);
+    } catch (error) {
+      console.error('Erro:', error);
+      alert('❌ Erro ao carregar eventos');
+    } finally {
+      setLoadingCalendar(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -2455,113 +2505,37 @@ export default function FinanceApp() {
 
               {/* Filtros e Sincronizar na mesma linha */}
               <div className="flex flex-wrap items-center gap-3">
+                {[
+                  { key: 'today',    label: '📆 Hoje' },
+                  { key: 'tomorrow', label: '☀️ Amanhã' },
+                  { key: 'week',     label: '📅 Esta Semana' },
+                  { key: 'month',    label: '🗓️ Este Mês' },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setCalendarFilter(key);
+                      fetchCalendarEvents(key);
+                    }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      calendarFilter === key
+                        ? 'bg-blue-600 text-white'
+                        : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {loadingCalendar && calendarFilter === key ? '⏳ Carregando...' : label}
+                  </button>
+                ))}
+
+                {/* Botão Sincronizar agora recarrega o filtro atual */}
                 <button
-                  onClick={() => {
-                    setCalendarFilter('today');
-                    setCalendarEvents([]);
-                  }}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    calendarFilter === 'today'
-                      ? 'bg-blue-600 text-white'
-                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  onClick={() => fetchCalendarEvents(calendarFilter)}
+                  disabled={loadingCalendar}
+                  className={`ml-auto flex items-center gap-2 font-semibold px-6 py-2 rounded-lg transition-colors ${
+                    loadingCalendar
+                      ? 'bg-green-400 cursor-not-allowed text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
                   }`}
-                >
-                  📆 Hoje
-                </button>
-                <button
-                  onClick={() => {
-                    setCalendarFilter('tomorrow');
-                    setCalendarEvents([]);
-                  }}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    calendarFilter === 'tomorrow'
-                      ? 'bg-blue-600 text-white'
-                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  ☀️ Amanhã
-                </button>
-                <button
-                  onClick={() => {
-                    setCalendarFilter('week');
-                    setCalendarEvents([]);
-                  }}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    calendarFilter === 'week'
-                      ? 'bg-blue-600 text-white'
-                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  📅 Esta Semana
-                </button>
-                <button
-                  onClick={() => {
-                    setCalendarFilter('month');
-                    setCalendarEvents([]); // Limpa eventos ao trocar filtro
-                  }}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    calendarFilter === 'month'
-                      ? 'bg-blue-600 text-white'
-                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  🗓️ Este Mês
-                </button>
-
-                <button
-                  onClick={async () => {
-                    setLoadingCalendar(true);
-                    try {
-                      const { data: { session } } = await supabase.auth.getSession();
-                      if (!session?.provider_token) {
-                        alert('❌ Faça login com Google para acessar o Calendar!');
-                        return;
-                      }
-
-                      const now = new Date();
-                      let timeMin = now.toISOString();
-                      let timeMax;
-
-                      if (calendarFilter === 'today') {
-                        const endOfDay = new Date(now);
-                        endOfDay.setHours(23, 59, 59, 999);
-                        timeMax = endOfDay.toISOString();
-                      } else if (calendarFilter === 'tomorrow') {
-                        const tomorrow = new Date(now);
-                        tomorrow.setDate(now.getDate() + 1);
-                        tomorrow.setHours(0, 0, 0, 0);
-                        timeMin = tomorrow.toISOString();
-                        const endOfTomorrow = new Date(tomorrow);
-                        endOfTomorrow.setHours(23, 59, 59, 999);
-                        timeMax = endOfTomorrow.toISOString();
-                      } else if (calendarFilter === 'week') {
-                        const endOfWeek = new Date(now);
-                        endOfWeek.setDate(now.getDate() + 7);
-                        timeMax = endOfWeek.toISOString();
-                      } else if (calendarFilter === 'month') {
-                        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-                        timeMax = endOfMonth.toISOString();
-                      }
-
-                      const response = await fetch(
-                        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&orderBy=startTime&singleEvents=true`,
-                        {
-                          headers: {
-                            Authorization: `Bearer ${session.provider_token}`
-                          }
-                        }
-                      );
-
-                      const data = await response.json();
-                      setCalendarEvents(data.items || []);
-                    } catch (error) {
-                      console.error('Erro:', error);
-                      alert('❌ Erro ao carregar eventos');
-                    } finally {
-                      setLoadingCalendar(false);
-                    }
-                  }}
-                  className="ml-auto flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
                 >
                   <Calendar className="w-5 h-5" />
                   {loadingCalendar ? 'Carregando...' : 'Sincronizar'}
@@ -2582,7 +2556,7 @@ export default function FinanceApp() {
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
                   <Calendar className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
                   <p className={`text-lg mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Selecione um período e clique em "Sincronizar"
+                    Selecione um período acima para carregar os eventos
                   </p>
                   <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                     Filtro atual: {calendarFilter === 'today' ? 'Hoje' : calendarFilter === 'tomorrow' ? 'Amanhã' : calendarFilter === 'week' ? 'Esta Semana' : 'Este Mês'}
