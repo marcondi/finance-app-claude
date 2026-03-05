@@ -1256,21 +1256,45 @@ export default function FinanceApp() {
 
   const upcomingDueDates = useMemo(() => {
     if (!currentUser) return [];
-    
+
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // início do dia de hoje
+    today.setHours(0, 0, 0, 0);
     const fiveDaysFromNow = new Date(today);
     fiveDaysFromNow.setDate(today.getDate() + 5);
-    fiveDaysFromNow.setHours(23, 59, 59, 999); // fim do 5º dia
+    fiveDaysFromNow.setHours(23, 59, 59, 999);
 
-    return scheduled.filter(s => {
-      if (s.user_id !== currentUser.id || s.is_paid) return false;
-      // Parsear como data local (evitar deslocamento de fuso UTC)
-      const [y, m, d] = s.due_date.split('-').map(Number);
-      const dueDate = new Date(y, m - 1, d, 0, 0, 0, 0);
-      return dueDate >= today && dueDate <= fiveDaysFromNow;
+    const parseLocalDate = (str) => {
+      const [y, m, d] = str.split('-').map(Number);
+      return new Date(y, m - 1, d, 0, 0, 0, 0);
+    };
+
+    // Contas agendadas (finance_scheduled) não pagas
+    const fromScheduled = scheduled
+      .filter(s => {
+        if (s.user_id !== currentUser.id || s.is_paid) return false;
+        const dueDate = parseLocalDate(s.due_date);
+        return dueDate >= today && dueDate <= fiveDaysFromNow;
+      })
+      .map(s => ({ ...s, _source: 'scheduled', label: s.description }));
+
+    // Transações normais (finance_transactions) do tipo despesa nos próximos 5 dias
+    const fromTransactions = transactions
+      .filter(t => {
+        if (t.user_id !== currentUser.id || t.type !== 'expense') return false;
+        const txDate = parseLocalDate(t.date);
+        return txDate >= today && txDate <= fiveDaysFromNow;
+      })
+      .map(t => ({ ...t, _source: 'transaction', label: t.description }));
+
+    // Juntar e remover duplicatas por descrição + data
+    const seen = new Set();
+    return [...fromScheduled, ...fromTransactions].filter(item => {
+      const key = (item.label || '') + '|' + (item.due_date || item.date);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
-  }, [scheduled, currentUser]);
+  }, [scheduled, transactions, currentUser]);
 
   const handleExport = async () => {
     try {
