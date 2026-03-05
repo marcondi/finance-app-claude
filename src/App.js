@@ -2527,19 +2527,7 @@ export default function FinanceApp() {
                   </button>
                 ))}
 
-                {/* Botão Sincronizar agora recarrega o filtro atual */}
-                <button
-                  onClick={() => fetchCalendarEvents(calendarFilter)}
-                  disabled={loadingCalendar}
-                  className={`ml-auto flex items-center gap-2 font-semibold px-6 py-2 rounded-lg transition-colors ${
-                    loadingCalendar
-                      ? 'bg-green-400 cursor-not-allowed text-white'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  <Calendar className="w-5 h-5" />
-                  {loadingCalendar ? 'Carregando...' : 'Sincronizar'}
-                </button>
+
               </div>
 
               {/* Mostrar filtro ativo */}
