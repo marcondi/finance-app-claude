@@ -1,0 +1,56 @@
+name: Relatório Mensal Automático
+
+on:
+  # Roda todo dia 28, 29, 30 e 31 às 20:00 (horário de Brasília = 23:00 UTC)
+  # O job verifica se é o último dia do mês antes de enviar
+  schedule:
+    - cron: '0 23 28-31 * *'
+
+  # Permite rodar manualmente pelo GitHub para testar
+  workflow_dispatch:
+
+jobs:
+  send-monthly-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Verificar se hoje é o último dia do mês
+        id: check_date
+        run: |
+          TODAY=$(date +%d)
+          LAST_DAY=$(date -d "$(date +%Y-%m-01) +1 month -1 day" +%d)
+          echo "Hoje: $TODAY, Último dia: $LAST_DAY"
+          if [ "$TODAY" = "$LAST_DAY" ]; then
+            echo "is_last_day=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_last_day=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Enviar relatório mensal
+        if: steps.check_date.outputs.is_last_day == 'true'
+        run: |
+          echo "📊 Último dia do mês! Enviando relatório..."
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/send-monthly-report-auto" \
+            -H "Content-Type: application/json" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -d '{}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Status HTTP: $HTTP_CODE"
+          echo "Resposta: $BODY"
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Erro ao enviar relatório!"
+            exit 1
+          fi
+
+          echo "✅ Relatório enviado com sucesso!"
+
+      - name: Pular (não é último dia)
+        if: steps.check_date.outputs.is_last_day == 'false'
+        run: |
+          echo "⏭️ Hoje não é o último dia do mês. Pulando..."
