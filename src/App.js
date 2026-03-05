@@ -1741,6 +1741,16 @@ export default function FinanceApp() {
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
+                {/* Botão Nova Transação no header - visível só na aba Transações */}
+                {view === 'transactions' && (
+                  <button
+                    onClick={() => setShowTransactionModal(true)}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm whitespace-nowrap"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Nova Transação
+                  </button>
+                )}
               </nav>
             </div>
 
@@ -1955,19 +1965,6 @@ export default function FinanceApp() {
                 Ver detalhes
               </button>
             </div>
-          </div>
-        )}
-
-        {/* Botão Nova Transação na aba Transações */}
-        {view === 'transactions' && (
-          <div className="flex justify-end mb-6">
-            <button
-              onClick={() => setShowTransactionModal(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Nova Transação
-            </button>
           </div>
         )}
 
