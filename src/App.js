@@ -84,6 +84,7 @@ export default function FinanceApp() {
   const [transactions, setTransactions] = useState([]);
   const [scheduled, setScheduled] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState('dashboard');
   const [showTransactionModal, setShowTransactionModal] = useState(false);
@@ -104,6 +105,32 @@ export default function FinanceApp() {
   const [calendarFilter, setCalendarFilter] = useState('week'); // 'today', 'tomorrow', 'week', 'month'
   const [todayEvents, setTodayEvents] = useState([]);
   const [tomorrowEvents, setTomorrowEvents] = useState([]);
+
+  // Verificar sessão existente ao abrir o app — pula tela de login se já logado
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const googleUser = session.user;
+          const { data: existingUser } = await supabase
+            .from('finance_users')
+            .select('*')
+            .eq('email', googleUser.email);
+
+          if (existingUser && existingUser.length > 0) {
+            setCurrentUser(existingUser[0]);
+            setGooglePhotoUrl(googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null);
+          }
+        }
+      } catch (e) {
+        console.error('Erro ao restaurar sessão:', e);
+      } finally {
+        setCheckingSession(false);
+      }
+    };
+    restoreSession();
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
@@ -1762,10 +1789,18 @@ export default function FinanceApp() {
     }
   };
 
-  if (loading) {
+  if (checkingSession || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-xl">Carregando...</div>
+      <div className={`min-h-screen flex flex-col items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+        <div className="flex items-center gap-3 mb-4">
+          <Wallet className="w-10 h-10 text-blue-500 animate-pulse" />
+          <span className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>FinanceApp</span>
+        </div>
+        <div className="flex gap-1.5 mt-2">
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay:'0ms'}}></div>
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay:'150ms'}}></div>
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay:'300ms'}}></div>
+        </div>
       </div>
     );
   }
