@@ -1265,8 +1265,9 @@ export default function FinanceApp() {
 
     return scheduled.filter(s => {
       if (s.user_id !== currentUser.id || s.is_paid) return false;
-      const dueDate = new Date(s.due_date);
-      dueDate.setHours(0, 0, 0, 0);
+      // Parsear como data local (evitar deslocamento de fuso UTC)
+      const [y, m, d] = s.due_date.split('-').map(Number);
+      const dueDate = new Date(y, m - 1, d, 0, 0, 0, 0);
       return dueDate >= today && dueDate <= fiveDaysFromNow;
     });
   }, [scheduled, currentUser]);
