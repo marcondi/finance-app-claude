@@ -1258,12 +1258,15 @@ export default function FinanceApp() {
     if (!currentUser) return [];
     
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // início do dia de hoje
     const fiveDaysFromNow = new Date(today);
     fiveDaysFromNow.setDate(today.getDate() + 5);
+    fiveDaysFromNow.setHours(23, 59, 59, 999); // fim do 5º dia
 
     return scheduled.filter(s => {
       if (s.user_id !== currentUser.id || s.is_paid) return false;
       const dueDate = new Date(s.due_date);
+      dueDate.setHours(0, 0, 0, 0);
       return dueDate >= today && dueDate <= fiveDaysFromNow;
     });
   }, [scheduled, currentUser]);
