@@ -23,7 +23,7 @@ import {
   ChevronDown,
   Mail
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { supabase } from './supabaseClient';
 import * as XLSX from 'xlsx';
 
@@ -2148,40 +2148,101 @@ export default function FinanceApp() {
               </button>
             </div>
 
-            {expensesByCategory.length > 0 && (
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* Card Gastos por Categoria */}
+              {expensesByCategory.length > 0 && (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+                  <h3 className={`text-xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                    Gastos por Categoria
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={expensesByCategory}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {expensesByCategory.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => formatCurrency(value)}
+                        contentStyle={{
+                          backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                          border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          color: darkMode ? '#ffffff' : '#000000'
+                        }}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Card Balanço Mensal */}
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 flex flex-col`}>
                 <h3 className={`text-xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  Gastos por Categoria
+                  Balanço Mensal
                 </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={expensesByCategory}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
+
+                {/* Gráfico de barras */}
+                <div className="flex-1">
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart
+                      data={[{ name: currentDate.toLocaleDateString('pt-BR', { month: 'short' }), Receitas: income, Despesas: expenses }]}
+                      barCategoryGap="40%"
                     >
-                      {expensesByCategory.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value) => formatCurrency(value)}
-                      contentStyle={{
-                        backgroundColor: darkMode ? '#1f2937' : '#ffffff',
-                        border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        color: darkMode ? '#ffffff' : '#000000'
-                      }}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                      <XAxis dataKey="name" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis hide />
+                      <Tooltip
+                        formatter={(value) => formatCurrency(value)}
+                        contentStyle={{
+                          backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                          border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          color: darkMode ? '#ffffff' : '#000000'
+                        }}
+                      />
+                      <Bar dataKey="Receitas" fill="#16a34a" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="Despesas" fill="#dc2626" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Resumo */}
+                <div className={`mt-4 rounded-xl p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div className="flex justify-between items-center py-2">
+                    <span className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Receitas</span>
+                    <span className="font-bold text-green-500">{formatCurrency(income)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Despesas</span>
+                    <span className="font-bold text-red-500">{formatCurrency(expenses)}</span>
+                  </div>
+                  <div className={`flex justify-between items-center py-2 mt-1 border-t ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Balanço</span>
+                    <span className={`font-bold text-lg ${(income - expenses) >= 0 ? 'text-blue-500' : 'text-red-500'}`}>
+                      {formatCurrency(income - expenses)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Ver mais */}
+                <button
+                  onClick={() => setView('transactions')}
+                  className={`mt-4 text-sm font-semibold tracking-wide transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                >
+                  VER MAIS
+                </button>
               </div>
-            )}
+            </div>
 
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
               <div className="flex items-center justify-between mb-4">
