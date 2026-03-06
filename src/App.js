@@ -3182,19 +3182,45 @@ export default function FinanceApp() {
                 </div>
               )}
 
-              {/* PIE + balance = bar */}
+              {/* PIE + balance = pizza Entradas x Saidas do mês */}
               {reportChart === 'pie' && reportFilter === 'balance' && (
-                <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={report6Months} barCategoryGap="30%">
-                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
-                    <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
-                    <Legend />
-                    <Bar dataKey="Entradas" fill="#16a34a" radius={[4,4,0,0]} />
-                    <Bar dataKey="Saidas" fill="#dc2626" radius={[4,4,0,0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="flex-1">
+                    <ResponsiveContainer width="100%" height={320}>
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'Entradas', value: income, color: '#16a34a' },
+                            { name: 'Saídas',   value: expenses, color: '#dc2626' },
+                          ]}
+                          cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={3} dataKey="value"
+                        >
+                          <Cell fill="#16a34a" />
+                          <Cell fill="#dc2626" />
+                        </Pie>
+                        <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex-1 space-y-4 self-center">
+                    {[
+                      { name: 'Entradas', value: income,           color: '#16a34a' },
+                      { name: 'Saídas',   value: expenses,         color: '#dc2626' },
+                      { name: 'Saldo',    value: income - expenses, color: (income - expenses) >= 0 ? '#3b82f6' : '#f97316' },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                          <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{item.name}</span>
+                        </div>
+                        <span className="text-sm font-bold" style={{ color: item.color }}>{formatCurrency(item.value)}</span>
+                      </div>
+                    ))}
+                    <div className={`mt-2 pt-3 border-t text-xs ${darkMode ? 'border-gray-600 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+                      {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* LINE */}
