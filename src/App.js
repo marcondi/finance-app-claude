@@ -1630,6 +1630,23 @@ export default function FinanceApp() {
     }
   };
 
+  const toggleTransactionPaid = async (transaction) => {
+    try {
+      const newPaid = !transaction.is_paid;
+      const { error } = await supabase
+        .from('finance_transactions')
+        .update({ is_paid: newPaid })
+        .eq('id', transaction.id);
+      if (error) throw error;
+      setTransactions(transactions.map(t =>
+        t.id === transaction.id ? { ...t, is_paid: newPaid } : t
+      ));
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+      alert('Erro ao atualizar status: ' + error.message);
+    }
+  };
+
   const deleteTransaction = async (id) => {
     try {
       const { error } = await supabase
@@ -2471,6 +2488,7 @@ export default function FinanceApp() {
                           </span>
                         </span>
                       </th>
+                      <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pago?</th>
                       <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Ações</th>
                     </tr>
                   </thead>
@@ -2522,7 +2540,11 @@ export default function FinanceApp() {
                             paginated.map(transaction => {
                               const category = categories.find(c => c.id === transaction.category_id);
                               return (
-                                <tr key={transaction.id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                                <tr key={transaction.id} className={`transition-colors ${
+                                  transaction.is_paid
+                                    ? darkMode ? 'bg-green-900/20 hover:bg-green-900/30' : 'bg-green-50 hover:bg-green-100'
+                                    : darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                                }`}>
                                   <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                     {formatDate(transaction.date)}
                                   </td>
@@ -2541,6 +2563,23 @@ export default function FinanceApp() {
                                     transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                                   }`}>
                                     {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                                  </td>
+                                  <td className="px-6 py-4 text-center">
+                                    <button
+                                      onClick={() => toggleTransactionPaid(transaction)}
+                                      title={transaction.is_paid ? 'Marcar como não pago' : 'Marcar como pago'}
+                                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center mx-auto transition-all ${
+                                        transaction.is_paid
+                                          ? 'bg-green-500 border-green-500 text-white'
+                                          : darkMode ? 'border-gray-500 hover:border-green-400' : 'border-gray-300 hover:border-green-400'
+                                      }`}
+                                    >
+                                      {transaction.is_paid && (
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      )}
+                                    </button>
                                   </td>
                                   <td className="px-6 py-4">
                                     <div className="flex items-center justify-center gap-2">
@@ -2566,7 +2605,7 @@ export default function FinanceApp() {
                             })
                           ) : (
                             <tr>
-                              <td colSpan={5} className="text-center py-12">
+                              <td colSpan={6} className="text-center py-12">
                                 <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                   {filterType !== 'all'
                                     ? 'Nenhuma transação encontrada com os filtros aplicados.'
