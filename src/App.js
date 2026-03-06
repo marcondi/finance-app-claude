@@ -2488,7 +2488,9 @@ export default function FinanceApp() {
                           </span>
                         </span>
                       </th>
-                      <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pago?</th>
+                      {filterType !== 'income' && (
+                        <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pago?</th>
+                      )}
                       <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Ações</th>
                     </tr>
                   </thead>
@@ -2564,23 +2566,27 @@ export default function FinanceApp() {
                                   }`}>
                                     {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
                                   </td>
-                                  <td className="px-6 py-4 text-center">
-                                    <button
-                                      onClick={() => toggleTransactionPaid(transaction)}
-                                      title={transaction.is_paid ? 'Marcar como não pago' : 'Marcar como pago'}
-                                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center mx-auto transition-all ${
-                                        transaction.is_paid
-                                          ? 'bg-green-500 border-green-500 text-white'
-                                          : darkMode ? 'border-gray-500 hover:border-green-400' : 'border-gray-300 hover:border-green-400'
-                                      }`}
-                                    >
-                                      {transaction.is_paid && (
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      )}
-                                    </button>
-                                  </td>
+                                  {transaction.type === 'expense' && filterType !== 'income' ? (
+                                    <td className="px-6 py-4 text-center">
+                                      <button
+                                        onClick={() => toggleTransactionPaid(transaction)}
+                                        title={transaction.is_paid ? 'Marcar como não pago' : 'Marcar como pago'}
+                                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center mx-auto transition-all ${
+                                          transaction.is_paid
+                                            ? 'bg-green-500 border-green-500 text-white'
+                                            : darkMode ? 'border-gray-500 hover:border-green-400' : 'border-gray-300 hover:border-green-400'
+                                        }`}
+                                      >
+                                        {transaction.is_paid && (
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        )}
+                                      </button>
+                                    </td>
+                                  ) : filterType !== 'income' ? (
+                                    <td className="px-6 py-4" />
+                                  ) : null}
                                   <td className="px-6 py-4">
                                     <div className="flex items-center justify-center gap-2">
                                       <button
