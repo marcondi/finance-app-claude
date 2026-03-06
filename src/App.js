@@ -23,7 +23,7 @@ import {
   ChevronDown,
   Mail
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { supabase } from './supabaseClient';
 import * as XLSX from 'xlsx';
 
@@ -1307,7 +1307,7 @@ export default function FinanceApp() {
     // Transações normais (finance_transactions) do tipo despesa nos próximos 5 dias
     const fromTransactions = transactions
       .filter(t => {
-        if (t.user_id !== currentUser.id || t.type !== 'expense') return false;
+        if (t.user_id !== currentUser.id || t.type !== 'expense' || t.is_paid) return false;
         const txDate = parseLocalDate(t.date);
         return txDate >= today && txDate <= fiveDaysFromNow;
       })
@@ -1840,7 +1840,7 @@ export default function FinanceApp() {
               </div>
 
               <nav className="hidden md:flex items-center gap-2">
-                {['dashboard', 'transactions', 'scheduled'].map(v => (
+                {['dashboard', 'transactions', 'scheduled', 'reports'].map(v => (
                   <button
                     key={v}
                     onClick={() => setView(v)}
@@ -1850,7 +1850,7 @@ export default function FinanceApp() {
                         : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
-                    {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : 'Agenda'}
+                    {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : v === 'scheduled' ? 'Agenda' : 'Relatórios'}
                   </button>
                 ))}
                 {/* Seletor de mês no lugar de Categorias */}
@@ -3061,6 +3061,203 @@ export default function FinanceApp() {
           </div>
         </div>
       )}
+
+        {view === 'reports' && (() => {
+          const [reportFilter, setReportFilter] = React.useState('expenses-category');
+          const [reportChart, setReportChart] = React.useState('pie');
+
+          // Last 6 months data for line/bar charts
+          const last6Months = Array.from({ length: 6 }, (_, i) => {
+            const d = new Date();
+            d.setDate(1);
+            d.setMonth(d.getMonth() - (5 - i));
+            const y = d.getFullYear();
+            const m = d.getMonth();
+            const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+            const monthTx = transactions.filter(t => {
+              const td = new Date(t.date);
+              return td.getFullYear() === y && td.getMonth() === m && t.user_id === currentUser.id;
+            });
+            const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+            const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+            return { label, Entradas: inc, Saídas: exp, Saldo: inc - exp };
+          });
+
+          // Pie data
+          const pieExpenses = categories
+            .filter(c => c.type === 'expense')
+            .map(c => ({
+              name: c.name, color: c.color,
+              value: currentMonthTransactions.filter(t => t.category_id === c.id && t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+            })).filter(c => c.value > 0);
+
+          const pieIncomes = categories
+            .filter(c => c.type === 'income')
+            .map(c => ({
+              name: c.name, color: c.color,
+              value: currentMonthTransactions.filter(t => t.category_id === c.id && t.type === 'income').reduce((s, t) => s + t.amount, 0)
+            })).filter(c => c.value > 0);
+
+          const pieData = reportFilter === 'expenses-category' ? pieExpenses : pieIncomes;
+          const totalPie = pieData.reduce((s, c) => s + c.value, 0);
+
+          return (
+            <div>
+              <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                📊 Relatórios
+              </h2>
+
+              {/* Chart type selector + filter */}
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                {/* Chart type buttons */}
+                <div className={`flex gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  {[
+                    { key: 'pie',  icon: '🍩', label: 'Pizza' },
+                    { key: 'line', icon: '📈', label: 'Linha' },
+                    { key: 'bar',  icon: '📊', label: 'Barras' },
+                  ].map(({ key, icon, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setReportChart(key)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        reportChart === key
+                          ? 'bg-blue-600 text-white shadow'
+                          : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <span>{icon}</span> {label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Filter selector */}
+                <div className={`flex gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  {[
+                    { key: 'expenses-category', label: 'Despesas por categoria' },
+                    { key: 'income-category',   label: 'Receitas por categoria' },
+                    { key: 'balance',            label: 'Saldo mensal' },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setReportFilter(key)}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        reportFilter === key
+                          ? 'bg-blue-600 text-white shadow'
+                          : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Chart card */}
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+                <h3 className={`text-lg font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-700'}`}>
+                  {reportFilter === 'expenses-category' ? '💸 Despesas por Categoria' :
+                   reportFilter === 'income-category'   ? '💰 Receitas por Categoria' :
+                   '📅 Evolução Mensal — Últimos 6 meses'}
+                  {reportFilter !== 'balance' && (
+                    <span className={`ml-3 text-sm font-normal ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+                    </span>
+                  )}
+                </h3>
+
+                {/* PIE CHART */}
+                {reportChart === 'pie' && reportFilter !== 'balance' && (
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-1">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <PieChart>
+                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={3} dataKey="value">
+                            {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                          </Pie>
+                          <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex-1 space-y-2 self-center">
+                      {pieData.map((cat, i) => (
+                        <div key={i} className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: cat.color }} />
+                            <span className={`text-sm truncate ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className={`text-sm font-semibold ${reportFilter === 'expenses-category' ? 'text-red-500' : 'text-green-500'}`}>{formatCurrency(cat.value)}</div>
+                            <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{totalPie > 0 ? ((cat.value / totalPie) * 100).toFixed(1) : 0}%</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* PIE for balance — show bar instead */}
+                {reportChart === 'pie' && reportFilter === 'balance' && (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <BarChart data={last6Months} barCategoryGap="30%">
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                      <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                      <Legend />
+                      <Bar dataKey="Entradas" fill="#16a34a" radius={[4,4,0,0]} />
+                      <Bar dataKey="Saídas" fill="#dc2626" radius={[4,4,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+
+                {/* LINE CHART */}
+                {reportChart === 'line' && (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart data={last6Months}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                      <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                      <Legend />
+                      {reportFilter === 'balance' ? (
+                        <Line type="monotone" dataKey="Saldo" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5, fill: '#3b82f6' }} />
+                      ) : reportFilter === 'expenses-category' ? (
+                        <Line type="monotone" dataKey="Saídas" stroke="#dc2626" strokeWidth={3} dot={{ r: 5, fill: '#dc2626' }} />
+                      ) : (
+                        <Line type="monotone" dataKey="Entradas" stroke="#16a34a" strokeWidth={3} dot={{ r: 5, fill: '#16a34a' }} />
+                      )}
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+
+                {/* BAR CHART */}
+                {reportChart === 'bar' && (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <BarChart data={reportFilter !== 'balance' ? pieData.map(d => ({ name: d.name, Valor: d.value, color: d.color })) : last6Months} barCategoryGap="30%">
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                      <XAxis dataKey="name" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
+                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                      {reportFilter === 'balance' ? (
+                        <>
+                          <Legend />
+                          <Bar dataKey="Entradas" fill="#16a34a" radius={[4,4,0,0]} />
+                          <Bar dataKey="Saídas" fill="#dc2626" radius={[4,4,0,0]} />
+                          <Bar dataKey="Saldo" fill="#3b82f6" radius={[4,4,0,0]} />
+                        </>
+                      ) : (
+                        <Bar dataKey="Valor" radius={[4,4,0,0]}>
+                          {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        </Bar>
+                      )}
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
     </div>
   );
 }
