@@ -2489,7 +2489,7 @@ export default function FinanceApp() {
                         </span>
                       </th>
                       {filterType !== 'income' && (
-                        <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pago?</th>
+                        <th className={`w-24 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pago?</th>
                       )}
                       <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Ações</th>
                     </tr>
@@ -2567,7 +2567,7 @@ export default function FinanceApp() {
                                     {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
                                   </td>
                                   {transaction.type === 'expense' && filterType !== 'income' ? (
-                                    <td className="px-6 py-4 text-center">
+                                    <td className="w-24 py-4 text-center">
                                       <button
                                         onClick={() => toggleTransactionPaid(transaction)}
                                         title={transaction.is_paid ? 'Marcar como não pago' : 'Marcar como pago'}
@@ -2585,7 +2585,7 @@ export default function FinanceApp() {
                                       </button>
                                     </td>
                                   ) : filterType !== 'income' ? (
-                                    <td className="px-6 py-4" />
+                                    <td className="w-24 py-4" />
                                   ) : null}
                                   <td className="px-6 py-4">
                                     <div className="flex items-center justify-center gap-2">
