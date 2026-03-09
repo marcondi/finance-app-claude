@@ -98,6 +98,7 @@ export default function FinanceApp() {
   const [savingsGoal, setSavingsGoal] = useState(0);
   const [showTips, setShowTips] = useState(false);
   const [aiTips, setAiTips] = useState([]);
+  const [isGeneratingTips, setIsGeneratingTips] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
   const [calendarEvents, setCalendarEvents] = useState([]);
@@ -1812,6 +1813,82 @@ export default function FinanceApp() {
     }
   };
 
+  const generateAiTips = async () => {
+    if (isGeneratingTips) return;
+
+    setShowTips(true);
+    setIsGeneratingTips(true);
+    setAiTips(['Analisando suas financas...']);
+
+    try {
+      const resumo = `
+Entradas: ${formatCurrency(income)}
+Saidas: ${formatCurrency(expenses)}
+Saldo: ${formatCurrency(balance)}
+Principais gastos: ${expensesByCategory.slice(0, 3).map(c => `${c.name} ${formatCurrency(c.value)}`).join(', ')}
+      `.trim();
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 400,
+          messages: [{
+            role: 'user',
+            content: `Baseado nestas financas mensais, de 3 dicas praticas e objetivas de economia:\n${resumo}\n\nRetorne apenas as 3 dicas numeradas, sem introducao.`
+          }]
+        })
+      });
+
+      const data = await response.json();
+
+      const rawText =
+        Array.isArray(data?.content)
+          ? data.content
+              .filter(item => item?.type === 'text' && typeof item?.text === 'string')
+              .map(item => item.text)
+              .join('\n')
+          : (typeof data?.content === 'string' ? data.content : '');
+
+      const parsedTips = rawText
+        .split('\n')
+        .map(t => t.replace(/^\s*\d+[\).\-\s]*/, '').trim())
+        .filter(Boolean);
+
+      if (parsedTips.length > 0) {
+        setAiTips(parsedTips.slice(0, 3));
+      } else {
+        throw new Error('Resposta da IA sem dicas validas');
+      }
+    } catch (error) {
+      const fallbackSets = [
+        [
+          'Revise seus gastos com alimentacao: pequenas economias diarias fazem diferenca.',
+          'Considere criar uma reserva de emergencia equivalente a 3-6 meses de despesas.',
+          'Defina metas especificas para seus gastos em cada categoria.'
+        ],
+        [
+          'Antes de comprar, espere 24 horas para evitar gastos por impulso.',
+          'Centralize despesas fixas em um dia do mes para ter previsao melhor do saldo.',
+          'Defina um teto semanal para lazer e acompanhe diariamente.'
+        ],
+        [
+          'Renegocie servicos recorrentes (internet, assinaturas e tarifas bancarias).',
+          'Automatize um valor pequeno para poupanca no inicio do mes.',
+          'Use a regra 50/30/20 como referencia e ajuste ao seu momento.'
+        ]
+      ];
+      const idx = Date.now() % fallbackSets.length;
+      setAiTips(fallbackSets[idx]);
+      console.error('Erro ao gerar dicas com IA:', error);
+    } finally {
+      setIsGeneratingTips(false);
+    }
+  };
+
   // Busca eventos do Google Calendar com base no filtro selecionado
   const fetchCalendarEvents = async (filter) => {
     setLoadingCalendar(true);
@@ -2381,48 +2458,11 @@ export default function FinanceApp() {
               
               {!showTips ? (
                 <button
-                  onClick={async () => {
-                    setShowTips(true);
-                    setAiTips(['⏳ Analisando suas finanças...']);
-                    try {
-                      const resumo = `Mes: ${currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-Entradas: ${formatCurrency(income)}
-Saidas: ${formatCurrency(expenses)}
-Saldo: ${formatCurrency(income - expenses)}
-Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${formatCurrency(c.value)}`).join(', ')}`;
-                      const { data: { session } } = await supabase.auth.getSession();
-                      const fnUrl = (supabase).supabaseUrl || process.env.REACT_APP_SUPABASE_URL || '';
-                      const fnKey = (supabase).supabaseKey || process.env.REACT_APP_SUPABASE_ANON_KEY || '';
-                      const response = await fetch(`${fnUrl}/functions/v1/financial-tips`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'apikey': fnKey, 'Authorization': `Bearer ${session?.access_token || fnKey}` },
-                        body: JSON.stringify({ resumo })
-                      });
-                      const data = await response.json();
-                      if (data.tips && data.tips.length > 0) {
-                        setAiTips(data.tips);
-                      } else {
-                        throw new Error('Sem dicas retornadas');
-                      }
-                    } catch (error) {
-                      console.error('Erro ao gerar dicas:', error);
-                      const tips = [];
-                      if (expenses > income) {
-                        tips.push(`⚠️ Suas saídas (${formatCurrency(expenses)}) superam as entradas (${formatCurrency(income)}). Revise os maiores gastos.`);
-                      } else {
-                        tips.push(`✅ Você economizou ${formatCurrency(income - expenses)} este mês. Continue assim!`);
-                      }
-                      if (expensesByCategory.length > 0) {
-                        const top = expensesByCategory[0];
-                        tips.push(`📊 Seu maior gasto é "${top.name}" com ${formatCurrency(top.value)} (${income > 0 ? ((top.value / income) * 100).toFixed(0) : 0}% da renda).`);
-                      }
-                      tips.push('🎯 Tente reservar pelo menos 10% das suas entradas todo mês como poupança.');
-                      setAiTips(tips);
-                    }
-                  }}
+                  onClick={generateAiTips}
+                  disabled={isGeneratingTips}
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all"
                 >
-                  ✨ Gerar Dicas com IA
+                  {isGeneratingTips ? 'Gerando dicas...' : 'Gerar dicas com IA'}
                 </button>
               ) : (
                 <div className="space-y-3">
@@ -2431,42 +2471,23 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                       <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{tip}</p>
                     </div>
                   ))}
-                  <div className="flex gap-4 mt-1">
-                    <button
-                      onClick={async () => {
-                        setAiTips(['⏳ Analisando suas finanças...']);
-                        try {
-                          const resumo = `Mes: ${currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-Entradas: ${formatCurrency(income)}
-Saidas: ${formatCurrency(expenses)}
-Saldo: ${formatCurrency(income - expenses)}
-Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${formatCurrency(c.value)}`).join(', ')}`;
-                          const { data: { session } } = await supabase.auth.getSession();
-                          const fnUrl = (supabase).supabaseUrl || process.env.REACT_APP_SUPABASE_URL || '';
-                          const fnKey = (supabase).supabaseKey || process.env.REACT_APP_SUPABASE_ANON_KEY || '';
-                          const response = await fetch(`${fnUrl}/functions/v1/financial-tips`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'apikey': fnKey, 'Authorization': `Bearer ${session?.access_token || fnKey}` },
-                            body: JSON.stringify({ resumo })
-                          });
-                          const data = await response.json();
-                          if (data.tips && data.tips.length > 0) setAiTips(data.tips);
-                          else throw new Error('Sem dicas');
-                        } catch (e) {
-                          setAiTips(['❌ Erro ao regerar dicas. Tente novamente.']);
-                        }
-                      }}
-                      className={`text-sm font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
-                    >
-                      🔄 Regerar dicas
-                    </button>
-                    <button
-                      onClick={() => setShowTips(false)}
-                      className={`text-sm ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} underline`}
-                    >
-                      Ocultar dicas
-                    </button>
-                  </div>
+                  <button
+                    onClick={generateAiTips}
+                    disabled={isGeneratingTips}
+                    className={`text-sm ${
+                      isGeneratingTips
+                        ? 'opacity-60 cursor-not-allowed'
+                        : darkMode ? 'text-blue-300 hover:text-blue-200' : 'text-blue-700 hover:text-blue-900'
+                    } underline`}
+                  >
+                    {isGeneratingTips ? 'Atualizando...' : 'Atualizar dicas'}
+                  </button>
+                  <button
+                    onClick={() => setShowTips(false)}
+                    className={`text-sm ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} underline`}
+                  >
+                    Ocultar dicas
+                  </button>
                 </div>
               )}
             </div>
@@ -3354,3 +3375,5 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
     </div>
   );
 }
+
+
