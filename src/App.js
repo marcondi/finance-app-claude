@@ -1680,6 +1680,52 @@ export default function FinanceApp() {
     }
   };
 
+  const gerarDicasIA = async () => {
+    setAiTips(['⏳ Analisando suas finanças...']);
+    const focos = ['economia no dia a dia', 'investimentos e reserva de emergência', 'controle de gastos por categoria', 'metas financeiras de longo prazo', 'redução de despesas fixas'];
+    const foco = focos[Math.floor(Math.random() * focos.length)];
+    try {
+      const mes = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      const gastos = expensesByCategory.slice(0, 5).map(c => c.name + ': ' + formatCurrency(c.value)).join(', ');
+      const resumo = 'Mes: ' + mes + '\nEntradas: ' + formatCurrency(income) + '\nSaidas: ' + formatCurrency(expenses) + '\nSaldo: ' + formatCurrency(income - expenses) + '\nPrincipais gastos: ' + (gastos || 'nenhum') + '\nFoco desta analise: ' + foco;
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || '';
+      const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://oooegbbvrwifilavlvgt.supabase.co';
+      const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+      const res = await fetch(SUPABASE_URL + '/functions/v1/financial-tips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + (token || SUPABASE_ANON_KEY),
+        },
+        body: JSON.stringify({ resumo })
+      });
+      const json = await res.json();
+      console.log('financial-tips status:', res.status, 'response:', json);
+      if (json.tips && json.tips.length > 0) {
+        setAiTips(json.tips);
+      } else {
+        throw new Error(json.error || 'Resposta vazia da API');
+      }
+    } catch (err) {
+      console.error('Erro dicas IA:', err);
+      // Fallback dinâmico baseado nos dados reais
+      const fallback = [];
+      if (expenses > income) {
+        fallback.push('⚠️ Suas saídas (' + formatCurrency(expenses) + ') superam as entradas (' + formatCurrency(income) + '). Revise os maiores gastos urgentemente.');
+      } else {
+        fallback.push('✅ Você economizou ' + formatCurrency(income - expenses) + ' este mês (' + (income > 0 ? ((( income - expenses) / income) * 100).toFixed(0) : 0) + '% da renda). Excelente!');
+      }
+      if (expensesByCategory.length > 0) {
+        const top = expensesByCategory[0];
+        fallback.push('📊 Seu maior gasto é "' + top.name + '" com ' + formatCurrency(top.value) + ' (' + (income > 0 ? ((top.value / income) * 100).toFixed(0) : 0) + '% da renda). Veja se há como reduzir.');
+      }
+      fallback.push('🎯 Meta recomendada: reserve ' + formatCurrency(income * 0.1) + ' (10% da renda) todo mês como poupança de emergência.');
+      setAiTips(fallback);
+    }
+  };
+
   const toggleTransactionPaid = async (transaction) => {
     try {
       const newPaid = !transaction.is_paid;
@@ -2381,44 +2427,7 @@ export default function FinanceApp() {
               
               {!showTips ? (
                 <button
-                  onClick={async () => {
-                    setShowTips(true);
-                    setAiTips(['⏳ Analisando suas finanças...']);
-                    try {
-                      const mes = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-                      const gastos = expensesByCategory.slice(0, 5).map(c => c.name + ': ' + formatCurrency(c.value)).join(', ');
-                      const resumo = 'Mes: ' + mes + '\nEntradas: ' + formatCurrency(income) + '\nSaidas: ' + formatCurrency(expenses) + '\nSaldo: ' + formatCurrency(income - expenses) + '\nPrincipais gastos: ' + gastos;
-                      const { data: { session } } = await supabase.auth.getSession();
-                      const fnUrl = process.env.REACT_APP_SUPABASE_URL || 'https://oooegbbvrwifilavlvgt.supabase.co';
-                      const fnKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
-                      const res = await fetch(fnUrl + '/functions/v1/financial-tips', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'apikey': fnKey, 'Authorization': 'Bearer ' + (session?.access_token || fnKey) },
-                        body: JSON.stringify({ resumo })
-                      });
-                      const json = await res.json();
-                      console.log('financial-tips response:', json);
-                      if (json.tips && json.tips.length > 0) {
-                        setAiTips(json.tips);
-                      } else {
-                        throw new Error(json.error || 'Sem dicas retornadas');
-                      }
-                    } catch (err) {
-                      console.error('Erro dicas IA:', err);
-                      const fallback = [];
-                      if (expenses > income) {
-                        fallback.push('⚠️ Suas saídas (' + formatCurrency(expenses) + ') superam as entradas (' + formatCurrency(income) + '). Revise os maiores gastos.');
-                      } else {
-                        fallback.push('✅ Você economizou ' + formatCurrency(income - expenses) + ' este mês. Continue assim!');
-                      }
-                      if (expensesByCategory.length > 0) {
-                        const top = expensesByCategory[0];
-                        fallback.push('📊 Seu maior gasto é "' + top.name + '" com ' + formatCurrency(top.value) + ' (' + (income > 0 ? ((top.value/income)*100).toFixed(0) : 0) + '% da renda).');
-                      }
-                      fallback.push('🎯 Tente reservar pelo menos 10% das suas entradas todo mês como poupança.');
-                      setAiTips(fallback);
-                    }
-                  }}
+                  onClick={async () => { setShowTips(true); await gerarDicasIA(); }}
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all"
                 >
                   ✨ Gerar Dicas com IA
@@ -2432,28 +2441,7 @@ export default function FinanceApp() {
                   ))}
                   <div className="flex gap-4 mt-1">
                     <button
-                      onClick={async () => {
-                        setAiTips(['⏳ Analisando suas finanças...']);
-                        try {
-                          const mes = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-                          const gastos = expensesByCategory.slice(0, 5).map(c => c.name + ': ' + formatCurrency(c.value)).join(', ');
-                          const resumo = 'Mes: ' + mes + '\nEntradas: ' + formatCurrency(income) + '\nSaidas: ' + formatCurrency(expenses) + '\nSaldo: ' + formatCurrency(income - expenses) + '\nPrincipais gastos: ' + gastos;
-                          const { data: { session } } = await supabase.auth.getSession();
-                          const fnUrl = process.env.REACT_APP_SUPABASE_URL || 'https://oooegbbvrwifilavlvgt.supabase.co';
-                          const fnKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
-                          const res = await fetch(fnUrl + '/functions/v1/financial-tips', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'apikey': fnKey, 'Authorization': 'Bearer ' + (session?.access_token || fnKey) },
-                            body: JSON.stringify({ resumo })
-                          });
-                          const json = await res.json();
-                          if (json.tips && json.tips.length > 0) setAiTips(json.tips);
-                          else throw new Error(json.error || 'Sem dicas');
-                        } catch (err) {
-                          console.error('Erro regerar dicas:', err);
-                          setAiTips(['❌ Não foi possível regerar as dicas. Verifique a conexão e tente novamente.']);
-                        }
-                      }}
+                      onClick={gerarDicasIA}
                       className={`text-sm font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                     >
                       🔄 Regerar dicas
