@@ -2439,20 +2439,12 @@ export default function FinanceApp() {
                       <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{tip}</p>
                     </div>
                   ))}
-                  <div className="flex gap-4 mt-1">
-                    <button
-                      onClick={gerarDicasIA}
-                      className={`text-sm font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
-                    >
-                      🔄 Regerar dicas
-                    </button>
-                    <button
-                      onClick={() => setShowTips(false)}
-                      className={`text-sm ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} underline`}
-                    >
-                      Ocultar dicas
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowTips(false)}
+                    className={`text-sm ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} underline`}
+                  >
+                    Ocultar dicas
+                  </button>
                 </div>
               )}
             </div>
