@@ -2389,8 +2389,8 @@ export default function FinanceApp() {
                       const gastos = expensesByCategory.slice(0, 5).map(c => c.name + ': ' + formatCurrency(c.value)).join(', ');
                       const resumo = 'Mes: ' + mes + '\nEntradas: ' + formatCurrency(income) + '\nSaidas: ' + formatCurrency(expenses) + '\nSaldo: ' + formatCurrency(income - expenses) + '\nPrincipais gastos: ' + gastos;
                       const { data: { session } } = await supabase.auth.getSession();
-                      const fnUrl = supabase.supabaseUrl || process.env.REACT_APP_SUPABASE_URL || '';
-                      const fnKey = supabase.supabaseKey || process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+                      const fnUrl = process.env.REACT_APP_SUPABASE_URL || 'https://oooegbbvrwifilavlvgt.supabase.co';
+                      const fnKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
                       const res = await fetch(fnUrl + '/functions/v1/financial-tips', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'apikey': fnKey, 'Authorization': 'Bearer ' + (session?.access_token || fnKey) },
@@ -2439,8 +2439,8 @@ export default function FinanceApp() {
                           const gastos = expensesByCategory.slice(0, 5).map(c => c.name + ': ' + formatCurrency(c.value)).join(', ');
                           const resumo = 'Mes: ' + mes + '\nEntradas: ' + formatCurrency(income) + '\nSaidas: ' + formatCurrency(expenses) + '\nSaldo: ' + formatCurrency(income - expenses) + '\nPrincipais gastos: ' + gastos;
                           const { data: { session } } = await supabase.auth.getSession();
-                          const fnUrl = supabase.supabaseUrl || process.env.REACT_APP_SUPABASE_URL || '';
-                          const fnKey = supabase.supabaseKey || process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+                          const fnUrl = process.env.REACT_APP_SUPABASE_URL || 'https://oooegbbvrwifilavlvgt.supabase.co';
+                          const fnKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
                           const res = await fetch(fnUrl + '/functions/v1/financial-tips', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'apikey': fnKey, 'Authorization': 'Bearer ' + (session?.access_token || fnKey) },
