@@ -48,7 +48,7 @@ const defaultCategories = [
   { id: 'cat-15', name: 'Cartão Crédito C6', color: '#9333ea', type: 'expense', user_id: null },
   { id: 'cat-16', name: 'Cartão Crédito Merc. Pago', color: '#0891b2', type: 'expense', user_id: null },
   { id: 'cat-17', name: 'Cartão Crédito Neon', color: '#f97316', type: 'expense', user_id: null },
-  { id: 'cat-18', name: 'Internet+Balcão', color: '#0284c7', type: 'expense', user_id: null },
+  { id: 'cat-18', name: 'Intenet+Balcão', color: '#0284c7', type: 'expense', user_id: null },
   { id: 'cat-19', name: 'Aux. Mãe', color: '#ec4899', type: 'expense', user_id: null },
   { id: 'cat-20', name: 'Fisioterapia Mãe', color: '#db2777', type: 'expense', user_id: null },
   { id: 'cat-21', name: 'Empréstimo', color: '#b91c1c', type: 'expense', user_id: null },
@@ -75,6 +75,7 @@ const formatDate = (date) => {
 export default function FinanceApp() {
   const [darkMode, setDarkMode] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [toasts, setToasts] = useState([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -105,10 +106,14 @@ export default function FinanceApp() {
   const [calendarFilter, setCalendarFilter] = useState('week'); // 'today', 'tomorrow', 'week', 'month'
   const [todayEvents, setTodayEvents] = useState([]);
   const [tomorrowEvents, setTomorrowEvents] = useState([]);
-  const [reportFilter, setReportFilter] = useState('expenses-category');
-  const [reportChart, setReportChart] = useState('pie');
 
-  // Verificar sessao existente ao abrir o app - pula tela de login se ja logado
+  // Verificar sessão existente ao abrir o app — pula tela de login se já logado
+  const showToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  };
+
   useEffect(() => {
     const restoreSession = async () => {
       try {
@@ -135,73 +140,46 @@ export default function FinanceApp() {
   }, []);
 
   useEffect(() => {
-    if (!currentUser) return;
-
-    loadUserData();
-    requestNotificationPermission();
-
-    let isActive = true;
-    let retryTimeout = null;
-    let stopEventChecks = null;
-
-    // Aguarda provider_token do Google OAuth antes de carregar eventos/notificacoes
-    const initWithSession = async () => {
-      let attempts = 0;
-
-      const tryInit = async () => {
-        if (!isActive) return;
-
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.provider_token || attempts >= 10) {
-          // loadBannerEvents retorna os eventos e ja dispara notificacoes
-          // evitando depender do state todayEvents/tomorrowEvents que ainda esta vazio
-          const { todayEvts, tomorrowEvts } = await loadBannerEvents();
-          if (isActive) {
-            stopEventChecks = checkUpcomingEvents(todayEvts, tomorrowEvts);
+    if (currentUser) {
+      loadUserData();
+      requestNotificationPermission();
+      // Aguarda provider_token do Google OAuth antes de carregar eventos/notificacoes
+      const initWithSession = async () => {
+        let attempts = 0;
+        const tryInit = async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.provider_token || attempts >= 10) {
+            // loadBannerEvents retorna os eventos e já dispara notificações
+            // evitando depender do state todayEvents/tomorrowEvents que ainda está vazio
+            const { todayEvts, tomorrowEvts } = await loadBannerEvents();
+            checkUpcomingEvents(todayEvts, tomorrowEvts);
+          } else {
+            attempts++;
+            setTimeout(tryInit, 500);
           }
-        } else {
-          attempts++;
-          retryTimeout = setTimeout(tryInit, 500);
-        }
+        };
+        await tryInit();
       };
-
-      await tryInit();
-    };
-
-    initWithSession();
-
-    return () => {
-      isActive = false;
-      if (retryTimeout) clearTimeout(retryTimeout);
-      if (typeof stopEventChecks === 'function') stopEventChecks();
-    };
+      initWithSession();
+    }
   }, [currentUser]);
 
   // Resetar pagina ao mudar filtro ou ordenacao
   useEffect(() => { setCurrentPage(1); }, [filterType, sortBy]);
 
+  // Fechar modais com ESC
   useEffect(() => {
-    const handleEscape = (event) => {
-      if (event.key !== 'Escape') return;
-      if (showUserMenu) setShowUserMenu(false);
-      if (showSettings) setShowSettings(false);
-      if (showGoalModal) {
-        setShowGoalModal(false);
-        setGoalInput('');
-      }
-      if (showTransactionModal) {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
         setShowTransactionModal(false);
-        setEditingTransaction(null);
-      }
-      if (showCategoryModal) {
         setShowCategoryModal(false);
-        setEditingCategory(null);
+        setShowSettings(false);
+        setShowGoalModal(false);
       }
     };
-
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [showUserMenu, showSettings, showGoalModal, showTransactionModal, showCategoryModal]);
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
 
   // Pedir permissão para notificações
   const requestNotificationPermission = async () => {
@@ -229,7 +207,7 @@ export default function FinanceApp() {
 
   // Notificar eventos em 1 hora
   const checkEventsSoonAndNotify = async () => {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (Notification.permission !== 'granted') return;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -252,7 +230,7 @@ export default function FinanceApp() {
           const diffMinutes = Math.floor((eventTime - now) / (1000 * 60));
 
           if (diffMinutes >= 55 && diffMinutes <= 65) {
-            new Notification('Evento proximo', {
+            new Notification('📅 Evento próximo!', {
               body: `${event.summary} começa em cerca de 1 hora`,
               icon: '/favicon.ico'
             });
@@ -273,14 +251,14 @@ export default function FinanceApp() {
     const eventsTomorrow = tomorrowEvts ?? tomorrowEvents;
 
     eventsToday.forEach(event => {
-      new Notification('Conta vencendo hoje', {
+      new Notification('💸 Conta vencendo HOJE!', {
         body: event.summary || 'Evento sem título',
         icon: '/favicon.ico'
       });
     });
 
     eventsTomorrow.forEach(event => {
-      new Notification('Conta vence amanha', {
+      new Notification('⚠️ Conta vence AMANHÃ!', {
         body: event.summary || 'Evento sem título',
         icon: '/favicon.ico'
       });
@@ -393,7 +371,7 @@ export default function FinanceApp() {
       setScheduled(sched || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      alert('Erro ao carregar dados: ' + error.message);
+      showToast('Erro ao carregar dados: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -421,7 +399,7 @@ export default function FinanceApp() {
         if (error) throw error;
       } catch (error) {
         console.error('Erro no login com Google:', error);
-        alert('Erro ao fazer login com Google: ' + error.message);
+        showToast('Erro ao fazer login com Google: ' + error.message, 'error');
       }
     };
 
@@ -470,7 +448,7 @@ export default function FinanceApp() {
             }
           } catch (error) {
             console.error('Erro ao processar login Google:', error);
-            alert('Erro ao processar login: ' + error.message);
+            showToast('Erro ao processar login: ' + error.message, 'error');
           }
         }
       };
@@ -492,15 +470,15 @@ export default function FinanceApp() {
           if (users && users.length > 0) {
             setCurrentUser(users[0]);
           } else {
-            alert('Credenciais inválidas!');
+            showToast('Credenciais inválidas!', 'error');
           }
         } catch (error) {
           console.error('Erro no login:', error);
-          alert('Erro ao fazer login: ' + error.message);
+          showToast('Erro ao fazer login: ' + error.message, 'error');
         }
       } else {
         if (!name || !email || !password) {
-          alert('Preencha todos os campos!');
+          showToast('Preencha todos os campos!', 'error');
           return;
         }
 
@@ -513,7 +491,7 @@ export default function FinanceApp() {
           if (checkError) throw checkError;
 
           if (existingUser && existingUser.length > 0) {
-            alert('Este e-mail já está cadastrado!');
+            showToast('Este e-mail já está cadastrado!', 'error');
             return;
           }
 
@@ -534,29 +512,29 @@ export default function FinanceApp() {
           setCurrentUser(data[0]);
         } catch (error) {
           console.error('Erro ao cadastrar:', error);
-          alert('Erro ao criar conta: ' + error.message);
+          showToast('Erro ao criar conta: ' + error.message, 'error');
         }
       }
     };
 
     const handleForgotPassword = async () => {
       if (!email) {
-        alert('Digite seu e-mail para recuperar a senha!');
+        showToast('Digite seu e-mail para recuperar a senha!', 'error');
         return;
       }
 
       if (!newPassword || !confirmPassword) {
-        alert('Preencha os campos de nova senha!');
+        showToast('Preencha os campos de nova senha!', 'error');
         return;
       }
 
       if (newPassword !== confirmPassword) {
-        alert('As senhas não coincidem!');
+        showToast('As senhas não coincidem!', 'error');
         return;
       }
 
       if (newPassword.length < 6) {
-        alert('A senha deve ter no mínimo 6 caracteres!');
+        showToast('A senha deve ter no mínimo 6 caracteres!', 'error');
         return;
       }
 
@@ -569,7 +547,7 @@ export default function FinanceApp() {
         if (findError) throw findError;
 
         if (!users || users.length === 0) {
-          alert('E-mail não encontrado!');
+          showToast('E-mail não encontrado!', 'error');
           return;
         }
 
@@ -580,14 +558,14 @@ export default function FinanceApp() {
 
         if (updateError) throw updateError;
 
-        alert('Senha redefinida com sucesso!');
+        showToast('✅ Senha redefinida com sucesso!', 'success');
         setIsForgotPassword(false);
         setEmail('');
         setNewPassword('');
         setConfirmPassword('');
       } catch (error) {
         console.error('Erro ao redefinir senha:', error);
-        alert('Erro ao redefinir senha: ' + error.message);
+        showToast('Erro ao redefinir senha: ' + error.message, 'error');
       }
     };
 
@@ -655,7 +633,7 @@ export default function FinanceApp() {
                     darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'
                   } font-medium py-2 transition-colors`}
                 >
-                  Voltar ao login
+                  ← Voltar ao login
                 </button>
               </div>
             </>
@@ -794,27 +772,19 @@ export default function FinanceApp() {
 
     const handleSubmit = async () => {
       if (!amount || !description || !categoryId) {
-        alert('Preencha todos os campos!');
+        showToast('Preencha todos os campos!', 'error');
         return;
       }
-
-      const parsedAmount = Number(amount);
-      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-        alert('Digite um valor valido maior que zero.');
-        return;
-      }
-
-      const months = Math.max(1, parseInt(recurringMonths, 10) || 1);
 
       const baseTransaction = {
         user_id: currentUser.id,
         type: type === 'scheduled' ? 'expense' : type,
-        amount: parsedAmount,
-        description: description.trim(),
+        amount: parseFloat(amount),
+        description,
         category_id: categoryId,
         date,
         is_recurring: isRecurring,
-        recurring_months: isRecurring ? months : null,
+        recurring_months: isRecurring ? parseInt(recurringMonths) : null,
         parent_id: null
       };
 
@@ -822,13 +792,14 @@ export default function FinanceApp() {
         if (type === 'scheduled') {
           const baseScheduled = {
             user_id: currentUser.id,
-            amount: parsedAmount,
-            description: description.trim(),
+            amount: parseFloat(amount),
+            description,
             category_id: categoryId,
             is_paid: false
           };
           
           const scheduledList = [];
+          const months = parseInt(recurringMonths) || 1;
           
           for (let i = 0; i < months; i++) {
             const scheduledDate = new Date(date);
@@ -836,7 +807,7 @@ export default function FinanceApp() {
             
             scheduledList.push({
               ...baseScheduled,
-              id: generateId(), // ADICIONAR ID UNICO
+              id: generateId(), // ADICIONAR ID ÚNICO
               due_date: scheduledDate.toISOString().split('T')[0]
             });
           }
@@ -848,7 +819,7 @@ export default function FinanceApp() {
           
           if (error) throw error;
           
-          setScheduled(prev => [...prev, ...data]);
+          setScheduled([...scheduled, ...data]);
         } else {
           if (editingTransaction) {
             const { error } = await supabase
@@ -858,7 +829,7 @@ export default function FinanceApp() {
             
             if (error) throw error;
             
-            setTransactions(prev => prev.map(t =>
+            setTransactions(transactions.map(t =>
               t.id === editingTransaction.id ? { ...t, ...baseTransaction } : t
             ));
           } else {
@@ -891,7 +862,7 @@ export default function FinanceApp() {
             
             if (error) throw error;
             
-            setTransactions(prev => [...prev, ...data]);
+            setTransactions([...transactions, ...data]);
             
             const dateParts = date.split('-');
             const transactionDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
@@ -905,7 +876,7 @@ export default function FinanceApp() {
         resetForm();
       } catch (error) {
         console.error('Erro ao salvar transação:', error);
-        alert('Erro ao salvar: ' + error.message);
+        showToast('Erro ao salvar: ' + error.message, 'error');
       }
     };
 
@@ -931,7 +902,7 @@ export default function FinanceApp() {
               <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                 {editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
               </h2>
-              <button aria-label="Fechar modal de transacao" onClick={() => {
+              <button onClick={() => {
                 setShowTransactionModal(false);
                 setEditingTransaction(null);
                 resetForm();
@@ -1136,7 +1107,7 @@ export default function FinanceApp() {
 
     const handleSubmit = async () => {
       if (!name) {
-        alert('Digite um nome para a categoria!');
+        showToast('Digite um nome para a categoria!', 'error');
         return;
       }
 
@@ -1178,7 +1149,7 @@ export default function FinanceApp() {
         setType('expense');
       } catch (error) {
         console.error('Erro ao salvar categoria:', error);
-        alert('Erro ao salvar categoria: ' + error.message);
+        showToast('Erro ao salvar categoria: ' + error.message, 'error');
       }
     };
 
@@ -1190,7 +1161,7 @@ export default function FinanceApp() {
               <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                 {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
               </h2>
-              <button aria-label="Fechar modal de categoria" onClick={() => {
+              <button onClick={() => {
                 setShowCategoryModal(false);
                 setEditingCategory(null);
               }}>
@@ -1376,7 +1347,7 @@ export default function FinanceApp() {
   const handleExport = async () => {
     try {
       if (!currentUser) {
-        alert('Erro: usuario nao identificado. Faca login novamente.');
+        showToast(' Erro: Usuário não identificado. Faça login novamente.');
         return;
       }
 
@@ -1399,10 +1370,10 @@ export default function FinanceApp() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      alert('Backup criado com sucesso!');
+      showToast('✅ Backup criado com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao exportar:', error);
-      alert('Erro ao criar backup: ' + error.message);
+      showToast(' Erro ao criar backup: ' + error.message);
     }
   };
 
@@ -1499,7 +1470,7 @@ export default function FinanceApp() {
             const newCatId = categoryMapping[s.category || s.categoryId || s.category_id] || existingCat?.id;
             
             return {
-            id: generateId(), // ADICIONAR ID UNICO
+              id: generateId(), // ADICIONAR ID ÚNICO
               user_id: currentUser.id,
               amount: s.amount,
               description: s.description,
@@ -1518,12 +1489,12 @@ export default function FinanceApp() {
           setScheduled([...scheduled, ...insertedSched]);
         }
 
-        alert(`Dados importados com sucesso!\n\n${mappedTransactions.length} transacoes\n${newCategories.length} novas categorias`);
+        showToast(`Importação concluída! ${mappedTransactions.length} transações e ${newCategories.length} categorias importadas.`, 'success');
         
         await loadUserData();
       } catch (error) {
         console.error('Erro na importação:', error);
-        alert('Erro ao importar dados: ' + error.message);
+        showToast(' Erro ao importar dados: ' + error.message);
       }
     };
     reader.readAsText(file);
@@ -1559,7 +1530,7 @@ export default function FinanceApp() {
           </style>
         </head>
         <body>
-          <h1>Relatorio Financeiro</h1>
+          <h1>📊 Relatório Financeiro</h1>
           <p class="periodo">Período: ${periodo}</p>
           
           <h2>Resumo</h2>
@@ -1613,10 +1584,10 @@ export default function FinanceApp() {
         printWindow.print();
       }, 250);
       
-      alert('Janela de impressao aberta! Use "Salvar como PDF" nas opcoes da impressora.');
+      showToast('✅ Janela de impressão aberta! Use "Salvar como PDF" nas opções da impressora.', 'success');
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
-      alert('Erro ao exportar PDF: ' + error.message);
+      showToast(' Erro ao exportar PDF: ' + error.message);
     }
   };
 
@@ -1626,7 +1597,7 @@ export default function FinanceApp() {
       
       // Aba 1: Resumo
       const wsResumo = XLSX.utils.aoa_to_sheet([
-        ['RELATORIO FINANCEIRO'],
+        ['RELATÓRIO FINANCEIRO'],
         [`Período: ${periodo}`],
         [],
         ['TIPO', 'VALOR'],
@@ -1673,10 +1644,10 @@ export default function FinanceApp() {
       const fileName = `relatorio-${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}.xlsx`;
       XLSX.writeFile(wb, fileName);
       
-      alert('Relatorio Excel exportado com sucesso!\n\nDica: no Excel, selecione os dados e use Inserir > Tabela Dinamica.');
+      showToast('✅ Relatório Excel exportado com sucesso!\n\nDica: No Excel, selecione os dados e vá em Inserir > Tabela Dinâmica para análises avançadas.', 'success');
     } catch (error) {
       console.error('Erro ao exportar Excel:', error);
-      alert('Erro ao exportar Excel: ' + error.message);
+      showToast(' Erro ao exportar Excel: ' + error.message);
     }
   };
 
@@ -1693,14 +1664,11 @@ export default function FinanceApp() {
       ));
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      alert('Erro ao atualizar status: ' + error.message);
+      showToast('Erro ao atualizar status: ' + error.message, 'error');
     }
   };
 
   const deleteTransaction = async (id) => {
-    const confirmed = window.confirm('Deseja realmente excluir esta transacao? Esta acao nao pode ser desfeita.');
-    if (!confirmed) return;
-
     try {
       const { error } = await supabase
         .from('finance_transactions')
@@ -1709,20 +1677,17 @@ export default function FinanceApp() {
       
       if (error) throw error;
       
-      setTransactions(prev => prev.filter(t => t.id !== id));
+      setTransactions(transactions.filter(t => t.id !== id));
     } catch (error) {
       console.error('Erro ao excluir transação:', error);
-      alert('Erro ao excluir transação: ' + error.message);
+      showToast('Erro ao excluir transação: ' + error.message, 'error');
     }
   };
 
   const deleteCategory = async (id) => {
-    const confirmed = window.confirm('Deseja realmente excluir esta categoria?');
-    if (!confirmed) return;
-
     const hasTransactions = transactions.some(t => t.category_id === id);
     if (hasTransactions) {
-      alert('Nao e possivel excluir uma categoria com transacoes associadas!');
+      showToast(' Não é possível excluir uma categoria com transações associadas!');
       return;
     }
 
@@ -1734,10 +1699,10 @@ export default function FinanceApp() {
       
       if (error) throw error;
       
-      setCategories(prev => prev.filter(c => c.id !== id));
+      setCategories(categories.filter(c => c.id !== id));
     } catch (error) {
       console.error('Erro ao excluir categoria:', error);
-      alert('Erro ao excluir categoria: ' + error.message);
+      showToast('Erro ao excluir categoria: ' + error.message, 'error');
     }
   };
 
@@ -1801,12 +1766,12 @@ export default function FinanceApp() {
 
       const result = await res.json();
       if (res.ok && result.success) {
-        alert('Relatorio enviado com sucesso para ' + currentUser.email + '!');
+        showToast('✅ Relatório enviado com sucesso para ' + currentUser.email + '!', 'error');
       } else {
-        alert('Erro ao enviar: ' + JSON.stringify(result.error || result));
+        showToast(' Erro ao enviar: ' + JSON.stringify(result.error || result));
       }
     } catch (err) {
-      alert('Erro: ' + err.message);
+      showToast(' Erro: ' + err.message);
     } finally {
       setSendingReport(false);
     }
@@ -1818,7 +1783,7 @@ export default function FinanceApp() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.provider_token) {
-        alert('Faca login com Google para acessar o Calendar!');
+        showToast(' Faça login com Google para acessar o Calendar!');
         return;
       }
 
@@ -1856,7 +1821,7 @@ export default function FinanceApp() {
       setCalendarEvents(data.items || []);
     } catch (error) {
       console.error('Erro:', error);
-      alert('Erro ao carregar eventos');
+      showToast(' Erro ao carregar eventos');
     } finally {
       setLoadingCalendar(false);
     }
@@ -1911,21 +1876,19 @@ export default function FinanceApp() {
                 ))}
                 {/* Seletor de mês no lugar de Categorias */}
                 <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                <button
-                  aria-label="Mes anterior"
-                  onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }}
-                  className={`p-1 rounded transition-colors ${darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-500 hover:bg-gray-200'}`}
-                >
+                  <button
+                    onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }}
+                    className={`p-1 rounded transition-colors ${darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-500 hover:bg-gray-200'}`}
+                  >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <span className={`text-sm font-semibold min-w-[110px] text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                     {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
                   </span>
-                <button
-                  aria-label="Proximo mes"
-                  onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }}
-                  className={`p-1 rounded transition-colors ${darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-500 hover:bg-gray-200'}`}
-                >
+                  <button
+                    onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }}
+                    className={`p-1 rounded transition-colors ${darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-500 hover:bg-gray-200'}`}
+                  >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -1945,7 +1908,6 @@ export default function FinanceApp() {
             <div className="flex items-center gap-3">
               {/* Botão modo escuro */}
               <button
-                aria-label={darkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
               >
@@ -2019,7 +1981,7 @@ export default function FinanceApp() {
           </div>
 
           <div className="flex md:hidden gap-2 mt-4 overflow-x-auto">
-            {['dashboard', 'transactions', 'scheduled', 'reports'].map(v => (
+            {['dashboard', 'transactions', 'scheduled'].map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -2029,18 +1991,18 @@ export default function FinanceApp() {
                     : darkMode ? 'text-gray-300 bg-gray-700' : 'text-gray-600 bg-gray-100'
                 }`}
               >
-                {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : v === 'scheduled' ? 'Agenda' : 'Relatórios'}
+                {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : 'Agenda'}
               </button>
             ))}
             {/* Seletor de mês mobile */}
             <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border whitespace-nowrap ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-              <button aria-label="Mes anterior" onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }} className={`p-1 rounded ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+              <button onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }} className={`p-1 rounded ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                 {currentDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
               </span>
-              <button aria-label="Proximo mes" onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }} className={`p-1 rounded ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+              <button onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }} className={`p-1 rounded ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -2059,7 +2021,7 @@ export default function FinanceApp() {
             <div className="flex items-center gap-2 mb-3">
               <Calendar className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
               <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                Sua Agenda
+                📅 Sua Agenda
               </h3>
               <button
                 onClick={() => setView('scheduled')}
@@ -2067,7 +2029,7 @@ export default function FinanceApp() {
                   darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
                 } underline`}
               >
-                Ver completa ->
+                Ver completa →
               </button>
             </div>
 
@@ -2075,7 +2037,7 @@ export default function FinanceApp() {
               {/* Hoje */}
               <div>
                 <p className={`text-xs font-semibold mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                  Hoje
+                  📆 Hoje
                 </p>
                 {todayEvents.length > 0 ? (
                   <div className="space-y-1.5">
@@ -2090,7 +2052,7 @@ export default function FinanceApp() {
                           {event.summary || 'Sem título'}
                         </p>
                         <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          Horario: {event.start?.dateTime 
+                          🕐 {event.start?.dateTime 
                             ? new Date(event.start.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
                             : 'Dia inteiro'}
                         </p>
@@ -2107,7 +2069,7 @@ export default function FinanceApp() {
               {/* Amanhã */}
               <div>
                 <p className={`text-xs font-semibold mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                  Amanha
+                  ☀️ Amanhã
                 </p>
                 {tomorrowEvents.length > 0 ? (
                   <div className="space-y-1.5">
@@ -2122,7 +2084,7 @@ export default function FinanceApp() {
                           {event.summary || 'Sem título'}
                         </p>
                         <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          Horario: {event.start?.dateTime 
+                          🕐 {event.start?.dateTime 
                             ? new Date(event.start.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
                             : 'Dia inteiro'}
                         </p>
@@ -2323,7 +2285,7 @@ export default function FinanceApp() {
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  Poupometro
+                  💰 Poupômetro
                 </h3>
                 <button
                   onClick={() => setShowGoalModal(true)}
@@ -2354,21 +2316,21 @@ export default function FinanceApp() {
                     </div>
                     <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       {savingsAmount >= savingsGoal 
-                        ? 'Parabens! Voce atingiu sua meta de poupanca.' 
+                        ? '🎉 Parabéns! Você atingiu sua meta de poupança!' 
                         : `Faltam ${formatCurrency(savingsGoal - savingsAmount)} para atingir a meta`}
                     </p>
                   </div>
                   <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                    Dica: lance valores na categoria "Poupanca" para alimentar o poupometro.
+                    💡 Dica: Lance valores na categoria "Poupança" para alimentar o poupômetro
                   </p>
                 </>
               ) : (
                 <div>
                   <p className={`text-sm mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Defina uma meta mensal de poupanca para acompanhar seu progresso.
+                    Defina uma meta mensal de poupança para acompanhar seu progresso! 🎯
                   </p>
                   <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                    Crie lancamentos na categoria "Poupanca" e veja sua evolucao aqui.
+                    💡 Crie lançamentos na categoria "Poupança" e veja sua evolução aqui
                   </p>
                 </div>
               )}
@@ -2376,7 +2338,7 @@ export default function FinanceApp() {
 
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
               <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                Dicas Financeiras Personalizadas
+                💡 Dicas Financeiras Personalizadas
               </h3>
               
               {!showTips ? (
@@ -2413,15 +2375,15 @@ export default function FinanceApp() {
                       setAiTips(tips);
                     } catch (error) {
                       setAiTips([
-                        'Revise seus gastos com alimentacao: pequenas economias diarias fazem diferenca.',
-                        'Considere criar uma reserva de emergencia equivalente a 3-6 meses de despesas.',
-                        'Defina metas especificas para seus gastos em cada categoria.'
+                        '💡 Revise seus gastos com alimentação - pequenas economias diárias fazem diferença!',
+                        '📊 Considere criar uma reserva de emergência equivalente a 3-6 meses de despesas.',
+                        '🎯 Defina metas específicas para seus gastos em cada categoria.'
                       ]);
                     }
                   }}
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all"
                 >
-                  Gerar dicas com IA
+                  ✨ Gerar Dicas com IA
                 </button>
               ) : (
                 <div className="space-y-3">
@@ -2478,7 +2440,7 @@ export default function FinanceApp() {
                         : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    Entradas
+                    💚 Entradas
                   </button>
                   <button
                     onClick={() => setFilterType('expense')}
@@ -2488,7 +2450,7 @@ export default function FinanceApp() {
                         : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    Saidas
+                    🔴 Saídas
                   </button>
                 </div>
               </div>
@@ -2499,7 +2461,7 @@ export default function FinanceApp() {
                 <table className="w-full">
                   <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     <tr>
-                      {/* Data - clicavel, alterna asc/desc */}
+                      {/* Data — clicável, alterna asc/desc */}
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                         onClick={() => setSortBy(sortBy === 'date-asc' ? 'date-desc' : 'date-asc')}
@@ -2511,7 +2473,7 @@ export default function FinanceApp() {
                           </span>
                         </span>
                       </th>
-                      {/* Descricao - clicavel */}
+                      {/* Descrição — clicável */}
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                         onClick={() => setSortBy(sortBy === 'description-asc' ? 'description-desc' : 'description-asc')}
@@ -2523,7 +2485,7 @@ export default function FinanceApp() {
                           </span>
                         </span>
                       </th>
-                      {/* Categoria - clicavel */}
+                      {/* Categoria — clicável */}
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                         onClick={() => setSortBy(sortBy === 'category-asc' ? 'category-desc' : 'category-asc')}
@@ -2535,7 +2497,7 @@ export default function FinanceApp() {
                           </span>
                         </span>
                       </th>
-                      {/* Valor - clicavel */}
+                      {/* Valor — clicável */}
                       <th
                         className={`px-6 py-4 text-right text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                         onClick={() => setSortBy(sortBy === 'amount-asc' ? 'amount-desc' : 'amount-asc')}
@@ -2649,21 +2611,19 @@ export default function FinanceApp() {
                                   <td className="px-6 py-4">
                                     <div className="flex items-center justify-center gap-2">
                                       <button
-                                        aria-label="Editar transacao"
                                         onClick={() => {
                                           setEditingTransaction(transaction);
                                           setShowTransactionModal(true);
                                         }}
                                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                       >
-                                        <Edit2 className="w-4 h-4" />
+                                        <Edit2 className="w-4 h-4" aria-label="Editar" />
                                       </button>
                                       <button
-                                        aria-label="Excluir transacao"
-                                        onClick={() => deleteTransaction(transaction.id)}
+                                        onClick={() => { if (window.confirm('Excluir esta transação? Esta ação não pode ser desfeita.')) deleteTransaction(transaction.id); }}
                                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                       >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-4 h-4" aria-label="Excluir" />
                                       </button>
                                     </div>
                                   </td>
@@ -2709,7 +2669,7 @@ export default function FinanceApp() {
                       const to = Math.min(safePage * pageSize, total);
                       return (
                         <>
-                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{from}-{to} de {total}</span>
+                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{from}–{to} de {total}</span>
                           <div className="flex items-center gap-1">
                             <button onClick={() => setCurrentPage(1)} disabled={safePage === 1} className={`px-2 py-1 rounded text-sm font-bold ${safePage === 1 ? 'opacity-30 cursor-not-allowed' : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}>⏮</button>
                             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`px-2 py-1 rounded text-sm font-bold ${safePage === 1 ? 'opacity-30 cursor-not-allowed' : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}>◄</button>
@@ -2730,16 +2690,16 @@ export default function FinanceApp() {
           <>
             <div className="mb-6">
               <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                Agenda Google Calendar
+                📅 Agenda Google Calendar
               </h2>
 
               {/* Filtros e Sincronizar na mesma linha */}
               <div className="flex flex-wrap items-center gap-3">
                 {[
-                  { key: 'today',    label: 'Hoje' },
-                  { key: 'tomorrow', label: 'Amanha' },
-                  { key: 'week',     label: 'Esta Semana' },
-                  { key: 'month',    label: 'Este Mes' },
+                  { key: 'today',    label: '📆 Hoje' },
+                  { key: 'tomorrow', label: '☀️ Amanhã' },
+                  { key: 'week',     label: '📅 Esta Semana' },
+                  { key: 'month',    label: '🗓️ Este Mês' },
                 ].map(({ key, label }) => (
                   <button
                     key={key}
@@ -2762,10 +2722,10 @@ export default function FinanceApp() {
 
               {/* Mostrar filtro ativo */}
               <p className={`text-sm mt-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                {calendarFilter === 'today' && 'Mostrando: eventos de hoje'}
-                {calendarFilter === 'tomorrow' && 'Mostrando: eventos de amanha'}
-                {calendarFilter === 'week' && 'Mostrando: eventos dos proximos 7 dias'}
-                {calendarFilter === 'month' && 'Mostrando: eventos deste mes'}
+                {calendarFilter === 'today' && '📆 Mostrando: Eventos de hoje'}
+                {calendarFilter === 'tomorrow' && '☀️ Mostrando: Eventos de amanhã'}
+                {calendarFilter === 'week' && '📅 Mostrando: Eventos dos próximos 7 dias'}
+                {calendarFilter === 'month' && '🗓️ Mostrando: Eventos deste mês'}
               </p>
             </div>
 
@@ -2796,7 +2756,7 @@ export default function FinanceApp() {
                         {event.summary || 'Sem título'}
                       </h3>
                       <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        Data: {event.start?.dateTime ? new Date(event.start.dateTime).toLocaleString('pt-BR') : event.start?.date || 'Data nao definida'}
+                        📅 {event.start?.dateTime ? new Date(event.start.dateTime).toLocaleString('pt-BR') : event.start?.date || 'Data não definida'}
                       </p>
                       {event.description && (
                         <p className={`text-sm mt-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -2852,21 +2812,19 @@ export default function FinanceApp() {
                         </div>
                         <div className="flex gap-2">
                           <button
-                            aria-label="Editar categoria"
                             onClick={() => {
                               setEditingCategory(category);
                               setShowCategoryModal(true);
                             }}
                             className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-4 h-4" aria-label="Editar" />
                           </button>
                           <button
-                            aria-label="Excluir categoria"
-                            onClick={() => deleteCategory(category.id)}
+                            onClick={() => { if (window.confirm('Excluir esta categoria? Esta ação não pode ser desfeita.')) deleteCategory(category.id); }}
                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" aria-label="Excluir" />
                           </button>
                         </div>
                       </div>
@@ -2899,21 +2857,19 @@ export default function FinanceApp() {
                         </div>
                         <div className="flex gap-2">
                           <button
-                            aria-label="Editar categoria"
                             onClick={() => {
                               setEditingCategory(category);
                               setShowCategoryModal(true);
                             }}
                             className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-4 h-4" aria-label="Editar" />
                           </button>
                           <button
-                            aria-label="Excluir categoria"
-                            onClick={() => deleteCategory(category.id)}
+                            onClick={() => { if (window.confirm('Excluir esta categoria? Esta ação não pode ser desfeita.')) deleteCategory(category.id); }}
                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" aria-label="Excluir" />
                           </button>
                         </div>
                       </div>
@@ -2939,7 +2895,7 @@ export default function FinanceApp() {
                   Configurações
                 </h2>
               </div>
-              <button aria-label="Fechar configuracoes" onClick={() => setShowSettings(false)}>
+              <button onClick={() => setShowSettings(false)}>
                 <X className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'} />
               </button>
             </div>
@@ -2987,7 +2943,7 @@ export default function FinanceApp() {
               {/* Relatório mensal por e-mail */}
               <div className={`mt-5 pt-5 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  RELATORIO MENSAL
+                  RELATÓRIO MENSAL
                 </p>
                 <button
                   onClick={handleSendMonthlyReport}
@@ -3033,8 +2989,8 @@ export default function FinanceApp() {
                           <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
                         </div>
                         <div className="flex gap-1">
-                          <button aria-label="Editar categoria" onClick={() => { setEditingCategory(cat); setShowSettings(false); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
-                          <button aria-label="Excluir categoria" onClick={() => deleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
+                          <button onClick={() => { setEditingCategory(cat); setShowSettings(false); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
+                          <button onClick={() => { if (window.confirm('Excluir esta categoria?')) deleteCategory(cat.id); }} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
                         </div>
                       </div>
                     ))}
@@ -3048,8 +3004,8 @@ export default function FinanceApp() {
                           <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
                         </div>
                         <div className="flex gap-1">
-                          <button aria-label="Editar categoria" onClick={() => { setEditingCategory(cat); setShowSettings(false); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
-                          <button aria-label="Excluir categoria" onClick={() => deleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
+                          <button onClick={() => { setEditingCategory(cat); setShowSettings(false); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
+                          <button onClick={() => { if (window.confirm('Excluir esta categoria?')) deleteCategory(cat.id); }} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
                         </div>
                       </div>
                     ))}
@@ -3074,9 +3030,9 @@ export default function FinanceApp() {
             <div className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6`}>
               <div className="flex justify-between items-center">
                 <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  Definir Meta de Economia
+                  💰 Definir Meta de Economia
                 </h2>
-                <button aria-label="Fechar meta de economia" onClick={() => {
+                <button onClick={() => {
                   setShowGoalModal(false);
                   setGoalInput('');
                 }}>
@@ -3104,7 +3060,7 @@ export default function FinanceApp() {
                   autoFocus
                 />
                 <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Lance valores na categoria "Poupanca" (entrada ou saida) para alimentar o poupometro
+                  💡 Lance valores na categoria "Poupança" (entrada ou saída) para alimentar o poupômetro
                 </p>
               </div>
 
@@ -3115,7 +3071,7 @@ export default function FinanceApp() {
                     setShowGoalModal(false);
                     setGoalInput('');
                   } else {
-                    alert('Por favor, digite um valor válido!');
+                    showToast('Por favor, digite um valor válido!', 'error');
                   }
                 }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
@@ -3128,6 +3084,9 @@ export default function FinanceApp() {
       )}
 
         {view === 'reports' && (() => {
+          const [reportFilter, setReportFilter] = React.useState('expenses-category');
+          const [reportChart, setReportChart] = React.useState('pie');
+
           // Last 6 months data for line/bar charts
           const last6Months = Array.from({ length: 6 }, (_, i) => {
             const d = new Date();
@@ -3166,7 +3125,7 @@ export default function FinanceApp() {
           return (
             <div>
               <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                Relatorios
+                📊 Relatórios
               </h2>
 
               {/* Chart type selector + filter */}
@@ -3174,9 +3133,9 @@ export default function FinanceApp() {
                 {/* Chart type buttons */}
                 <div className={`flex gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
                   {[
-                    { key: 'pie',  icon: '', label: 'Pizza' },
-                    { key: 'line', icon: '', label: 'Linha' },
-                    { key: 'bar',  icon: '', label: 'Barras' },
+                    { key: 'pie',  icon: '🍩', label: 'Pizza' },
+                    { key: 'line', icon: '📈', label: 'Linha' },
+                    { key: 'bar',  icon: '📊', label: 'Barras' },
                   ].map(({ key, icon, label }) => (
                     <button
                       key={key}
@@ -3217,9 +3176,9 @@ export default function FinanceApp() {
               {/* Chart card */}
               <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
                 <h3 className={`text-lg font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-700'}`}>
-                  {reportFilter === 'expenses-category' ? 'Despesas por Categoria' :
-                   reportFilter === 'income-category'   ? 'Receitas por Categoria' :
-                   'Evolucao Mensal - Ultimos 6 meses'}
+                  {reportFilter === 'expenses-category' ? '💸 Despesas por Categoria' :
+                   reportFilter === 'income-category'   ? '💰 Receitas por Categoria' :
+                   '📅 Evolução Mensal — Últimos 6 meses'}
                   {reportFilter !== 'balance' && (
                     <span className={`ml-3 text-sm font-normal ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
@@ -3257,7 +3216,7 @@ export default function FinanceApp() {
                   </div>
                 )}
 
-                {/* PIE for balance - show bar instead */}
+                {/* PIE for balance — show bar instead */}
                 {reportChart === 'pie' && reportFilter === 'balance' && (
                   <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={last6Months} barCategoryGap="30%">
@@ -3321,7 +3280,23 @@ export default function FinanceApp() {
         })()}
 
     </div>
+
+      {/* Toast notifications */}
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-white text-sm font-medium max-w-sm pointer-events-auto animate-bounce-in transition-all ${
+              toast.type === 'success' ? 'bg-green-600' :
+              toast.type === 'error'   ? 'bg-red-600' :
+              toast.type === 'warning' ? 'bg-orange-500' :
+              'bg-gray-800'
+            }`}
+          >
+            <span>{toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+            <span>{toast.message}</span>
+          </div>
+        ))}
+      </div>
   );
 }
-
-
