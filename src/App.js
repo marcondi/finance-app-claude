@@ -48,7 +48,7 @@ const defaultCategories = [
   { id: 'cat-15', name: 'Cartão Crédito C6', color: '#9333ea', type: 'expense', user_id: null },
   { id: 'cat-16', name: 'Cartão Crédito Merc. Pago', color: '#0891b2', type: 'expense', user_id: null },
   { id: 'cat-17', name: 'Cartão Crédito Neon', color: '#f97316', type: 'expense', user_id: null },
-  { id: 'cat-18', name: 'Intenet+Balcão', color: '#0284c7', type: 'expense', user_id: null },
+  { id: 'cat-18', name: 'Internet+Balcão', color: '#0284c7', type: 'expense', user_id: null },
   { id: 'cat-19', name: 'Aux. Mãe', color: '#ec4899', type: 'expense', user_id: null },
   { id: 'cat-20', name: 'Fisioterapia Mãe', color: '#db2777', type: 'expense', user_id: null },
   { id: 'cat-21', name: 'Empréstimo', color: '#b91c1c', type: 'expense', user_id: null },
@@ -103,12 +103,12 @@ export default function FinanceApp() {
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [calendarFilter, setCalendarFilter] = useState('week'); // 'today', 'tomorrow', 'week', 'month'
-  const [reportFilter, setReportFilter] = useState('expenses-category');
-  const [reportChart, setReportChart] = useState('pie');
   const [todayEvents, setTodayEvents] = useState([]);
   const [tomorrowEvents, setTomorrowEvents] = useState([]);
+  const [reportFilter, setReportFilter] = useState('expenses-category');
+  const [reportChart, setReportChart] = useState('pie');
 
-  // Verificar sessão existente ao abrir o app — pula tela de login se já logado
+  // Verificar sessao existente ao abrir o app - pula tela de login se ja logado
   useEffect(() => {
     const restoreSession = async () => {
       try {
@@ -135,32 +135,73 @@ export default function FinanceApp() {
   }, []);
 
   useEffect(() => {
-    if (currentUser) {
-      loadUserData();
-      requestNotificationPermission();
-      // Aguarda provider_token do Google OAuth antes de carregar eventos/notificacoes
-      const initWithSession = async () => {
-        let attempts = 0;
-        const tryInit = async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.provider_token || attempts >= 10) {
-            // loadBannerEvents retorna os eventos e já dispara notificações
-            // evitando depender do state todayEvents/tomorrowEvents que ainda está vazio
-            const { todayEvts, tomorrowEvts } = await loadBannerEvents();
-            checkUpcomingEvents(todayEvts, tomorrowEvts);
-          } else {
-            attempts++;
-            setTimeout(tryInit, 500);
+    if (!currentUser) return;
+
+    loadUserData();
+    requestNotificationPermission();
+
+    let isActive = true;
+    let retryTimeout = null;
+    let stopEventChecks = null;
+
+    // Aguarda provider_token do Google OAuth antes de carregar eventos/notificacoes
+    const initWithSession = async () => {
+      let attempts = 0;
+
+      const tryInit = async () => {
+        if (!isActive) return;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.provider_token || attempts >= 10) {
+          // loadBannerEvents retorna os eventos e ja dispara notificacoes
+          // evitando depender do state todayEvents/tomorrowEvents que ainda esta vazio
+          const { todayEvts, tomorrowEvts } = await loadBannerEvents();
+          if (isActive) {
+            stopEventChecks = checkUpcomingEvents(todayEvts, tomorrowEvts);
           }
-        };
-        await tryInit();
+        } else {
+          attempts++;
+          retryTimeout = setTimeout(tryInit, 500);
+        }
       };
-      initWithSession();
-    }
+
+      await tryInit();
+    };
+
+    initWithSession();
+
+    return () => {
+      isActive = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+      if (typeof stopEventChecks === 'function') stopEventChecks();
+    };
   }, [currentUser]);
 
   // Resetar pagina ao mudar filtro ou ordenacao
   useEffect(() => { setCurrentPage(1); }, [filterType, sortBy]);
+
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key !== 'Escape') return;
+      if (showUserMenu) setShowUserMenu(false);
+      if (showSettings) setShowSettings(false);
+      if (showGoalModal) {
+        setShowGoalModal(false);
+        setGoalInput('');
+      }
+      if (showTransactionModal) {
+        setShowTransactionModal(false);
+        setEditingTransaction(null);
+      }
+      if (showCategoryModal) {
+        setShowCategoryModal(false);
+        setEditingCategory(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showUserMenu, showSettings, showGoalModal, showTransactionModal, showCategoryModal]);
 
   // Pedir permissão para notificações
   const requestNotificationPermission = async () => {
@@ -188,7 +229,7 @@ export default function FinanceApp() {
 
   // Notificar eventos em 1 hora
   const checkEventsSoonAndNotify = async () => {
-    if (Notification.permission !== 'granted') return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -211,7 +252,7 @@ export default function FinanceApp() {
           const diffMinutes = Math.floor((eventTime - now) / (1000 * 60));
 
           if (diffMinutes >= 55 && diffMinutes <= 65) {
-            new Notification('📅 Evento próximo!', {
+            new Notification('Evento proximo', {
               body: `${event.summary} começa em cerca de 1 hora`,
               icon: '/favicon.ico'
             });
@@ -232,14 +273,14 @@ export default function FinanceApp() {
     const eventsTomorrow = tomorrowEvts ?? tomorrowEvents;
 
     eventsToday.forEach(event => {
-      new Notification('💸 Conta vencendo HOJE!', {
+      new Notification('Conta vencendo hoje', {
         body: event.summary || 'Evento sem título',
         icon: '/favicon.ico'
       });
     });
 
     eventsTomorrow.forEach(event => {
-      new Notification('⚠️ Conta vence AMANHÃ!', {
+      new Notification('Conta vence amanha', {
         body: event.summary || 'Evento sem título',
         icon: '/favicon.ico'
       });
@@ -539,7 +580,7 @@ export default function FinanceApp() {
 
         if (updateError) throw updateError;
 
-        alert('✅ Senha redefinida com sucesso!');
+        alert('Senha redefinida com sucesso!');
         setIsForgotPassword(false);
         setEmail('');
         setNewPassword('');
@@ -614,7 +655,7 @@ export default function FinanceApp() {
                     darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'
                   } font-medium py-2 transition-colors`}
                 >
-                  ← Voltar ao login
+                  Voltar ao login
                 </button>
               </div>
             </>
@@ -757,15 +798,23 @@ export default function FinanceApp() {
         return;
       }
 
+      const parsedAmount = Number(amount);
+      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+        alert('Digite um valor valido maior que zero.');
+        return;
+      }
+
+      const months = Math.max(1, parseInt(recurringMonths, 10) || 1);
+
       const baseTransaction = {
         user_id: currentUser.id,
         type: type === 'scheduled' ? 'expense' : type,
-        amount: parseFloat(amount),
-        description,
+        amount: parsedAmount,
+        description: description.trim(),
         category_id: categoryId,
         date,
         is_recurring: isRecurring,
-        recurring_months: isRecurring ? parseInt(recurringMonths) : null,
+        recurring_months: isRecurring ? months : null,
         parent_id: null
       };
 
@@ -773,14 +822,13 @@ export default function FinanceApp() {
         if (type === 'scheduled') {
           const baseScheduled = {
             user_id: currentUser.id,
-            amount: parseFloat(amount),
-            description,
+            amount: parsedAmount,
+            description: description.trim(),
             category_id: categoryId,
             is_paid: false
           };
           
           const scheduledList = [];
-          const months = parseInt(recurringMonths) || 1;
           
           for (let i = 0; i < months; i++) {
             const scheduledDate = new Date(date);
@@ -788,7 +836,7 @@ export default function FinanceApp() {
             
             scheduledList.push({
               ...baseScheduled,
-              id: generateId(), // ADICIONAR ID ÚNICO
+              id: generateId(), // ADICIONAR ID UNICO
               due_date: scheduledDate.toISOString().split('T')[0]
             });
           }
@@ -800,7 +848,7 @@ export default function FinanceApp() {
           
           if (error) throw error;
           
-          setScheduled([...scheduled, ...data]);
+          setScheduled(prev => [...prev, ...data]);
         } else {
           if (editingTransaction) {
             const { error } = await supabase
@@ -810,7 +858,7 @@ export default function FinanceApp() {
             
             if (error) throw error;
             
-            setTransactions(transactions.map(t =>
+            setTransactions(prev => prev.map(t =>
               t.id === editingTransaction.id ? { ...t, ...baseTransaction } : t
             ));
           } else {
@@ -843,7 +891,7 @@ export default function FinanceApp() {
             
             if (error) throw error;
             
-            setTransactions([...transactions, ...data]);
+            setTransactions(prev => [...prev, ...data]);
             
             const dateParts = date.split('-');
             const transactionDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
@@ -883,7 +931,7 @@ export default function FinanceApp() {
               <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                 {editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
               </h2>
-              <button onClick={() => {
+              <button aria-label="Fechar modal de transacao" onClick={() => {
                 setShowTransactionModal(false);
                 setEditingTransaction(null);
                 resetForm();
@@ -1142,7 +1190,7 @@ export default function FinanceApp() {
               <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                 {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
               </h2>
-              <button onClick={() => {
+              <button aria-label="Fechar modal de categoria" onClick={() => {
                 setShowCategoryModal(false);
                 setEditingCategory(null);
               }}>
@@ -1325,47 +1373,10 @@ export default function FinanceApp() {
     });
   }, [scheduled, transactions, currentUser]);
 
-  // Report: last 6 months data
-  const report6Months = useMemo(() => {
-    return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date();
-      d.setDate(1);
-      d.setMonth(d.getMonth() - (5 - i));
-      const y = d.getFullYear();
-      const m = d.getMonth();
-      const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
-      const monthTx = transactions.filter(t => {
-        if (!currentUser || t.user_id !== currentUser.id) return false;
-        // Parsear como data local para evitar deslocamento UTC
-        const [ty, tm] = t.date.split('-').map(Number);
-        return ty === y && (tm - 1) === m;
-      });
-      const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-      const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-      return { label, Entradas: inc, Saidas: exp, Saldo: inc - exp };
-    });
-  }, [transactions, currentUser]);
-
-  // Report: pie data based on filter
-  const reportPieData = useMemo(() => {
-    const type = reportFilter === 'expenses-category' ? 'expense' : 'income';
-    return categories
-      .filter(c => c.type === type)
-      .map(c => ({
-        name: c.name, color: c.color,
-        value: currentMonthTransactions.filter(t => t.category_id === c.id && t.type === type).reduce((s, t) => s + t.amount, 0)
-      }))
-      .filter(c => c.value > 0);
-  }, [categories, currentMonthTransactions, reportFilter]);
-
-  const reportPieTotal = useMemo(() =>
-    reportPieData.reduce((s, c) => s + c.value, 0),
-  [reportPieData]);
-
   const handleExport = async () => {
     try {
       if (!currentUser) {
-        alert('❌ Erro: Usuário não identificado. Faça login novamente.');
+        alert('Erro: usuario nao identificado. Faca login novamente.');
         return;
       }
 
@@ -1388,10 +1399,10 @@ export default function FinanceApp() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      alert('✅ Backup criado com sucesso!');
+      alert('Backup criado com sucesso!');
     } catch (error) {
       console.error('Erro ao exportar:', error);
-      alert('❌ Erro ao criar backup: ' + error.message);
+      alert('Erro ao criar backup: ' + error.message);
     }
   };
 
@@ -1488,7 +1499,7 @@ export default function FinanceApp() {
             const newCatId = categoryMapping[s.category || s.categoryId || s.category_id] || existingCat?.id;
             
             return {
-              id: generateId(), // ADICIONAR ID ÚNICO
+            id: generateId(), // ADICIONAR ID UNICO
               user_id: currentUser.id,
               amount: s.amount,
               description: s.description,
@@ -1507,12 +1518,12 @@ export default function FinanceApp() {
           setScheduled([...scheduled, ...insertedSched]);
         }
 
-        alert(`✅ Dados importados com sucesso!\n\n📊 ${mappedTransactions.length} transações\n🏷️ ${newCategories.length} novas categorias`);
+        alert(`Dados importados com sucesso!\n\n${mappedTransactions.length} transacoes\n${newCategories.length} novas categorias`);
         
         await loadUserData();
       } catch (error) {
         console.error('Erro na importação:', error);
-        alert('❌ Erro ao importar dados: ' + error.message);
+        alert('Erro ao importar dados: ' + error.message);
       }
     };
     reader.readAsText(file);
@@ -1548,7 +1559,7 @@ export default function FinanceApp() {
           </style>
         </head>
         <body>
-          <h1>📊 Relatório Financeiro</h1>
+          <h1>Relatorio Financeiro</h1>
           <p class="periodo">Período: ${periodo}</p>
           
           <h2>Resumo</h2>
@@ -1602,10 +1613,10 @@ export default function FinanceApp() {
         printWindow.print();
       }, 250);
       
-      alert('✅ Janela de impressão aberta! Use "Salvar como PDF" nas opções da impressora.');
+      alert('Janela de impressao aberta! Use "Salvar como PDF" nas opcoes da impressora.');
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
-      alert('❌ Erro ao exportar PDF: ' + error.message);
+      alert('Erro ao exportar PDF: ' + error.message);
     }
   };
 
@@ -1615,7 +1626,7 @@ export default function FinanceApp() {
       
       // Aba 1: Resumo
       const wsResumo = XLSX.utils.aoa_to_sheet([
-        ['RELATÓRIO FINANCEIRO'],
+        ['RELATORIO FINANCEIRO'],
         [`Período: ${periodo}`],
         [],
         ['TIPO', 'VALOR'],
@@ -1662,10 +1673,10 @@ export default function FinanceApp() {
       const fileName = `relatorio-${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}.xlsx`;
       XLSX.writeFile(wb, fileName);
       
-      alert('✅ Relatório Excel exportado com sucesso!\n\nDica: No Excel, selecione os dados e vá em Inserir > Tabela Dinâmica para análises avançadas.');
+      alert('Relatorio Excel exportado com sucesso!\n\nDica: no Excel, selecione os dados e use Inserir > Tabela Dinamica.');
     } catch (error) {
       console.error('Erro ao exportar Excel:', error);
-      alert('❌ Erro ao exportar Excel: ' + error.message);
+      alert('Erro ao exportar Excel: ' + error.message);
     }
   };
 
@@ -1687,6 +1698,9 @@ export default function FinanceApp() {
   };
 
   const deleteTransaction = async (id) => {
+    const confirmed = window.confirm('Deseja realmente excluir esta transacao? Esta acao nao pode ser desfeita.');
+    if (!confirmed) return;
+
     try {
       const { error } = await supabase
         .from('finance_transactions')
@@ -1695,7 +1709,7 @@ export default function FinanceApp() {
       
       if (error) throw error;
       
-      setTransactions(transactions.filter(t => t.id !== id));
+      setTransactions(prev => prev.filter(t => t.id !== id));
     } catch (error) {
       console.error('Erro ao excluir transação:', error);
       alert('Erro ao excluir transação: ' + error.message);
@@ -1703,9 +1717,12 @@ export default function FinanceApp() {
   };
 
   const deleteCategory = async (id) => {
+    const confirmed = window.confirm('Deseja realmente excluir esta categoria?');
+    if (!confirmed) return;
+
     const hasTransactions = transactions.some(t => t.category_id === id);
     if (hasTransactions) {
-      alert('❌ Não é possível excluir uma categoria com transações associadas!');
+      alert('Nao e possivel excluir uma categoria com transacoes associadas!');
       return;
     }
 
@@ -1717,7 +1734,7 @@ export default function FinanceApp() {
       
       if (error) throw error;
       
-      setCategories(categories.filter(c => c.id !== id));
+      setCategories(prev => prev.filter(c => c.id !== id));
     } catch (error) {
       console.error('Erro ao excluir categoria:', error);
       alert('Erro ao excluir categoria: ' + error.message);
@@ -1784,12 +1801,12 @@ export default function FinanceApp() {
 
       const result = await res.json();
       if (res.ok && result.success) {
-        alert('✅ Relatório enviado com sucesso para ' + currentUser.email + '!');
+        alert('Relatorio enviado com sucesso para ' + currentUser.email + '!');
       } else {
-        alert('❌ Erro ao enviar: ' + JSON.stringify(result.error || result));
+        alert('Erro ao enviar: ' + JSON.stringify(result.error || result));
       }
     } catch (err) {
-      alert('❌ Erro: ' + err.message);
+      alert('Erro: ' + err.message);
     } finally {
       setSendingReport(false);
     }
@@ -1801,7 +1818,7 @@ export default function FinanceApp() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.provider_token) {
-        alert('❌ Faça login com Google para acessar o Calendar!');
+        alert('Faca login com Google para acessar o Calendar!');
         return;
       }
 
@@ -1839,7 +1856,7 @@ export default function FinanceApp() {
       setCalendarEvents(data.items || []);
     } catch (error) {
       console.error('Erro:', error);
-      alert('❌ Erro ao carregar eventos');
+      alert('Erro ao carregar eventos');
     } finally {
       setLoadingCalendar(false);
     }
@@ -1894,19 +1911,21 @@ export default function FinanceApp() {
                 ))}
                 {/* Seletor de mês no lugar de Categorias */}
                 <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                  <button
-                    onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }}
-                    className={`p-1 rounded transition-colors ${darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-500 hover:bg-gray-200'}`}
-                  >
+                <button
+                  aria-label="Mes anterior"
+                  onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }}
+                  className={`p-1 rounded transition-colors ${darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-500 hover:bg-gray-200'}`}
+                >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <span className={`text-sm font-semibold min-w-[110px] text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                     {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
                   </span>
-                  <button
-                    onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }}
-                    className={`p-1 rounded transition-colors ${darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-500 hover:bg-gray-200'}`}
-                  >
+                <button
+                  aria-label="Proximo mes"
+                  onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }}
+                  className={`p-1 rounded transition-colors ${darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-500 hover:bg-gray-200'}`}
+                >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -1926,6 +1945,7 @@ export default function FinanceApp() {
             <div className="flex items-center gap-3">
               {/* Botão modo escuro */}
               <button
+                aria-label={darkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
               >
@@ -1999,7 +2019,7 @@ export default function FinanceApp() {
           </div>
 
           <div className="flex md:hidden gap-2 mt-4 overflow-x-auto">
-            {['dashboard', 'transactions', 'scheduled'].map(v => (
+            {['dashboard', 'transactions', 'scheduled', 'reports'].map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -2009,18 +2029,18 @@ export default function FinanceApp() {
                     : darkMode ? 'text-gray-300 bg-gray-700' : 'text-gray-600 bg-gray-100'
                 }`}
               >
-                {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : 'Agenda'}
+                {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : v === 'scheduled' ? 'Agenda' : 'Relatórios'}
               </button>
             ))}
             {/* Seletor de mês mobile */}
             <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border whitespace-nowrap ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-              <button onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }} className={`p-1 rounded ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+              <button aria-label="Mes anterior" onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); setCurrentDate(d); }} className={`p-1 rounded ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                 {currentDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
               </span>
-              <button onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }} className={`p-1 rounded ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+              <button aria-label="Proximo mes" onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); setCurrentDate(d); }} className={`p-1 rounded ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -2039,7 +2059,7 @@ export default function FinanceApp() {
             <div className="flex items-center gap-2 mb-3">
               <Calendar className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
               <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                📅 Sua Agenda
+                Sua Agenda
               </h3>
               <button
                 onClick={() => setView('scheduled')}
@@ -2047,7 +2067,7 @@ export default function FinanceApp() {
                   darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
                 } underline`}
               >
-                Ver completa →
+                Ver completa ->
               </button>
             </div>
 
@@ -2055,7 +2075,7 @@ export default function FinanceApp() {
               {/* Hoje */}
               <div>
                 <p className={`text-xs font-semibold mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                  📆 Hoje
+                  Hoje
                 </p>
                 {todayEvents.length > 0 ? (
                   <div className="space-y-1.5">
@@ -2070,7 +2090,7 @@ export default function FinanceApp() {
                           {event.summary || 'Sem título'}
                         </p>
                         <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          🕐 {event.start?.dateTime 
+                          Horario: {event.start?.dateTime 
                             ? new Date(event.start.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
                             : 'Dia inteiro'}
                         </p>
@@ -2087,7 +2107,7 @@ export default function FinanceApp() {
               {/* Amanhã */}
               <div>
                 <p className={`text-xs font-semibold mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                  ☀️ Amanhã
+                  Amanha
                 </p>
                 {tomorrowEvents.length > 0 ? (
                   <div className="space-y-1.5">
@@ -2102,7 +2122,7 @@ export default function FinanceApp() {
                           {event.summary || 'Sem título'}
                         </p>
                         <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          🕐 {event.start?.dateTime 
+                          Horario: {event.start?.dateTime 
                             ? new Date(event.start.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
                             : 'Dia inteiro'}
                         </p>
@@ -2303,7 +2323,7 @@ export default function FinanceApp() {
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  💰 Poupômetro
+                  Poupometro
                 </h3>
                 <button
                   onClick={() => setShowGoalModal(true)}
@@ -2334,21 +2354,21 @@ export default function FinanceApp() {
                     </div>
                     <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       {savingsAmount >= savingsGoal 
-                        ? '🎉 Parabéns! Você atingiu sua meta de poupança!' 
+                        ? 'Parabens! Voce atingiu sua meta de poupanca.' 
                         : `Faltam ${formatCurrency(savingsGoal - savingsAmount)} para atingir a meta`}
                     </p>
                   </div>
                   <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                    💡 Dica: Lance valores na categoria "Poupança" para alimentar o poupômetro
+                    Dica: lance valores na categoria "Poupanca" para alimentar o poupometro.
                   </p>
                 </>
               ) : (
                 <div>
                   <p className={`text-sm mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Defina uma meta mensal de poupança para acompanhar seu progresso! 🎯
+                    Defina uma meta mensal de poupanca para acompanhar seu progresso.
                   </p>
                   <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                    💡 Crie lançamentos na categoria "Poupança" e veja sua evolução aqui
+                    Crie lancamentos na categoria "Poupanca" e veja sua evolucao aqui.
                   </p>
                 </div>
               )}
@@ -2356,7 +2376,7 @@ export default function FinanceApp() {
 
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
               <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                💡 Dicas Financeiras Personalizadas
+                Dicas Financeiras Personalizadas
               </h3>
               
               {!showTips ? (
@@ -2366,58 +2386,42 @@ export default function FinanceApp() {
                     setAiTips(['Analisando suas finanças...']);
                     
                     try {
-                      const resumo = `Mês: ${currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-Entradas: ${formatCurrency(income)}
-Saídas: ${formatCurrency(expenses)}
-Saldo: ${formatCurrency(income - expenses)}
-Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${formatCurrency(c.value)}`).join(', ')}`;
-
-                      const { data: { session } } = await supabase.auth.getSession();
-
-                      const fnUrl = (supabase).supabaseUrl
-                        || (supabase).restUrl?.replace('/rest/v1','')
-                        || process.env.REACT_APP_SUPABASE_URL
-                        || '';
-                      const fnKey = (supabase).supabaseKey
-                        || process.env.REACT_APP_SUPABASE_ANON_KEY
-                        || '';
-
-                      const response = await fetch(`${fnUrl}/functions/v1/financial-tips`, {
+                      const resumo = `
+                        Entradas: ${formatCurrency(income)}
+                        Saídas: ${formatCurrency(expenses)}
+                        Saldo: ${formatCurrency(balance)}
+                        Principais gastos: ${expensesByCategory.slice(0, 3).map(c => `${c.name} ${formatCurrency(c.value)}`).join(', ')}
+                      `;
+                      
+                      const response = await fetch('https://api.anthropic.com/v1/messages', {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
-                          'apikey': fnKey,
-                          'Authorization': `Bearer ${session?.access_token || fnKey}`,
                         },
-                        body: JSON.stringify({ resumo })
+                        body: JSON.stringify({
+                          model: 'claude-sonnet-4-20250514',
+                          max_tokens: 1000,
+                          messages: [{
+                            role: 'user',
+                            content: `Baseado nestas finanças mensais, dê 3 dicas práticas e objetivas de economia:\n${resumo}\n\nRetorne apenas as 3 dicas numeradas, sem introdução.`
+                          }]
+                        })
                       });
-
+                      
                       const data = await response.json();
-                      if (data.tips) {
-                        setAiTips(data.tips);
-                      } else {
-                        throw new Error('Sem resposta');
-                      }
-                    } catch (error) {
-                      console.error('Erro ao gerar dicas:', error);
-                      // Dicas dinâmicas baseadas nos dados reais
-                      const tips = [];
-                      if (expenses > income) {
-                        tips.push(`⚠️ Suas saídas (${formatCurrency(expenses)}) superam as entradas (${formatCurrency(income)}). Revise os maiores gastos.`);
-                      } else {
-                        tips.push(`✅ Parabéns! Você economizou ${formatCurrency(income - expenses)} este mês.`);
-                      }
-                      if (expensesByCategory.length > 0) {
-                        const top = expensesByCategory[0];
-                        tips.push(`📊 Seu maior gasto é "${top.name}" com ${formatCurrency(top.value)} (${income > 0 ? ((top.value/income)*100).toFixed(0) : 0}% da renda).`);
-                      }
-                      tips.push('🎯 Tente reservar pelo menos 10% das suas entradas todo mês como poupança.');
+                      const tips = data.content[0].text.split('\n').filter(t => t.trim());
                       setAiTips(tips);
+                    } catch (error) {
+                      setAiTips([
+                        'Revise seus gastos com alimentacao: pequenas economias diarias fazem diferenca.',
+                        'Considere criar uma reserva de emergencia equivalente a 3-6 meses de despesas.',
+                        'Defina metas especificas para seus gastos em cada categoria.'
+                      ]);
                     }
                   }}
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all"
                 >
-                  ✨ Gerar Dicas com IA
+                  Gerar dicas com IA
                 </button>
               ) : (
                 <div className="space-y-3">
@@ -2474,7 +2478,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                         : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    💚 Entradas
+                    Entradas
                   </button>
                   <button
                     onClick={() => setFilterType('expense')}
@@ -2484,7 +2488,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                         : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    🔴 Saídas
+                    Saidas
                   </button>
                 </div>
               </div>
@@ -2495,7 +2499,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                 <table className="w-full">
                   <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     <tr>
-                      {/* Data — clicável, alterna asc/desc */}
+                      {/* Data - clicavel, alterna asc/desc */}
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                         onClick={() => setSortBy(sortBy === 'date-asc' ? 'date-desc' : 'date-asc')}
@@ -2507,7 +2511,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                           </span>
                         </span>
                       </th>
-                      {/* Descrição — clicável */}
+                      {/* Descricao - clicavel */}
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                         onClick={() => setSortBy(sortBy === 'description-asc' ? 'description-desc' : 'description-asc')}
@@ -2519,7 +2523,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                           </span>
                         </span>
                       </th>
-                      {/* Categoria — clicável */}
+                      {/* Categoria - clicavel */}
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                         onClick={() => setSortBy(sortBy === 'category-asc' ? 'category-desc' : 'category-asc')}
@@ -2531,7 +2535,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                           </span>
                         </span>
                       </th>
-                      {/* Valor — clicável */}
+                      {/* Valor - clicavel */}
                       <th
                         className={`px-6 py-4 text-right text-sm font-semibold cursor-pointer select-none ${darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                         onClick={() => setSortBy(sortBy === 'amount-asc' ? 'amount-desc' : 'amount-asc')}
@@ -2645,6 +2649,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                                   <td className="px-6 py-4">
                                     <div className="flex items-center justify-center gap-2">
                                       <button
+                                        aria-label="Editar transacao"
                                         onClick={() => {
                                           setEditingTransaction(transaction);
                                           setShowTransactionModal(true);
@@ -2654,6 +2659,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                                         <Edit2 className="w-4 h-4" />
                                       </button>
                                       <button
+                                        aria-label="Excluir transacao"
                                         onClick={() => deleteTransaction(transaction.id)}
                                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                       >
@@ -2703,7 +2709,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                       const to = Math.min(safePage * pageSize, total);
                       return (
                         <>
-                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{from}–{to} de {total}</span>
+                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{from}-{to} de {total}</span>
                           <div className="flex items-center gap-1">
                             <button onClick={() => setCurrentPage(1)} disabled={safePage === 1} className={`px-2 py-1 rounded text-sm font-bold ${safePage === 1 ? 'opacity-30 cursor-not-allowed' : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}>⏮</button>
                             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={`px-2 py-1 rounded text-sm font-bold ${safePage === 1 ? 'opacity-30 cursor-not-allowed' : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}>◄</button>
@@ -2724,16 +2730,16 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
           <>
             <div className="mb-6">
               <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                📅 Agenda Google Calendar
+                Agenda Google Calendar
               </h2>
 
               {/* Filtros e Sincronizar na mesma linha */}
               <div className="flex flex-wrap items-center gap-3">
                 {[
-                  { key: 'today',    label: '📆 Hoje' },
-                  { key: 'tomorrow', label: '☀️ Amanhã' },
-                  { key: 'week',     label: '📅 Esta Semana' },
-                  { key: 'month',    label: '🗓️ Este Mês' },
+                  { key: 'today',    label: 'Hoje' },
+                  { key: 'tomorrow', label: 'Amanha' },
+                  { key: 'week',     label: 'Esta Semana' },
+                  { key: 'month',    label: 'Este Mes' },
                 ].map(({ key, label }) => (
                   <button
                     key={key}
@@ -2756,10 +2762,10 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
 
               {/* Mostrar filtro ativo */}
               <p className={`text-sm mt-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                {calendarFilter === 'today' && '📆 Mostrando: Eventos de hoje'}
-                {calendarFilter === 'tomorrow' && '☀️ Mostrando: Eventos de amanhã'}
-                {calendarFilter === 'week' && '📅 Mostrando: Eventos dos próximos 7 dias'}
-                {calendarFilter === 'month' && '🗓️ Mostrando: Eventos deste mês'}
+                {calendarFilter === 'today' && 'Mostrando: eventos de hoje'}
+                {calendarFilter === 'tomorrow' && 'Mostrando: eventos de amanha'}
+                {calendarFilter === 'week' && 'Mostrando: eventos dos proximos 7 dias'}
+                {calendarFilter === 'month' && 'Mostrando: eventos deste mes'}
               </p>
             </div>
 
@@ -2790,7 +2796,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                         {event.summary || 'Sem título'}
                       </h3>
                       <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        📅 {event.start?.dateTime ? new Date(event.start.dateTime).toLocaleString('pt-BR') : event.start?.date || 'Data não definida'}
+                        Data: {event.start?.dateTime ? new Date(event.start.dateTime).toLocaleString('pt-BR') : event.start?.date || 'Data nao definida'}
                       </p>
                       {event.description && (
                         <p className={`text-sm mt-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -2846,6 +2852,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                         </div>
                         <div className="flex gap-2">
                           <button
+                            aria-label="Editar categoria"
                             onClick={() => {
                               setEditingCategory(category);
                               setShowCategoryModal(true);
@@ -2855,6 +2862,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
+                            aria-label="Excluir categoria"
                             onClick={() => deleteCategory(category.id)}
                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           >
@@ -2891,6 +2899,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                         </div>
                         <div className="flex gap-2">
                           <button
+                            aria-label="Editar categoria"
                             onClick={() => {
                               setEditingCategory(category);
                               setShowCategoryModal(true);
@@ -2900,6 +2909,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
+                            aria-label="Excluir categoria"
                             onClick={() => deleteCategory(category.id)}
                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           >
@@ -2929,7 +2939,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                   Configurações
                 </h2>
               </div>
-              <button onClick={() => setShowSettings(false)}>
+              <button aria-label="Fechar configuracoes" onClick={() => setShowSettings(false)}>
                 <X className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'} />
               </button>
             </div>
@@ -2977,7 +2987,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
               {/* Relatório mensal por e-mail */}
               <div className={`mt-5 pt-5 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  RELATÓRIO MENSAL
+                  RELATORIO MENSAL
                 </p>
                 <button
                   onClick={handleSendMonthlyReport}
@@ -3023,8 +3033,8 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                           <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
                         </div>
                         <div className="flex gap-1">
-                          <button onClick={() => { setEditingCategory(cat); setShowSettings(false); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
-                          <button onClick={() => deleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
+                          <button aria-label="Editar categoria" onClick={() => { setEditingCategory(cat); setShowSettings(false); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
+                          <button aria-label="Excluir categoria" onClick={() => deleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
                         </div>
                       </div>
                     ))}
@@ -3038,8 +3048,8 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                           <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
                         </div>
                         <div className="flex gap-1">
-                          <button onClick={() => { setEditingCategory(cat); setShowSettings(false); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
-                          <button onClick={() => deleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
+                          <button aria-label="Editar categoria" onClick={() => { setEditingCategory(cat); setShowSettings(false); setShowCategoryModal(true); }} className="p-1 opacity-50 hover:opacity-100"><Edit2 className="w-3 h-3 text-blue-500" /></button>
+                          <button aria-label="Excluir categoria" onClick={() => deleteCategory(cat.id)} className="p-1 opacity-50 hover:opacity-100"><Trash2 className="w-3 h-3 text-red-500" /></button>
                         </div>
                       </div>
                     ))}
@@ -3064,9 +3074,9 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
             <div className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6`}>
               <div className="flex justify-between items-center">
                 <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  💰 Definir Meta de Economia
+                  Definir Meta de Economia
                 </h2>
-                <button onClick={() => {
+                <button aria-label="Fechar meta de economia" onClick={() => {
                   setShowGoalModal(false);
                   setGoalInput('');
                 }}>
@@ -3094,7 +3104,7 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
                   autoFocus
                 />
                 <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  💡 Lance valores na categoria "Poupança" (entrada ou saída) para alimentar o poupômetro
+                  Lance valores na categoria "Poupanca" (entrada ou saida) para alimentar o poupometro
                 </p>
               </div>
 
@@ -3117,178 +3127,201 @@ Principais gastos: ${expensesByCategory.slice(0, 5).map(c => `${c.name}: ${forma
         </div>
       )}
 
-        {view === 'reports' && (
-          <div>
-            <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              📊 Relatórios
-            </h2>
+        {view === 'reports' && (() => {
+          // Last 6 months data for line/bar charts
+          const last6Months = Array.from({ length: 6 }, (_, i) => {
+            const d = new Date();
+            d.setDate(1);
+            d.setMonth(d.getMonth() - (5 - i));
+            const y = d.getFullYear();
+            const m = d.getMonth();
+            const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+            const monthTx = transactions.filter(t => {
+              const td = new Date(t.date);
+              return td.getFullYear() === y && td.getMonth() === m && t.user_id === currentUser.id;
+            });
+            const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+            const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+            return { label, Entradas: inc, Saídas: exp, Saldo: inc - exp };
+          });
 
-            {/* Chart type selector + filter */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <div className={`flex gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                {[
-                  { key: 'pie',  icon: '🍩', label: 'Pizza' },
-                  { key: 'line', icon: '📈', label: 'Linha' },
-                  { key: 'bar',  icon: '📊', label: 'Barras' },
-                ].map(({ key, icon, label }) => (
-                  <button key={key} onClick={() => setReportChart(key)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                      reportChart === key ? 'bg-blue-600 text-white shadow' : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-                    }`}>
-                    <span>{icon}</span> {label}
-                  </button>
-                ))}
-              </div>
-              <div className={`flex flex-wrap gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                {[
-                  { key: 'expenses-category', label: 'Despesas por categoria' },
-                  { key: 'income-category',   label: 'Receitas por categoria' },
-                  { key: 'balance',            label: 'Saldo mensal' },
-                ].map(({ key, label }) => (
-                  <button key={key} onClick={() => setReportFilter(key)}
-                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                      reportFilter === key ? 'bg-blue-600 text-white shadow' : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-                    }`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+          // Pie data
+          const pieExpenses = categories
+            .filter(c => c.type === 'expense')
+            .map(c => ({
+              name: c.name, color: c.color,
+              value: currentMonthTransactions.filter(t => t.category_id === c.id && t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+            })).filter(c => c.value > 0);
 
-            {/* Chart card */}
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
-              <h3 className={`text-lg font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-700'}`}>
-                {reportFilter === 'expenses-category' ? '💸 Despesas por Categoria' :
-                 reportFilter === 'income-category'   ? '💰 Receitas por Categoria' :
-                 '📅 Evolução Mensal — Últimos 6 meses'}
-                {reportFilter !== 'balance' && (
-                  <span className={`ml-3 text-sm font-normal ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
-                  </span>
-                )}
-              </h3>
+          const pieIncomes = categories
+            .filter(c => c.type === 'income')
+            .map(c => ({
+              name: c.name, color: c.color,
+              value: currentMonthTransactions.filter(t => t.category_id === c.id && t.type === 'income').reduce((s, t) => s + t.amount, 0)
+            })).filter(c => c.value > 0);
 
-              {/* PIE */}
-              {reportChart === 'pie' && reportFilter !== 'balance' && (
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex-1">
-                    <ResponsiveContainer width="100%" height={320}>
-                      <PieChart>
-                        <Pie data={reportPieData} cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={3} dataKey="value">
-                          {reportPieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                        </Pie>
-                        <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex-1 space-y-2 self-center">
-                    {reportPieData.map((cat, i) => (
-                      <div key={i} className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: cat.color }} />
-                          <span className={`text-sm truncate ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className={`text-sm font-semibold ${reportFilter === 'expenses-category' ? 'text-red-500' : 'text-green-500'}`}>{formatCurrency(cat.value)}</div>
-                          <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{reportPieTotal > 0 ? ((cat.value / reportPieTotal) * 100).toFixed(1) : 0}%</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+          const pieData = reportFilter === 'expenses-category' ? pieExpenses : pieIncomes;
+          const totalPie = pieData.reduce((s, c) => s + c.value, 0);
+
+          return (
+            <div>
+              <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                Relatorios
+              </h2>
+
+              {/* Chart type selector + filter */}
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                {/* Chart type buttons */}
+                <div className={`flex gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  {[
+                    { key: 'pie',  icon: '', label: 'Pizza' },
+                    { key: 'line', icon: '', label: 'Linha' },
+                    { key: 'bar',  icon: '', label: 'Barras' },
+                  ].map(({ key, icon, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setReportChart(key)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        reportChart === key
+                          ? 'bg-blue-600 text-white shadow'
+                          : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <span>{icon}</span> {label}
+                    </button>
+                  ))}
                 </div>
-              )}
 
-              {/* PIE + balance = pizza Entradas x Saidas do mês */}
-              {reportChart === 'pie' && reportFilter === 'balance' && (
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex-1">
-                    <ResponsiveContainer width="100%" height={320}>
-                      <PieChart>
-                        <Pie
-                          data={[
-                            { name: 'Entradas', value: income, color: '#16a34a' },
-                            { name: 'Saídas',   value: expenses, color: '#dc2626' },
-                          ]}
-                          cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={3} dataKey="value"
-                        >
-                          <Cell fill="#16a34a" />
-                          <Cell fill="#dc2626" />
-                        </Pie>
-                        <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex-1 space-y-4 self-center">
-                    {[
-                      { name: 'Entradas', value: income,           color: '#16a34a' },
-                      { name: 'Saídas',   value: expenses,         color: '#dc2626' },
-                      { name: 'Saldo',    value: income - expenses, color: (income - expenses) >= 0 ? '#3b82f6' : '#f97316' },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: item.color }} />
-                          <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{item.name}</span>
-                        </div>
-                        <span className="text-sm font-bold" style={{ color: item.color }}>{formatCurrency(item.value)}</span>
-                      </div>
-                    ))}
-                    <div className={`mt-2 pt-3 border-t text-xs ${darkMode ? 'border-gray-600 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+                {/* Filter selector */}
+                <div className={`flex gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  {[
+                    { key: 'expenses-category', label: 'Despesas por categoria' },
+                    { key: 'income-category',   label: 'Receitas por categoria' },
+                    { key: 'balance',            label: 'Saldo mensal' },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setReportFilter(key)}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        reportFilter === key
+                          ? 'bg-blue-600 text-white shadow'
+                          : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Chart card */}
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+                <h3 className={`text-lg font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-700'}`}>
+                  {reportFilter === 'expenses-category' ? 'Despesas por Categoria' :
+                   reportFilter === 'income-category'   ? 'Receitas por Categoria' :
+                   'Evolucao Mensal - Ultimos 6 meses'}
+                  {reportFilter !== 'balance' && (
+                    <span className={`ml-3 text-sm font-normal ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+                    </span>
+                  )}
+                </h3>
+
+                {/* PIE CHART */}
+                {reportChart === 'pie' && reportFilter !== 'balance' && (
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-1">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <PieChart>
+                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={3} dataKey="value">
+                            {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                          </Pie>
+                          <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex-1 space-y-2 self-center">
+                      {pieData.map((cat, i) => (
+                        <div key={i} className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: cat.color }} />
+                            <span className={`text-sm truncate ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className={`text-sm font-semibold ${reportFilter === 'expenses-category' ? 'text-red-500' : 'text-green-500'}`}>{formatCurrency(cat.value)}</div>
+                            <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{totalPie > 0 ? ((cat.value / totalPie) * 100).toFixed(1) : 0}%</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* LINE */}
-              {reportChart === 'line' && (
-                <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={report6Months}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
-                    <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
-                    <Legend />
-                    {reportFilter === 'balance'
-                      ? <Line type="monotone" dataKey="Saldo" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5, fill: '#3b82f6' }} />
-                      : reportFilter === 'expenses-category'
-                        ? <Line type="monotone" dataKey="Saidas" stroke="#dc2626" strokeWidth={3} dot={{ r: 5, fill: '#dc2626' }} />
-                        : <Line type="monotone" dataKey="Entradas" stroke="#16a34a" strokeWidth={3} dot={{ r: 5, fill: '#16a34a' }} />
-                    }
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-
-              {/* BAR */}
-              {reportChart === 'bar' && (
-                <ResponsiveContainer width="100%" height={320}>
-                  {reportFilter !== 'balance' ? (
-                    <BarChart data={reportPieData.map(d => ({ name: d.name, Valor: d.value, color: d.color }))} barCategoryGap="30%">
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
-                      <XAxis dataKey="name" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
-                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
-                      <Bar dataKey="Valor" radius={[4,4,0,0]}>
-                        {reportPieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                      </Bar>
-                    </BarChart>
-                  ) : (
-                    <BarChart data={report6Months} barCategoryGap="30%">
+                {/* PIE for balance - show bar instead */}
+                {reportChart === 'pie' && reportFilter === 'balance' && (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <BarChart data={last6Months} barCategoryGap="30%">
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
                       <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
                       <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
                       <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
                       <Legend />
                       <Bar dataKey="Entradas" fill="#16a34a" radius={[4,4,0,0]} />
-                      <Bar dataKey="Saidas" fill="#dc2626" radius={[4,4,0,0]} />
-                      <Bar dataKey="Saldo" fill="#3b82f6" radius={[4,4,0,0]} />
+                      <Bar dataKey="Saídas" fill="#dc2626" radius={[4,4,0,0]} />
                     </BarChart>
-                  )}
-                </ResponsiveContainer>
-              )}
+                  </ResponsiveContainer>
+                )}
+
+                {/* LINE CHART */}
+                {reportChart === 'line' && (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart data={last6Months}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                      <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                      <Legend />
+                      {reportFilter === 'balance' ? (
+                        <Line type="monotone" dataKey="Saldo" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5, fill: '#3b82f6' }} />
+                      ) : reportFilter === 'expenses-category' ? (
+                        <Line type="monotone" dataKey="Saídas" stroke="#dc2626" strokeWidth={3} dot={{ r: 5, fill: '#dc2626' }} />
+                      ) : (
+                        <Line type="monotone" dataKey="Entradas" stroke="#16a34a" strokeWidth={3} dot={{ r: 5, fill: '#16a34a' }} />
+                      )}
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+
+                {/* BAR CHART */}
+                {reportChart === 'bar' && (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <BarChart data={reportFilter !== 'balance' ? pieData.map(d => ({ name: d.name, Valor: d.value, color: d.color })) : last6Months} barCategoryGap="30%">
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                      <XAxis dataKey="name" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
+                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                      {reportFilter === 'balance' ? (
+                        <>
+                          <Legend />
+                          <Bar dataKey="Entradas" fill="#16a34a" radius={[4,4,0,0]} />
+                          <Bar dataKey="Saídas" fill="#dc2626" radius={[4,4,0,0]} />
+                          <Bar dataKey="Saldo" fill="#3b82f6" radius={[4,4,0,0]} />
+                        </>
+                      ) : (
+                        <Bar dataKey="Valor" radius={[4,4,0,0]}>
+                          {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        </Bar>
+                      )}
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
     </div>
   );
 }
+
+
