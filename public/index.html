@@ -3,10 +3,23 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="App de Finanças Pessoais" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="App de Finanças Pessoais com Google Calendar integrado" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="FinanceApp" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <title>FinanceApp</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(reg) { console.log('SW registrado:', reg.scope); })
+            .catch(function(err) { console.log('SW erro:', err); });
+        });
+      }
+    </script>
   </head>
   <body>
     <noscript>Você precisa habilitar JavaScript para rodar este app.</noscript>
