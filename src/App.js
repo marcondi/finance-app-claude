@@ -75,6 +75,8 @@ const formatDate = (date) => {
 export default function FinanceApp() {
   const [darkMode, setDarkMode] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -179,6 +181,25 @@ export default function FinanceApp() {
 
   // Resetar pagina ao mudar filtro ou ordenacao
   useEffect(() => { setCurrentPage(1); }, [filterType, sortBy]);
+
+  // PWA install prompt
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+      setShowInstallBanner(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') setShowInstallBanner(false);
+    setInstallPrompt(null);
+  };
 
   useEffect(() => {
     const handleEscape = (event) => {
@@ -1930,6 +1951,36 @@ export default function FinanceApp() {
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+
+      {/* Banner de instalação PWA */}
+      {showInstallBanner && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 flex items-center justify-between gap-3 shadow-2xl"
+          style={{ background: 'linear-gradient(135deg, #1e40af, #7c3aed)' }}>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📱</span>
+            <div>
+              <p className="text-white font-semibold text-sm">Instalar FinanceApp</p>
+              <p className="text-blue-200 text-xs">Acesse rápido pela tela inicial do celular</p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              onClick={handleInstall}
+              className="bg-white text-blue-700 font-bold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              Instalar
+            </button>
+            <button
+              onClick={() => setShowInstallBanner(false)}
+              className="text-blue-200 hover:text-white text-xl px-2"
+              aria-label="Fechar"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b sticky top-0 z-40`}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -2439,12 +2490,20 @@ export default function FinanceApp() {
                       <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{tip}</p>
                     </div>
                   ))}
-                  <button
-                    onClick={() => setShowTips(false)}
-                    className={`text-sm ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} underline`}
-                  >
-                    Ocultar dicas
-                  </button>
+                  <div className="flex gap-4 mt-1">
+                    <button
+                      onClick={gerarDicasIA}
+                      className={`text-sm font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                    >
+                      🔄 Regerar dicas
+                    </button>
+                    <button
+                      onClick={() => setShowTips(false)}
+                      className={`text-sm ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} underline`}
+                    >
+                      Ocultar dicas
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
