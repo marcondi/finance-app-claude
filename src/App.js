@@ -2755,6 +2755,48 @@ export default function FinanceApp() {
                   </tbody>
                 </table>
 
+                {/* Resumo de pagamentos */}
+                {currentMonthTransactions.filter(t => t.type === 'expense').length > 0 && (() => {
+                  const despesas = currentMonthTransactions.filter(t => t.type === 'expense' && (filterType === 'all' || filterType === 'expense'));
+                  const totalDespesas = despesas.reduce((s, t) => s + t.amount, 0);
+                  const totalPago = despesas.filter(t => t.is_paid).reduce((s, t) => s + t.amount, 0);
+                  const totalAPagar = totalDespesas - totalPago;
+                  const pct = totalDespesas > 0 ? (totalPago / totalDespesas) * 100 : 0;
+                  if (filterType === 'income') return null;
+                  return (
+                    <div className={`px-6 py-4 border-t ${darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50'}`}>
+                      <div className="flex flex-wrap gap-4 justify-between items-center mb-3">
+                        <div className="flex flex-wrap gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
+                            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Pago:</span>
+                            <span className="text-sm font-bold text-green-500">{formatCurrency(totalPago)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-orange-400 flex-shrink-0" />
+                            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>A pagar:</span>
+                            <span className="text-sm font-bold text-orange-400">{formatCurrency(totalAPagar)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`w-3 h-3 rounded-full flex-shrink-0 ${darkMode ? 'bg-gray-400' : 'bg-gray-500'}`} />
+                            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total:</span>
+                            <span className={`text-sm font-bold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{formatCurrency(totalDespesas)}</span>
+                          </div>
+                        </div>
+                        <span className={`text-sm font-semibold ${pct === 100 ? 'text-green-500' : darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          {pct.toFixed(0)}% pago
+                        </span>
+                      </div>
+                      <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                        <div
+                          className="h-2 rounded-full bg-green-500 transition-all duration-500"
+                          style={{ width: pct + '%' }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {currentMonthTransactions.length > 0 && (
                   <div className={`px-6 py-3 border-t flex flex-wrap items-center justify-end gap-4 ${darkMode ? 'border-gray-700' : 'border-gray-200 bg-gray-50'}`}>
                     <div className="flex items-center gap-2">
