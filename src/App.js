@@ -413,15 +413,16 @@ export default function FinanceApp() {
       
       if (schedError) throw schedError;
       setScheduled(sched || []);
+
+      // Onboarding para novos usuarios
+      if (!trans || trans.length === 0) {
+        setTimeout(() => setOnboardingStep(1), 800);
+      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar dados: ' + error.message);
     } finally {
       setLoading(false);
-      // Show onboarding for new users (no transactions)
-      if (!trans || trans.length === 0) {
-        setTimeout(() => setOnboardingStep(1), 800);
-      }
     }
   };
 
