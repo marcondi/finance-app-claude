@@ -77,6 +77,7 @@ export default function FinanceApp() {
   const [currentUser, setCurrentUser] = useState(null);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0); // 0=hidden, 1=welcome, 2=category, 3=done
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -417,6 +418,10 @@ export default function FinanceApp() {
       alert('Erro ao carregar dados: ' + error.message);
     } finally {
       setLoading(false);
+      // Show onboarding for new users (no transactions)
+      if (!trans || trans.length === 0) {
+        setTimeout(() => setOnboardingStep(1), 800);
+      }
     }
   };
 
@@ -797,7 +802,9 @@ export default function FinanceApp() {
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [categoryId, setCategoryId] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const today = new Date();
+    const localDate = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    const [date, setDate] = useState(localDate);
     const [isRecurring, setIsRecurring] = useState(false);
     const [recurringMonths, setRecurringMonths] = useState('1');
 
@@ -2694,20 +2701,32 @@ export default function FinanceApp() {
                                     {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
                                   </td>
                                   {transaction.type === 'expense' && filterType !== 'income' ? (
-                                    <td className="w-24 py-4 text-center">
+                                    <td className="w-28 py-4 text-center">
                                       <button
                                         onClick={() => toggleTransactionPaid(transaction)}
-                                        title={transaction.is_paid ? 'Marcar como não pago' : 'Marcar como pago'}
-                                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center mx-auto transition-all ${
+                                        title={transaction.is_paid ? 'Clique para desmarcar' : 'Clique para marcar como pago'}
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
                                           transaction.is_paid
-                                            ? 'bg-green-500 border-green-500 text-white'
-                                            : darkMode ? 'border-gray-500 hover:border-green-400' : 'border-gray-300 hover:border-green-400'
+                                            ? 'bg-green-500 border-green-500 text-white hover:bg-green-600'
+                                            : darkMode
+                                              ? 'border-gray-500 text-gray-400 hover:border-green-400 hover:text-green-400'
+                                              : 'border-gray-300 text-gray-400 hover:border-green-500 hover:text-green-600'
                                         }`}
                                       >
-                                        {transaction.is_paid && (
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                          </svg>
+                                        {transaction.is_paid ? (
+                                          <>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            Pago
+                                          </>
+                                        ) : (
+                                          <>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                            </svg>
+                                            Pagar
+                                          </>
                                         )}
                                       </button>
                                     </td>
@@ -3429,6 +3448,83 @@ export default function FinanceApp() {
             </div>
           );
         })()}
+
+
+      {/* Onboarding modal para novos usuários */}
+      {onboardingStep > 0 && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 p-4">
+          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-8 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            {onboardingStep === 1 && (
+              <>
+                <div className="text-center mb-6">
+                  <div className="text-5xl mb-4">👋</div>
+                  <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Bem-vindo ao FinanceApp!</h2>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Vamos configurar seu app em 2 passos rápidos para você começar a controlar suas finanças.</p>
+                </div>
+                <div className="space-y-3 mb-6">
+                  {[
+                    { icon: '🏷️', title: 'Crie suas categorias', desc: 'Ex: Moradia, Alimentação, Salário' },
+                    { icon: '💸', title: 'Registre transações', desc: 'Entradas e saídas do mês' },
+                    { icon: '📊', title: 'Acompanhe seus gastos', desc: 'Gráficos e relatórios automáticos' },
+                  ].map((item, i) => (
+                    <div key={i} className={`flex items-center gap-3 p-3 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <span className="text-2xl">{item.icon}</span>
+                      <div>
+                        <p className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-gray-700'}`}>{item.title}</p>
+                        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setOnboardingStep(0)} className={`flex-1 py-2 rounded-xl text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                    Pular
+                  </button>
+                  <button onClick={() => setOnboardingStep(2)} className="flex-1 py-2 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors">
+                    Começar →
+                  </button>
+                </div>
+              </>
+            )}
+            {onboardingStep === 2 && (
+              <>
+                <div className="text-center mb-6">
+                  <div className="text-5xl mb-4">🏷️</div>
+                  <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Suas Categorias</h2>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Já criamos categorias padrão para você! Vá em <strong>Configurações</strong> para personalizar.</p>
+                </div>
+                <div className={`p-4 rounded-xl mb-6 ${darkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
+                  <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>💡 Dica rápida:</p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Use o botão <strong>"+ Nova Transação"</strong> no topo para registrar sua primeira entrada ou saída. No celular, use o botão <strong>+</strong> no canto inferior direito!</p>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setOnboardingStep(1)} className={`flex-1 py-2 rounded-xl text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                    ← Voltar
+                  </button>
+                  <button
+                    onClick={() => { setOnboardingStep(0); setEditingTransaction(null); setShowTransactionModal(true); }}
+                    className="flex-1 py-2 rounded-xl text-sm font-bold bg-green-600 hover:bg-green-700 text-white transition-colors"
+                  >
+                    + Primeira transação!
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Botão flutuante + Nova Transação (apenas mobile, apenas logado) */}
+      {currentUser && (
+        <button
+          onClick={() => { setEditingTransaction(null); setShowTransactionModal(true); }}
+          className="fixed bottom-6 right-6 z-50 md:hidden w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-2xl flex items-center justify-center text-3xl font-light transition-all active:scale-95"
+          aria-label="Nova transação"
+          title="Nova transação"
+        >
+          +
+        </button>
+      )}
 
     </div>
   );
