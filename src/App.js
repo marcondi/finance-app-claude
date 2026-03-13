@@ -26,7 +26,9 @@ import {
   ArrowLeftRight,
   CalendarDays,
   BarChart2,
-  Search
+  Search,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { supabase } from './supabaseClient';
@@ -452,6 +454,8 @@ export default function FinanceApp() {
     const [password, setPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [isAuthLoading, setIsAuthLoading] = useState(false);
 
     const handleGoogleLogin = async () => {
       try {
@@ -524,6 +528,8 @@ export default function FinanceApp() {
     }, [isLoggingOut]);
 
     const handleAuth = async () => {
+      if (isAuthLoading) return;
+      setIsAuthLoading(true);
       if (isLogin) {
         try {
           const { data: users, error } = await supabase
@@ -542,6 +548,8 @@ export default function FinanceApp() {
         } catch (error) {
           console.error('Erro no login:', error);
           showToast('Erro ao fazer login: ' + error.message, 'error');
+        } finally {
+          setIsAuthLoading(false);
         }
       } else {
         if (!name || !email || !password) {
@@ -580,6 +588,8 @@ export default function FinanceApp() {
         } catch (error) {
           console.error('Erro ao cadastrar:', error);
           showToast('Erro ao criar conta: ' + error.message, 'error');
+        } finally {
+          setIsAuthLoading(false);
         }
       }
     };
@@ -754,22 +764,44 @@ export default function FinanceApp() {
                       : 'bg-white border-gray-300 text-gray-900'
                   } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
-                <input
-                  type="password"
-                  placeholder="Senha"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`w-full px-4 py-3 pr-12 rounded-lg border ${
+                      darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                        : 'bg-white border-gray-300 text-gray-900'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(p => !p)}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    {showPassword
+                      ? <EyeOff className="w-5 h-5" />
+                      : <Eye className="w-5 h-5" />
+                    }
+                  </button>
+                </div>
                 <button
                   onClick={handleAuth}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
+                  disabled={isAuthLoading}
+                  className={`w-full bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${isAuthLoading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-700'}`}
                 >
-                  {isLogin ? 'Entrar' : 'Criar Conta'}
+                  {isAuthLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                      {isLogin ? 'Entrando...' : 'Criando conta...'}
+                    </>
+                  ) : (
+                    isLogin ? 'Entrar' : 'Criar Conta'
+                  )}
                 </button>
 
                 {/* Divisor "OU" */}
