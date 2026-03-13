@@ -816,8 +816,8 @@ export default function FinanceApp() {
   };
 
   const AgendaCalendario = ({ darkMode, scheduled, transactions, currentDate, categories, formatCurrency, setShowTransactionModal, setEditingTransaction, googlePhotoUrl, handleGoogleLogin }) => {
-    const [selectedDay, setSelectedDay] = React.useState(null);
-    const [viewMonth, setViewMonth] = React.useState(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1));
+    const [selectedDay, setSelectedDay] = useState(null);
+    const [viewMonth, setViewMonth] = useState(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1));
 
     const ano = viewMonth.getFullYear();
     const mes = viewMonth.getMonth();
@@ -3057,40 +3057,9 @@ export default function FinanceApp() {
         )}
 
         {view === 'scheduled' && (() => {
-          const { data: { session: agendaSession } } = { data: { session: null } }; // placeholder
-          // Detecta se tem Google conectado via googlePhotoUrl ou provider_token verificado no mount
           const isGoogleConnected = !!googlePhotoUrl;
 
-          // ── CALENDÁRIO PRÓPRIO (sem Google) ──────────────────────────────
           if (!isGoogleConnected) {
-            const hoje = new Date();
-            const anoAtual = hoje.getFullYear();
-            const mesAtual = hoje.getMonth();
-            const primeiroDia = new Date(anoAtual, mesAtual, 1).getDay();
-            const diasNoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
-            const nomeMes = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-            const [diaSelecionado, setDiaSelecionado] = [null, () => {}]; // will be overridden below
-
-            // Mapear contas agendadas por dia do mês atual
-            const contasPorDia = {};
-            scheduled.forEach(s => {
-              if (!s.due_date) return;
-              const [y, m, d] = s.due_date.split('-').map(Number);
-              if (y === anoAtual && m - 1 === mesAtual) {
-                if (!contasPorDia[d]) contasPorDia[d] = [];
-                contasPorDia[d].push(s);
-              }
-            });
-            // Tb transações recorrentes
-            transactions.forEach(t => {
-              if (!t.is_recurring || t.type !== 'expense') return;
-              const [y, m, d] = t.date.split('-').map(Number);
-              if (y === anoAtual && m - 1 === mesAtual) {
-                if (!contasPorDia[d]) contasPorDia[d] = [];
-                contasPorDia[d].push({ ...t, _fromTransaction: true });
-              }
-            });
-
             return (
               <AgendaCalendario
                 darkMode={darkMode}
