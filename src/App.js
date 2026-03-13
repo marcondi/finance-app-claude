@@ -123,7 +123,6 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
           </button>
         )}
       </div>
-
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
           { label: 'Total do mês', value: formatCurrency(totalMes), color: 'text-gray-700', bg: darkMode ? 'bg-gray-800' : 'bg-white' },
@@ -136,7 +135,6 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
           </div>
         ))}
       </div>
-
       <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4 mb-4`}>
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => setViewMonth(new Date(ano, mes - 1, 1))}
@@ -192,7 +190,6 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
           ))}
         </div>
       </div>
-
       {selectedDay && (
         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
           <h4 className={`font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -224,7 +221,6 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
           )}
         </div>
       )}
-
       {Object.keys(contasPorDia).length === 0 && (
         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-10 text-center`}>
           <div className="text-5xl mb-3">📅</div>
@@ -326,6 +322,9 @@ export default function FinanceApp() {
         if (!isActive) return;
 
         const { data: { session } } = await supabase.auth.getSession();
+        // Só inicializa eventos do Google Calendar para usuários Google OAuth
+        const isGoogleUser = session?.user?.app_metadata?.provider === 'google';
+        if (!isGoogleUser) return;
         if (session?.provider_token || attempts >= 10) {
           // loadBannerEvents retorna os eventos e ja dispara notificacoes
           // evitando depender do state todayEvents/tomorrowEvents que ainda esta vazio
@@ -2082,7 +2081,7 @@ export default function FinanceApp() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.provider_token) {
-        alert('Faca login com Google para acessar o Calendar!');
+        console.warn('fetchCalendarEvents: sem provider_token, abortando.');
         return;
       }
 
