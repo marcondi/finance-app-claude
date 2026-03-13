@@ -25,7 +25,8 @@ import {
   LayoutDashboard,
   ArrowLeftRight,
   CalendarDays,
-  BarChart2
+  BarChart2,
+  Search
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { supabase } from './supabaseClient';
