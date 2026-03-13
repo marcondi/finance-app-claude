@@ -3658,7 +3658,7 @@ export default function FinanceApp() {
                           <Pie data={pieData} cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={3} dataKey="value">
                             {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                           </Pie>
-                          <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                          <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
@@ -3686,7 +3686,7 @@ export default function FinanceApp() {
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
                       <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
                       <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
                       <Legend />
                       <Bar dataKey="Entradas" fill="#16a34a" radius={[4,4,0,0]} />
                       <Bar dataKey="Saídas" fill="#dc2626" radius={[4,4,0,0]} />
@@ -3701,7 +3701,7 @@ export default function FinanceApp() {
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
                       <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
                       <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
                       <Legend />
                       {reportFilter === 'balance' ? (
                         <Line type="monotone" dataKey="Saldo" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5, fill: '#3b82f6' }} />
@@ -3721,7 +3721,7 @@ export default function FinanceApp() {
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
                       <XAxis dataKey="name" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
                       <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', color: darkMode ? '#fff' : '#000' }} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
                       {reportFilter === 'balance' ? (
                         <>
                           <Legend />
