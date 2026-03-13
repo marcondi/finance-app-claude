@@ -1532,6 +1532,41 @@ export default function FinanceApp() {
 
   const balance = income - expenses;
 
+  // Transações do mês anterior para calcular variação %
+  const prevMonthTransactions = useMemo(() => {
+    if (!currentUser) return [];
+    const prevDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    const year = prevDate.getFullYear();
+    const month = prevDate.getMonth();
+    return transactions.filter(t => {
+      if (t.user_id !== currentUser.id) return false;
+      const [y, m] = t.date.split('-').map(Number);
+      return y === year && m - 1 === month;
+    });
+  }, [transactions, currentUser, currentDate]);
+
+  const prevIncome = useMemo(() =>
+    prevMonthTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  , [prevMonthTransactions]);
+
+  const prevExpenses = useMemo(() =>
+    prevMonthTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  , [prevMonthTransactions]);
+
+  const prevBalance = prevIncome - prevExpenses;
+
+  // Calcula badge de variação: { pct, up, isFirst }
+  const calcVariation = (current, previous) => {
+    if (previous === 0 && current === 0) return null;
+    if (previous === 0) return { pct: 100, up: true, isFirst: true };
+    const pct = ((current - previous) / Math.abs(previous)) * 100;
+    return { pct: Math.abs(pct).toFixed(1), up: pct >= 0, isFirst: false };
+  };
+
+  const incomeVar   = calcVariation(income,   prevIncome);
+  const expensesVar = calcVariation(expenses, prevExpenses);
+  const balanceVar  = calcVariation(balance,  prevBalance);
+
   const savingsAmount = useMemo(() => {
     const savingsCategory = categories.find(c => 
       c.name.toLowerCase() === 'poupança' || c.name.toLowerCase() === 'poupanca'
@@ -2483,65 +2518,74 @@ export default function FinanceApp() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               {/* Card Entradas - Clicável */}
               <button
-                onClick={() => {
-                  setView('transactions');
-                  setFilterType('income');
-                }}
+                onClick={() => { setView('transactions'); setFilterType('income'); }}
                 className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white hover:bg-gray-50'} rounded-xl shadow-lg p-6 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl cursor-pointer text-left`}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    Entradas
-                  </h3>
+                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Entradas</h3>
                   <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg">
                     <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-green-600">
-                  {formatCurrency(income)}
-                </p>
+                <p className="text-3xl font-bold text-green-600 mb-3">{formatCurrency(income)}</p>
+                {incomeVar === null ? null : incomeVar.isFirst ? (
+                  <span className={`text-xs font-medium px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>Primeiro registro</span>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-xs font-semibold px-2 py-1 rounded ${incomeVar.up ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'}`}>
+                      {incomeVar.up ? '▲' : '▼'} {incomeVar.pct}%
+                    </span>
+                    <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>vs mês anterior</span>
+                  </div>
+                )}
               </button>
 
               {/* Card Saídas - Clicável */}
               <button
-                onClick={() => {
-                  setView('transactions');
-                  setFilterType('expense');
-                }}
+                onClick={() => { setView('transactions'); setFilterType('expense'); }}
                 className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white hover:bg-gray-50'} rounded-xl shadow-lg p-6 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl cursor-pointer text-left`}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    Saídas
-                  </h3>
+                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Saídas</h3>
                   <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg">
                     <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-red-600">
-                  {formatCurrency(expenses)}
-                </p>
+                <p className="text-3xl font-bold text-red-600 mb-3">{formatCurrency(expenses)}</p>
+                {expensesVar === null ? null : expensesVar.isFirst ? (
+                  <span className={`text-xs font-medium px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>Primeiro registro</span>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-xs font-semibold px-2 py-1 rounded ${expensesVar.up ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'}`}>
+                      {expensesVar.up ? '▲' : '▼'} {expensesVar.pct}%
+                    </span>
+                    <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>vs mês anterior</span>
+                  </div>
+                )}
               </button>
 
               {/* Card Saldo - Clicável */}
               <button
-                onClick={() => {
-                  setView('transactions');
-                  setFilterType('all');
-                }}
+                onClick={() => { setView('transactions'); setFilterType('all'); }}
                 className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white hover:bg-gray-50'} rounded-xl shadow-lg p-6 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl cursor-pointer text-left`}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    Saldo
-                  </h3>
+                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Saldo</h3>
                   <div className={`${balance >= 0 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-red-100 dark:bg-red-900/30'} p-2 rounded-lg`}>
                     <DollarSign className={`w-5 h-5 ${balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`} />
                   </div>
                 </div>
-                <p className={`text-3xl font-bold ${balance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                  {formatCurrency(balance)}
-                </p>
+                <p className={`text-3xl font-bold mb-3 ${balance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatCurrency(balance)}</p>
+                {balanceVar === null ? null : balanceVar.isFirst ? (
+                  <span className={`text-xs font-medium px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>Primeiro registro</span>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-xs font-semibold px-2 py-1 rounded ${balanceVar.up ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'}`}>
+                      {balanceVar.up ? '▲' : '▼'} {balanceVar.pct}%
+                    </span>
+                    <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>vs mês anterior</span>
+                  </div>
+                )}
               </button>
             </div>
 
