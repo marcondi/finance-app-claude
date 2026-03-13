@@ -2864,7 +2864,6 @@ export default function FinanceApp() {
                     Saidas
                   </button>
                 </div>
-              </div>
 
                 {/* Campo de busca */}
                 <div className="mt-3 relative">
