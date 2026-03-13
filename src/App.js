@@ -1583,7 +1583,7 @@ export default function FinanceApp() {
 
   const savingsAmount = useMemo(() => {
     const savingsCategory = categories.find(c => 
-      c.name.toLowerCase() === 'poupança' || c.name.toLowerCase() === 'poupanca'
+      c.name.toLowerCase() === 'poupança' || c.name.toLowerCase() === 'poupança'
     );
     
     if (!savingsCategory) return 0;
@@ -1848,7 +1848,7 @@ export default function FinanceApp() {
           </style>
         </head>
         <body>
-          <h1>Relatorio Financeiro</h1>
+          <h1>Relatório Financeiro</h1>
           <p class="periodo">Período: ${periodo}</p>
           
           <h2>Resumo</h2>
@@ -1936,11 +1936,11 @@ export default function FinanceApp() {
         };
       });
       
-      const wsTransacoes = XLSX.utils.json_to_sheet(transData);
+      const wsTransações = XLSX.utils.json_to_sheet(transData);
       
       // Adicionar ref de tabela para Excel reconhecer
-      if (!wsTransacoes['!ref']) {
-        wsTransacoes['!ref'] = 'A1:E' + (transData.length + 1);
+      if (!wsTransações['!ref']) {
+        wsTransações['!ref'] = 'A1:E' + (transData.length + 1);
       }
       
       // Aba 3: Categorias
@@ -1955,11 +1955,11 @@ export default function FinanceApp() {
       // Criar workbook
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
-      XLSX.utils.book_append_sheet(wb, wsTransacoes, 'Transações');
+      XLSX.utils.book_append_sheet(wb, wsTransações, 'Transações');
       XLSX.utils.book_append_sheet(wb, wsCategorias, 'Categorias');
       
       // Exportar
-      const fileName = `relatorio-${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}.xlsx`;
+      const fileName = `relatório-${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}.xlsx`;
       XLSX.writeFile(wb, fileName);
       
       showToast('Relatório Excel exportado com sucesso!', 'success');
@@ -1976,7 +1976,7 @@ export default function FinanceApp() {
     try {
       const mes = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
       const gastos = expensesByCategory.slice(0, 5).map(c => c.name + ': ' + formatCurrency(c.value)).join(', ');
-      const resumo = 'Mes: ' + mes + '\nEntradas: ' + formatCurrency(income) + '\nSaidas: ' + formatCurrency(expenses) + '\nSaldo: ' + formatCurrency(income - expenses) + '\nPrincipais gastos: ' + (gastos || 'nenhum') + '\nFoco desta analise: ' + foco;
+      const resumo = 'Mes: ' + mes + '\nEntradas: ' + formatCurrency(income) + '\nSaídas: ' + formatCurrency(expenses) + '\nSaldo: ' + formatCurrency(income - expenses) + '\nPrincipais gastos: ' + (gastos || 'nenhum') + '\nFoco desta analise: ' + foco;
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || '';
       const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://oooegbbvrwifilavlvgt.supabase.co';
@@ -2033,7 +2033,7 @@ export default function FinanceApp() {
   };
 
   const deleteTransaction = async (id) => {
-    const confirmed = window.confirm('Deseja realmente excluir esta transacao? Esta acao nao pode ser desfeita.');
+    const confirmed = window.confirm('Deseja realmente excluir esta transacao? Esta acao não pode ser desfeita.');
     if (!confirmed) return;
 
     try {
@@ -2757,7 +2757,7 @@ export default function FinanceApp() {
                     </div>
                     <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       {savingsAmount >= savingsGoal 
-                        ? 'Parabens! Voce atingiu sua meta de poupanca.' 
+                        ? 'Parabéns! Você atingiu sua meta de poupança.' 
                         : `Faltam ${formatCurrency(savingsGoal - savingsAmount)} para atingir a meta`}
                     </p>
                   </div>
@@ -2768,7 +2768,7 @@ export default function FinanceApp() {
               ) : (
                 <div>
                   <p className={`text-sm mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Defina uma meta mensal de poupanca para acompanhar seu progresso.
+                    Defina uma meta mensal de poupança para acompanhar seu progresso.
                   </p>
                   <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                     Crie lancamentos na categoria "Poupanca" e veja sua evolucao aqui.
@@ -2862,7 +2862,7 @@ export default function FinanceApp() {
                         : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    Saidas
+                    Saídas
                   </button>
                 </div>
 
@@ -3618,7 +3618,7 @@ export default function FinanceApp() {
           return (
             <div>
               <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                Relatorios
+                Relatórios
               </h2>
 
               {/* Chart type selector + filter */}
