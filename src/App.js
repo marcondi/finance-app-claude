@@ -1593,7 +1593,7 @@ export default function FinanceApp() {
 
   const expensesByCategory = useMemo(() => {
     const categoryMap = new Map();
-    
+
     currentMonthTransactions
       .filter(t => t.type === 'expense')
       .forEach(t => {
@@ -1601,14 +1601,21 @@ export default function FinanceApp() {
         categoryMap.set(t.category_id, current + t.amount);
       });
 
-    return Array.from(categoryMap.entries()).map(([categoryId, amount]) => {
+    const all = Array.from(categoryMap.entries()).map(([categoryId, amount]) => {
       const category = categories.find(c => c.id === categoryId);
       return {
         name: category?.name || 'Sem categoria',
         value: amount,
         color: category?.color || '#666'
       };
-    });
+    }).sort((a, b) => b.value - a.value);
+
+    // Top 6 + agrupar restante em "Outros"
+    if (all.length <= 6) return all;
+    const top6 = all.slice(0, 6);
+    const others = all.slice(6);
+    const othersValue = others.reduce((s, c) => s + c.value, 0);
+    return [...top6, { name: `Outros (${others.length})`, value: othersValue, color: '#9ca3af' }];
   }, [currentMonthTransactions, categories]);
 
   const upcomingDueDates = useMemo(() => {
@@ -2634,15 +2641,22 @@ export default function FinanceApp() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value) => formatCurrency(value)}
+                        formatter={(value, name) => [formatCurrency(value), name]}
                         contentStyle={{
                           backgroundColor: darkMode ? '#1f2937' : '#ffffff',
-                          border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                          border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb',
                           borderRadius: '8px',
-                          color: darkMode ? '#ffffff' : '#000000'
+                          color: darkMode ? '#f9fafb' : '#111827',
+                          fontSize: '13px',
                         }}
+                        labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }}
+                        itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }}
                       />
-                      <Legend />
+                      <Legend
+                        formatter={(value) => (
+                          <span style={{ color: darkMode ? '#d1d5db' : '#374151', fontSize: '13px' }}>{value}</span>
+                        )}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
