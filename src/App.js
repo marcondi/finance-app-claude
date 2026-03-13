@@ -115,6 +115,18 @@ export default function FinanceApp() {
   const [reportFilter, setReportFilter] = useState('expenses-category');
   const [reportChart, setReportChart] = useState('pie');
 
+  // ── Sistema de Toast (substitui alert()) ─────────────────────────────────
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = (message, type = 'success') => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev.slice(-2), { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  };
+
+  const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Verificar sessao existente ao abrir o app - pula tela de login se ja logado
   useEffect(() => {
     const restoreSession = async () => {
@@ -424,7 +436,7 @@ export default function FinanceApp() {
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      alert('Erro ao carregar dados: ' + error.message);
+      showToast('Erro ao carregar dados: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -452,7 +464,7 @@ export default function FinanceApp() {
         if (error) throw error;
       } catch (error) {
         console.error('Erro no login com Google:', error);
-        alert('Erro ao fazer login com Google: ' + error.message);
+        showToast('Erro ao fazer login com Google: ' + error.message, 'error');
       }
     };
 
@@ -501,7 +513,7 @@ export default function FinanceApp() {
             }
           } catch (error) {
             console.error('Erro ao processar login Google:', error);
-            alert('Erro ao processar login: ' + error.message);
+            showToast('Erro ao processar login: ' + error.message, 'error');
           }
         }
       };
@@ -523,15 +535,15 @@ export default function FinanceApp() {
           if (users && users.length > 0) {
             setCurrentUser(users[0]);
           } else {
-            alert('Credenciais inválidas!');
+            showToast('E-mail ou senha incorretos.', 'warning');
           }
         } catch (error) {
           console.error('Erro no login:', error);
-          alert('Erro ao fazer login: ' + error.message);
+          showToast('Erro ao fazer login: ' + error.message, 'error');
         }
       } else {
         if (!name || !email || !password) {
-          alert('Preencha todos os campos!');
+          showToast('Preencha todos os campos.', 'warning');
           return;
         }
 
@@ -544,7 +556,7 @@ export default function FinanceApp() {
           if (checkError) throw checkError;
 
           if (existingUser && existingUser.length > 0) {
-            alert('Este e-mail já está cadastrado!');
+            showToast('Este e-mail já está cadastrado.', 'warning');
             return;
           }
 
@@ -565,29 +577,29 @@ export default function FinanceApp() {
           setCurrentUser(data[0]);
         } catch (error) {
           console.error('Erro ao cadastrar:', error);
-          alert('Erro ao criar conta: ' + error.message);
+          showToast('Erro ao criar conta: ' + error.message, 'error');
         }
       }
     };
 
     const handleForgotPassword = async () => {
       if (!email) {
-        alert('Digite seu e-mail para recuperar a senha!');
+        showToast('Digite seu e-mail para recuperar a senha.', 'warning');
         return;
       }
 
       if (!newPassword || !confirmPassword) {
-        alert('Preencha os campos de nova senha!');
+        showToast('Preencha os campos de nova senha.', 'warning');
         return;
       }
 
       if (newPassword !== confirmPassword) {
-        alert('As senhas não coincidem!');
+        showToast('As senhas não coincidem.', 'warning');
         return;
       }
 
       if (newPassword.length < 6) {
-        alert('A senha deve ter no mínimo 6 caracteres!');
+        showToast('A senha deve ter no mínimo 6 caracteres.', 'warning');
         return;
       }
 
@@ -600,7 +612,7 @@ export default function FinanceApp() {
         if (findError) throw findError;
 
         if (!users || users.length === 0) {
-          alert('E-mail não encontrado!');
+          showToast('E-mail não encontrado.', 'warning');
           return;
         }
 
@@ -611,14 +623,14 @@ export default function FinanceApp() {
 
         if (updateError) throw updateError;
 
-        alert('Senha redefinida com sucesso!');
+        showToast('Senha redefinida com sucesso!', 'success');
         setIsForgotPassword(false);
         setEmail('');
         setNewPassword('');
         setConfirmPassword('');
       } catch (error) {
         console.error('Erro ao redefinir senha:', error);
-        alert('Erro ao redefinir senha: ' + error.message);
+        showToast('Erro ao redefinir senha: ' + error.message, 'error');
       }
     };
 
@@ -815,7 +827,7 @@ export default function FinanceApp() {
       if (error) throw error;
     } catch (error) {
       console.error('Erro no login com Google:', error);
-      alert('Erro ao fazer login com Google: ' + error.message);
+      showToast('Erro ao fazer login com Google: ' + error.message, 'error');
     }
   };
 
@@ -1027,13 +1039,13 @@ export default function FinanceApp() {
 
     const handleSubmit = async () => {
       if (!amount || !description || !categoryId) {
-        alert('Preencha todos os campos!');
+        showToast('Preencha todos os campos.', 'warning');
         return;
       }
 
       const parsedAmount = Number(amount);
       if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-        alert('Digite um valor valido maior que zero.');
+        showToast('Digite um valor válido maior que zero.', 'warning');
         return;
       }
 
@@ -1138,7 +1150,7 @@ export default function FinanceApp() {
         resetForm();
       } catch (error) {
         console.error('Erro ao salvar transação:', error);
-        alert('Erro ao salvar: ' + error.message);
+        showToast('Erro ao salvar: ' + error.message, 'error');
       }
     };
 
@@ -1369,7 +1381,7 @@ export default function FinanceApp() {
 
     const handleSubmit = async () => {
       if (!name) {
-        alert('Digite um nome para a categoria!');
+        showToast('Digite um nome para a categoria.', 'warning');
         return;
       }
 
@@ -1411,7 +1423,7 @@ export default function FinanceApp() {
         setType('expense');
       } catch (error) {
         console.error('Erro ao salvar categoria:', error);
-        alert('Erro ao salvar categoria: ' + error.message);
+        showToast('Erro ao salvar categoria: ' + error.message, 'error');
       }
     };
 
@@ -1644,7 +1656,7 @@ export default function FinanceApp() {
   const handleExport = async () => {
     try {
       if (!currentUser) {
-        alert('Erro: usuario nao identificado. Faca login novamente.');
+        showToast('Usuário não identificado. Faça login novamente.', 'error');
         return;
       }
 
@@ -1667,10 +1679,10 @@ export default function FinanceApp() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      alert('Backup criado com sucesso!');
+      showToast('Backup criado com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao exportar:', error);
-      alert('Erro ao criar backup: ' + error.message);
+      showToast('Erro ao criar backup: ' + error.message, 'error');
     }
   };
 
@@ -1786,12 +1798,12 @@ export default function FinanceApp() {
           setScheduled([...scheduled, ...insertedSched]);
         }
 
-        alert(`Dados importados com sucesso!\n\n${mappedTransactions.length} transacoes\n${newCategories.length} novas categorias`);
+        showToast(`Importação concluída: ${mappedTransactions.length} transações e ${newCategories.length} categorias.`, 'success');
         
         await loadUserData();
       } catch (error) {
         console.error('Erro na importação:', error);
-        alert('Erro ao importar dados: ' + error.message);
+        showToast('Erro ao importar dados: ' + error.message, 'error');
       }
     };
     reader.readAsText(file);
@@ -1881,10 +1893,10 @@ export default function FinanceApp() {
         printWindow.print();
       }, 250);
       
-      alert('Janela de impressao aberta! Use "Salvar como PDF" nas opcoes da impressora.');
+      showToast('Janela de impressão aberta. Use "Salvar como PDF".', 'success');
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
-      alert('Erro ao exportar PDF: ' + error.message);
+      showToast('Erro ao exportar PDF: ' + error.message, 'error');
     }
   };
 
@@ -1941,10 +1953,10 @@ export default function FinanceApp() {
       const fileName = `relatorio-${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}.xlsx`;
       XLSX.writeFile(wb, fileName);
       
-      alert('Relatorio Excel exportado com sucesso!\n\nDica: no Excel, selecione os dados e use Inserir > Tabela Dinamica.');
+      showToast('Relatório Excel exportado com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao exportar Excel:', error);
-      alert('Erro ao exportar Excel: ' + error.message);
+      showToast('Erro ao exportar Excel: ' + error.message, 'error');
     }
   };
 
@@ -2007,7 +2019,7 @@ export default function FinanceApp() {
       ));
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      alert('Erro ao atualizar status: ' + error.message);
+      showToast('Erro ao atualizar status: ' + error.message, 'error');
     }
   };
 
@@ -2026,7 +2038,7 @@ export default function FinanceApp() {
       setTransactions(prev => prev.filter(t => t.id !== id));
     } catch (error) {
       console.error('Erro ao excluir transação:', error);
-      alert('Erro ao excluir transação: ' + error.message);
+      showToast('Erro ao excluir transação: ' + error.message, 'error');
     }
   };
 
@@ -2036,7 +2048,7 @@ export default function FinanceApp() {
 
     const hasTransactions = transactions.some(t => t.category_id === id);
     if (hasTransactions) {
-      alert('Nao e possivel excluir uma categoria com transacoes associadas!');
+      showToast('Não é possível excluir uma categoria com transações associadas.', 'warning');
       return;
     }
 
@@ -2051,7 +2063,7 @@ export default function FinanceApp() {
       setCategories(prev => prev.filter(c => c.id !== id));
     } catch (error) {
       console.error('Erro ao excluir categoria:', error);
-      alert('Erro ao excluir categoria: ' + error.message);
+      showToast('Erro ao excluir categoria: ' + error.message, 'error');
     }
   };
 
@@ -2115,12 +2127,12 @@ export default function FinanceApp() {
 
       const result = await res.json();
       if (res.ok && result.success) {
-        alert('Relatorio enviado com sucesso para ' + currentUser.email + '!');
+        showToast('Relatório enviado para ' + currentUser.email, 'success');
       } else {
-        alert('Erro ao enviar: ' + JSON.stringify(result.error || result));
+        showToast('Erro ao enviar relatório. Tente novamente.', 'error');
       }
     } catch (err) {
-      alert('Erro: ' + err.message);
+      showToast('Erro: ' + err.message, 'error');
     } finally {
       setSendingReport(false);
     }
@@ -2132,7 +2144,7 @@ export default function FinanceApp() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.provider_token) {
-        alert('Faca login com Google para acessar o Calendar!');
+        showToast('Conecte sua conta Google para acessar o Calendar.', 'warning');
         return;
       }
 
@@ -2170,7 +2182,7 @@ export default function FinanceApp() {
       setCalendarEvents(data.items || []);
     } catch (error) {
       console.error('Erro:', error);
-      alert('Erro ao carregar eventos');
+      showToast('Erro ao carregar eventos do Google Calendar', 'error');
     } finally {
       setLoadingCalendar(false);
     }
@@ -3501,7 +3513,7 @@ export default function FinanceApp() {
                     setShowGoalModal(false);
                     setGoalInput('');
                   } else {
-                    alert('Por favor, digite um valor válido!');
+                    showToast('Digite um valor válido.', 'warning');
                   }
                 }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
@@ -3770,6 +3782,28 @@ export default function FinanceApp() {
           </div>
         </div>
       )}
+
+      {/* ── Toast container ─────────────────────────────────────────────── */}
+      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none" style={{minWidth: 300, maxWidth: 380}}>
+        {toasts.map(toast => (
+          <div key={toast.id} className="pointer-events-auto flex items-start gap-3 rounded-r-xl p-3 pr-4 shadow-lg"
+            style={{
+              background: darkMode ? '#1f2937' : '#ffffff',
+              border: `0.5px solid ${toastBorder[toast.type]}`,
+              borderLeft: `4px solid ${toastBorder[toast.type]}`,
+            }}
+          >
+            {toastIcons[toast.type]}
+            <div className="flex-1">
+              <p className={`text-sm font-semibold mb-0.5 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{toastLabel[toast.type]}</p>
+              <p className={`text-xs leading-snug ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{toast.message}</p>
+            </div>
+            <button onClick={() => removeToast(toast.id)} className={`ml-1 mt-0.5 ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
 
       {/* Botão flutuante + Nova Transação (apenas mobile, apenas logado) */}
       {currentUser && (
