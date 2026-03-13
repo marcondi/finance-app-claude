@@ -21,7 +21,11 @@ import {
   FileSpreadsheet,
   Settings,
   ChevronDown,
-  Mail
+  Mail,
+  LayoutDashboard,
+  ArrowLeftRight,
+  CalendarDays,
+  BarChart2
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { supabase } from './supabaseClient';
@@ -71,190 +75,6 @@ const formatDate = (date) => {
   const dateObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
   return dateObj.toLocaleDateString('pt-BR');
 };
-
-function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, categories, formatCurrency, setShowTransactionModal, setEditingTransaction, googlePhotoUrl, handleGoogleLogin }) {
-  const [selectedDay, setSelectedDay] = useState(null);
-  const [viewMonth, setViewMonth] = useState(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1));
-
-  const ano = viewMonth.getFullYear();
-  const mes = viewMonth.getMonth();
-  const primeiroDia = new Date(ano, mes, 1).getDay();
-  const diasNoMes = new Date(ano, mes + 1, 0).getDate();
-  const nomeMes = viewMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  const hoje = new Date();
-
-  // Mapear contas por dia
-  const contasPorDia = {};
-  scheduled.forEach(s => {
-    if (!s.due_date) return;
-    const [y, m, d] = s.due_date.split('-').map(Number);
-    if (y === ano && m - 1 === mes) {
-      if (!contasPorDia[d]) contasPorDia[d] = [];
-      contasPorDia[d].push({ ...s, _tipo: 'agendado' });
-    }
-  });
-  transactions.filter(t => t.is_recurring && t.type === 'expense').forEach(t => {
-    const [y, m, d] = t.date.split('-').map(Number);
-    if (y === ano && m - 1 === mes) {
-      if (!contasPorDia[d]) contasPorDia[d] = [];
-      contasPorDia[d].push({ ...t, _tipo: 'recorrente', description: t.description, amount: t.amount });
-    }
-  });
-
-  const contasDiaSelecionado = selectedDay ? (contasPorDia[selectedDay] || []) : [];
-  const totalMes = Object.values(contasPorDia).flat().reduce((s, c) => s + (c.amount || 0), 0);
-  const totalPago = Object.values(contasPorDia).flat().filter(c => c.is_paid).reduce((s, c) => s + (c.amount || 0), 0);
-
-  const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>📅 Agenda de Contas</h2>
-          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Suas contas agendadas e recorrentes do mês
-          </p>
-        </div>
-        {!googlePhotoUrl && (
-          <button
-            onClick={handleGoogleLogin}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
-          >
-            <span>🔗</span> Conectar Google Calendar
-          </button>
-        )}
-      </div>
-
-      {/* Resumo do mês */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {[
-          { label: 'Total do mês', value: formatCurrency(totalMes), color: 'text-gray-700', bg: darkMode ? 'bg-gray-800' : 'bg-white' },
-          { label: 'Já pago', value: formatCurrency(totalPago), color: 'text-green-500', bg: darkMode ? 'bg-gray-800' : 'bg-white' },
-          { label: 'A pagar', value: formatCurrency(totalMes - totalPago), color: 'text-orange-500', bg: darkMode ? 'bg-gray-800' : 'bg-white' },
-        ].map((item, i) => (
-          <div key={i} className={`${item.bg} rounded-xl shadow p-4 text-center`}>
-            <p className={`text-xs mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{item.label}</p>
-            <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Calendário */}
-      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4 mb-4`}>
-        {/* Header navegação */}
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={() => setViewMonth(new Date(ano, mes - 1, 1))}
-            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}>◄</button>
-          <h3 className={`text-lg font-bold capitalize ${darkMode ? 'text-white' : 'text-gray-800'}`}>{nomeMes}</h3>
-          <button onClick={() => setViewMonth(new Date(ano, mes + 1, 1))}
-            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}>►</button>
-        </div>
-
-        {/* Dias da semana */}
-        <div className="grid grid-cols-7 mb-2">
-          {diasSemana.map(d => (
-            <div key={d} className={`text-center text-xs font-semibold py-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{d}</div>
-          ))}
-        </div>
-
-        {/* Grid de dias */}
-        <div className="grid grid-cols-7 gap-1">
-          {Array.from({ length: primeiroDia }).map((_, i) => <div key={'e'+i} />)}
-          {Array.from({ length: diasNoMes }, (_, i) => i + 1).map(dia => {
-            const contas = contasPorDia[dia] || [];
-            const ehHoje = hoje.getDate() === dia && hoje.getMonth() === mes && hoje.getFullYear() === ano;
-            const temConta = contas.length > 0;
-            const todoPago = temConta && contas.every(c => c.is_paid);
-            const selecionado = selectedDay === dia;
-            return (
-              <button key={dia} onClick={() => setSelectedDay(selecionado ? null : dia)}
-                className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-all
-                  ${selecionado ? 'ring-2 ring-blue-500' : ''}
-                  ${ehHoje ? 'bg-blue-600 text-white' : temConta
-                    ? todoPago
-                      ? darkMode ? 'bg-green-900/40 text-green-300' : 'bg-green-50 text-green-700'
-                      : darkMode ? 'bg-orange-900/30 text-orange-300' : 'bg-orange-50 text-orange-700'
-                    : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-50 text-gray-700'
-                  }`}
-              >
-                {dia}
-                {temConta && (
-                  <span className={`text-[9px] font-bold ${ehHoje ? 'text-white/80' : todoPago ? 'text-green-500' : 'text-orange-500'}`}>
-                    {contas.length}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Legenda */}
-        <div className="flex gap-4 mt-3 justify-center flex-wrap">
-          {[
-            { color: 'bg-blue-600', label: 'Hoje' },
-            { color: darkMode ? 'bg-orange-900/60' : 'bg-orange-50 border border-orange-200', label: 'A pagar' },
-            { color: darkMode ? 'bg-green-900/60' : 'bg-green-50 border border-green-200', label: 'Pago' },
-          ].map((l, i) => (
-            <div key={i} className="flex items-center gap-1">
-              <span className={`w-3 h-3 rounded ${l.color}`} />
-              <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{l.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Contas do dia selecionado */}
-      {selectedDay && (
-        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
-          <h4 className={`font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-            Contas do dia {selectedDay}/{String(mes+1).padStart(2,'0')}/{ano}
-          </h4>
-          {contasDiaSelecionado.length === 0 ? (
-            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Nenhuma conta neste dia.</p>
-          ) : (
-            <div className="space-y-2">
-              {contasDiaSelecionado.map((c, i) => {
-                const cat = categories.find(cat => cat.id === c.category_id);
-                return (
-                  <div key={i} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className="flex items-center gap-3">
-                      {cat && <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: cat.color }} />}
-                      <div>
-                        <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>{c.description}</p>
-                        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {c._tipo === 'recorrente' ? '🔄 Recorrente' : '📌 Agendada'}
-                          {c.is_paid ? ' · ✅ Pago' : ' · ⏳ A pagar'}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-sm font-bold text-red-500">{formatCurrency(c.amount)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Se não tem contas no mês */}
-      {Object.keys(contasPorDia).length === 0 && (
-        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-10 text-center`}>
-          <div className="text-5xl mb-3">📅</div>
-          <p className={`text-lg font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Nenhuma conta agendada neste mês</p>
-          <p className={`text-sm mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Adicione uma transação com lançamento recorrente ou use o tipo "Agendado"</p>
-          <button
-            onClick={() => { setEditingTransaction(null); setShowTransactionModal(true); }}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-          >
-            + Nova Transação
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 
 export default function FinanceApp() {
   const [darkMode, setDarkMode] = useState(false);
@@ -309,9 +129,7 @@ export default function FinanceApp() {
 
           if (existingUser && existingUser.length > 0) {
             setCurrentUser(existingUser[0]);
-            // Só seta foto Google se o login foi realmente via Google OAuth
-            const isGoogle = googleUser.app_metadata?.provider === 'google';
-            setGooglePhotoUrl(isGoogle ? (googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null) : null);
+            setGooglePhotoUrl(googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null);
           }
         }
       } catch (e) {
@@ -341,11 +159,6 @@ export default function FinanceApp() {
         if (!isActive) return;
 
         const { data: { session } } = await supabase.auth.getSession();
-
-        // Só carrega Google Calendar para usuários que logaram via Google OAuth
-        const isGoogle = session?.user?.app_metadata?.provider === 'google';
-        if (!isGoogle) return;
-
         if (session?.provider_token || attempts >= 10) {
           // loadBannerEvents retorna os eventos e ja dispara notificacoes
           // evitando depender do state todayEvents/tomorrowEvents que ainda esta vazio
@@ -666,8 +479,7 @@ export default function FinanceApp() {
             if (existingUser && existingUser.length > 0) {
               // Usuário já existe
               setCurrentUser(existingUser[0]);
-              const isGoogle = googleUser.app_metadata?.provider === 'google';
-              setGooglePhotoUrl(isGoogle ? (googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null) : null);
+              setGooglePhotoUrl(googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null);
             } else {
               // Criar novo usuário
               const newUser = {
@@ -685,8 +497,7 @@ export default function FinanceApp() {
               if (error) throw error;
 
               setCurrentUser(data[0]);
-              const isGoogle2 = googleUser.app_metadata?.provider === 'google';
-              setGooglePhotoUrl(isGoogle2 ? (googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null) : null);
+              setGooglePhotoUrl(googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null);
             }
           } catch (error) {
             console.error('Erro ao processar login Google:', error);
@@ -1008,6 +819,188 @@ export default function FinanceApp() {
     }
   };
 
+  const AgendaCalendario = ({ darkMode, scheduled, transactions, currentDate, categories, formatCurrency, setShowTransactionModal, setEditingTransaction, googlePhotoUrl, handleGoogleLogin }) => {
+    const [selectedDay, setSelectedDay] = useState(null);
+    const [viewMonth, setViewMonth] = useState(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1));
+
+    const ano = viewMonth.getFullYear();
+    const mes = viewMonth.getMonth();
+    const primeiroDia = new Date(ano, mes, 1).getDay();
+    const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+    const nomeMes = viewMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const hoje = new Date();
+
+    // Mapear contas por dia
+    const contasPorDia = {};
+    scheduled.forEach(s => {
+      if (!s.due_date) return;
+      const [y, m, d] = s.due_date.split('-').map(Number);
+      if (y === ano && m - 1 === mes) {
+        if (!contasPorDia[d]) contasPorDia[d] = [];
+        contasPorDia[d].push({ ...s, _tipo: 'agendado' });
+      }
+    });
+    transactions.filter(t => t.is_recurring && t.type === 'expense').forEach(t => {
+      const [y, m, d] = t.date.split('-').map(Number);
+      if (y === ano && m - 1 === mes) {
+        if (!contasPorDia[d]) contasPorDia[d] = [];
+        contasPorDia[d].push({ ...t, _tipo: 'recorrente', description: t.description, amount: t.amount });
+      }
+    });
+
+    const contasDiaSelecionado = selectedDay ? (contasPorDia[selectedDay] || []) : [];
+    const totalMes = Object.values(contasPorDia).flat().reduce((s, c) => s + (c.amount || 0), 0);
+    const totalPago = Object.values(contasPorDia).flat().filter(c => c.is_paid).reduce((s, c) => s + (c.amount || 0), 0);
+
+    const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>📅 Agenda de Contas</h2>
+            <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Suas contas agendadas e recorrentes do mês
+            </p>
+          </div>
+          {!googlePhotoUrl && (
+            <button
+              onClick={handleGoogleLogin}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+            >
+              <span>🔗</span> Conectar Google Calendar
+            </button>
+          )}
+        </div>
+
+        {/* Resumo do mês */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {[
+            { label: 'Total do mês', value: formatCurrency(totalMes), color: 'text-gray-700', bg: darkMode ? 'bg-gray-800' : 'bg-white' },
+            { label: 'Já pago', value: formatCurrency(totalPago), color: 'text-green-500', bg: darkMode ? 'bg-gray-800' : 'bg-white' },
+            { label: 'A pagar', value: formatCurrency(totalMes - totalPago), color: 'text-orange-500', bg: darkMode ? 'bg-gray-800' : 'bg-white' },
+          ].map((item, i) => (
+            <div key={i} className={`${item.bg} rounded-xl shadow p-4 text-center`}>
+              <p className={`text-xs mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{item.label}</p>
+              <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Calendário */}
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4 mb-4`}>
+          {/* Header navegação */}
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={() => setViewMonth(new Date(ano, mes - 1, 1))}
+              className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}>◄</button>
+            <h3 className={`text-lg font-bold capitalize ${darkMode ? 'text-white' : 'text-gray-800'}`}>{nomeMes}</h3>
+            <button onClick={() => setViewMonth(new Date(ano, mes + 1, 1))}
+              className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}>►</button>
+          </div>
+
+          {/* Dias da semana */}
+          <div className="grid grid-cols-7 mb-2">
+            {diasSemana.map(d => (
+              <div key={d} className={`text-center text-xs font-semibold py-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{d}</div>
+            ))}
+          </div>
+
+          {/* Grid de dias */}
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: primeiroDia }).map((_, i) => <div key={'e'+i} />)}
+            {Array.from({ length: diasNoMes }, (_, i) => i + 1).map(dia => {
+              const contas = contasPorDia[dia] || [];
+              const ehHoje = hoje.getDate() === dia && hoje.getMonth() === mes && hoje.getFullYear() === ano;
+              const temConta = contas.length > 0;
+              const todoPago = temConta && contas.every(c => c.is_paid);
+              const selecionado = selectedDay === dia;
+              return (
+                <button key={dia} onClick={() => setSelectedDay(selecionado ? null : dia)}
+                  className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-all
+                    ${selecionado ? 'ring-2 ring-blue-500' : ''}
+                    ${ehHoje ? 'bg-blue-600 text-white' : temConta
+                      ? todoPago
+                        ? darkMode ? 'bg-green-900/40 text-green-300' : 'bg-green-50 text-green-700'
+                        : darkMode ? 'bg-orange-900/30 text-orange-300' : 'bg-orange-50 text-orange-700'
+                      : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-50 text-gray-700'
+                    }`}
+                >
+                  {dia}
+                  {temConta && (
+                    <span className={`text-[9px] font-bold ${ehHoje ? 'text-white/80' : todoPago ? 'text-green-500' : 'text-orange-500'}`}>
+                      {contas.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Legenda */}
+          <div className="flex gap-4 mt-3 justify-center flex-wrap">
+            {[
+              { color: 'bg-blue-600', label: 'Hoje' },
+              { color: darkMode ? 'bg-orange-900/60' : 'bg-orange-50 border border-orange-200', label: 'A pagar' },
+              { color: darkMode ? 'bg-green-900/60' : 'bg-green-50 border border-green-200', label: 'Pago' },
+            ].map((l, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <span className={`w-3 h-3 rounded ${l.color}`} />
+                <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Contas do dia selecionado */}
+        {selectedDay && (
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
+            <h4 className={`font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+              Contas do dia {selectedDay}/{String(mes+1).padStart(2,'0')}/{ano}
+            </h4>
+            {contasDiaSelecionado.length === 0 ? (
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Nenhuma conta neste dia.</p>
+            ) : (
+              <div className="space-y-2">
+                {contasDiaSelecionado.map((c, i) => {
+                  const cat = categories.find(cat => cat.id === c.category_id);
+                  return (
+                    <div key={i} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className="flex items-center gap-3">
+                        {cat && <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: cat.color }} />}
+                        <div>
+                          <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>{c.description}</p>
+                          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {c._tipo === 'recorrente' ? '🔄 Recorrente' : '📌 Agendada'}
+                            {c.is_paid ? ' · ✅ Pago' : ' · ⏳ A pagar'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-red-500">{formatCurrency(c.amount)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Se não tem contas no mês */}
+        {Object.keys(contasPorDia).length === 0 && (
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-10 text-center`}>
+            <div className="text-5xl mb-3">📅</div>
+            <p className={`text-lg font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Nenhuma conta agendada neste mês</p>
+            <p className={`text-sm mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Adicione uma transação com lançamento recorrente ou use o tipo "Agendado"</p>
+            <button
+              onClick={() => { setEditingTransaction(null); setShowTransactionModal(true); }}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+            >
+              + Nova Transação
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const TransactionModal = () => {
     const [type, setType] = useState('expense');
@@ -2104,7 +2097,7 @@ export default function FinanceApp() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.provider_token) {
-        console.warn('fetchCalendarEvents: sem provider_token Google, abortando.');
+        alert('Faca login com Google para acessar o Calendar!');
         return;
       }
 
@@ -2212,17 +2205,23 @@ export default function FinanceApp() {
               </div>
 
               <nav className="hidden md:flex items-center gap-2">
-                {['dashboard', 'transactions', 'scheduled', 'reports'].map(v => (
+                {[
+                  { key: 'dashboard',    label: 'Dashboard',  Icon: LayoutDashboard },
+                  { key: 'transactions', label: 'Transações', Icon: ArrowLeftRight  },
+                  { key: 'scheduled',    label: 'Agenda',     Icon: CalendarDays    },
+                  { key: 'reports',      label: 'Relatórios', Icon: BarChart2       },
+                ].map(({ key, label, Icon }) => (
                   <button
-                    key={v}
-                    onClick={() => setView(v)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      view === v
+                    key={key}
+                    onClick={() => setView(key)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      view === key
                         ? 'bg-blue-600 text-white'
                         : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
-                    {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : v === 'scheduled' ? 'Agenda' : 'Relatórios'}
+                    <Icon className="w-4 h-4" />
+                    {label}
                   </button>
                 ))}
                 {/* Seletor de mês no lugar de Categorias */}
@@ -2335,17 +2334,23 @@ export default function FinanceApp() {
           </div>
 
           <div className="flex md:hidden gap-2 mt-4 overflow-x-auto">
-            {['dashboard', 'transactions', 'scheduled', 'reports'].map(v => (
+            {[
+              { key: 'dashboard',    label: 'Dashboard',  Icon: LayoutDashboard },
+              { key: 'transactions', label: 'Transações', Icon: ArrowLeftRight  },
+              { key: 'scheduled',    label: 'Agenda',     Icon: CalendarDays    },
+              { key: 'reports',      label: 'Relatórios', Icon: BarChart2       },
+            ].map(({ key, label, Icon }) => (
               <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                  view === v
+                key={key}
+                onClick={() => setView(key)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                  view === key
                     ? 'bg-blue-600 text-white'
                     : darkMode ? 'text-gray-300 bg-gray-700' : 'text-gray-600 bg-gray-100'
                 }`}
               >
-                {v === 'dashboard' ? 'Dashboard' : v === 'transactions' ? 'Transações' : v === 'scheduled' ? 'Agenda' : 'Relatórios'}
+                <Icon className="w-4 h-4" />
+                {label}
               </button>
             ))}
             {/* Seletor de mês mobile */}
