@@ -99,6 +99,7 @@ export default function FinanceApp() {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [filterType, setFilterType] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -197,7 +198,7 @@ export default function FinanceApp() {
   }, [currentUser]);
 
   // Resetar pagina ao mudar filtro ou ordenacao
-  useEffect(() => { setCurrentPage(1); }, [filterType, sortBy]);
+  useEffect(() => { setCurrentPage(1); }, [filterType, sortBy, searchTerm]);
 
   // PWA install prompt
   useEffect(() => {
@@ -2864,6 +2865,28 @@ export default function FinanceApp() {
                   </button>
                 </div>
               </div>
+
+                {/* Campo de busca */}
+                <div className="mt-3 relative">
+                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por descricao..."
+                    className={`w-full pl-9 pr-9 py-2 rounded-lg text-sm border transition-colors outline-none ${
+                      darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500'
+                        : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-blue-400'
+                    }`}
+                  />
+                  {searchTerm && (
+                    <button onClick={() => setSearchTerm('')} className={`absolute right-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg overflow-hidden`}>
@@ -2931,6 +2954,13 @@ export default function FinanceApp() {
 
                       if (filterType !== 'all') {
                         filtered = filtered.filter(t => t.type === filterType);
+                      }
+
+                      if (searchTerm.trim()) {
+                        const term = searchTerm.trim().toLowerCase();
+                        filtered = filtered.filter(t =>
+                          (t.description || '').toLowerCase().includes(term)
+                        );
                       }
 
                       filtered = [...filtered].sort((a, b) => {
