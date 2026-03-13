@@ -83,6 +83,7 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
   const nomeMes = viewMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const hoje = new Date();
 
+  // Mapear contas por dia
   const contasPorDia = {};
   scheduled.forEach(s => {
     if (!s.due_date) return;
@@ -103,6 +104,7 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
   const contasDiaSelecionado = selectedDay ? (contasPorDia[selectedDay] || []) : [];
   const totalMes = Object.values(contasPorDia).flat().reduce((s, c) => s + (c.amount || 0), 0);
   const totalPago = Object.values(contasPorDia).flat().filter(c => c.is_paid).reduce((s, c) => s + (c.amount || 0), 0);
+
   const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
   return (
@@ -123,6 +125,8 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
           </button>
         )}
       </div>
+
+      {/* Resumo do mês */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
           { label: 'Total do mês', value: formatCurrency(totalMes), color: 'text-gray-700', bg: darkMode ? 'bg-gray-800' : 'bg-white' },
@@ -135,7 +139,10 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
           </div>
         ))}
       </div>
+
+      {/* Calendário */}
       <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4 mb-4`}>
+        {/* Header navegação */}
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => setViewMonth(new Date(ano, mes - 1, 1))}
             className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}>◄</button>
@@ -143,11 +150,15 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
           <button onClick={() => setViewMonth(new Date(ano, mes + 1, 1))}
             className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}>►</button>
         </div>
+
+        {/* Dias da semana */}
         <div className="grid grid-cols-7 mb-2">
           {diasSemana.map(d => (
             <div key={d} className={`text-center text-xs font-semibold py-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{d}</div>
           ))}
         </div>
+
+        {/* Grid de dias */}
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: primeiroDia }).map((_, i) => <div key={'e'+i} />)}
           {Array.from({ length: diasNoMes }, (_, i) => i + 1).map(dia => {
@@ -177,6 +188,8 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
             );
           })}
         </div>
+
+        {/* Legenda */}
         <div className="flex gap-4 mt-3 justify-center flex-wrap">
           {[
             { color: 'bg-blue-600', label: 'Hoje' },
@@ -190,6 +203,8 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
           ))}
         </div>
       </div>
+
+      {/* Contas do dia selecionado */}
       {selectedDay && (
         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
           <h4 className={`font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -221,6 +236,8 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
           )}
         </div>
       )}
+
+      {/* Se não tem contas no mês */}
       {Object.keys(contasPorDia).length === 0 && (
         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-10 text-center`}>
           <div className="text-5xl mb-3">📅</div>
@@ -237,6 +254,7 @@ function AgendaCalendario({ darkMode, scheduled, transactions, currentDate, cate
     </div>
   );
 }
+
 
 export default function FinanceApp() {
   const [darkMode, setDarkMode] = useState(false);
@@ -291,8 +309,9 @@ export default function FinanceApp() {
 
           if (existingUser && existingUser.length > 0) {
             setCurrentUser(existingUser[0]);
-            const isGoogleProvider = googleUser.app_metadata?.provider === 'google';
-            setGooglePhotoUrl(isGoogleProvider ? (googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null) : null);
+            // Só seta foto Google se o login foi realmente via Google OAuth
+            const isGoogle = googleUser.app_metadata?.provider === 'google';
+            setGooglePhotoUrl(isGoogle ? (googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null) : null);
           }
         }
       } catch (e) {
@@ -322,9 +341,11 @@ export default function FinanceApp() {
         if (!isActive) return;
 
         const { data: { session } } = await supabase.auth.getSession();
-        // Só inicializa eventos do Google Calendar para usuários Google OAuth
-        const isGoogleUser = session?.user?.app_metadata?.provider === 'google';
-        if (!isGoogleUser) return;
+
+        // Só carrega Google Calendar para usuários que logaram via Google OAuth
+        const isGoogle = session?.user?.app_metadata?.provider === 'google';
+        if (!isGoogle) return;
+
         if (session?.provider_token || attempts >= 10) {
           // loadBannerEvents retorna os eventos e ja dispara notificacoes
           // evitando depender do state todayEvents/tomorrowEvents que ainda esta vazio
@@ -645,7 +666,8 @@ export default function FinanceApp() {
             if (existingUser && existingUser.length > 0) {
               // Usuário já existe
               setCurrentUser(existingUser[0]);
-              setGooglePhotoUrl(googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null);
+              const isGoogle = googleUser.app_metadata?.provider === 'google';
+              setGooglePhotoUrl(isGoogle ? (googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null) : null);
             } else {
               // Criar novo usuário
               const newUser = {
@@ -663,7 +685,8 @@ export default function FinanceApp() {
               if (error) throw error;
 
               setCurrentUser(data[0]);
-              setGooglePhotoUrl(googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null);
+              const isGoogle2 = googleUser.app_metadata?.provider === 'google';
+              setGooglePhotoUrl(isGoogle2 ? (googleUser.user_metadata?.avatar_url || googleUser.user_metadata?.picture || null) : null);
             }
           } catch (error) {
             console.error('Erro ao processar login Google:', error);
@@ -2081,7 +2104,7 @@ export default function FinanceApp() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.provider_token) {
-        console.warn('fetchCalendarEvents: sem provider_token, abortando.');
+        console.warn('fetchCalendarEvents: sem provider_token Google, abortando.');
         return;
       }
 
