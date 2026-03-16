@@ -2560,15 +2560,18 @@ export default function FinanceApp() {
 
         {/* Banner de alerta - nova posição: antes dos cards */}
         {upcomingDueDates.length > 0 && view === 'dashboard' && (
-          <div className="mb-6 bg-orange-500 dark:bg-orange-900/30 border-2 border-orange-600 dark:border-orange-700 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-white dark:text-orange-400 flex-shrink-0 mt-0.5" />
+          <div className="mb-6 rounded-lg p-4 flex items-start gap-3"
+            style={{ background: darkMode ? 'rgba(124,45,18,0.3)' : '#f97316', border: darkMode ? '2px solid #c2410c' : '2px solid #ea580c' }}
+          >
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#ffffff' }} />
             <div>
-              <p className="font-semibold text-white dark:text-orange-300">
+              <p className="font-semibold" style={{ color: '#ffffff' }}>
                 Atenção: Você tem {upcomingDueDates.length} conta{upcomingDueDates.length > 1 ? 's' : ''} vencendo nos próximos 5 dias.
               </p>
               <button
                 onClick={() => setView('scheduled')}
-                className="text-sm text-white dark:text-orange-400 underline mt-1 font-medium opacity-90 hover:opacity-100"
+                className="text-sm underline mt-1 font-medium"
+                style={{ color: '#ffffff', opacity: 0.9 }}
               >
                 Ver detalhes
               </button>
