@@ -112,6 +112,18 @@ export default function FinanceApp() {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
   const [calendarEvents, setCalendarEvents] = useState([]);
+  const [eventStatus, setEventStatus] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('financeapp_event_status') || '{}'); }
+    catch { return {}; }
+  });
+
+  const toggleEventStatus = (eventId) => {
+    setEventStatus(prev => {
+      const next = { ...prev, [eventId]: !prev[eventId] };
+      try { localStorage.setItem('financeapp_event_status', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
   const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [calendarFilter, setCalendarFilter] = useState('week'); // 'today', 'tomorrow', 'week', 'month'
   const [todayEvents, setTodayEvents] = useState([]);
@@ -3282,15 +3294,41 @@ export default function FinanceApp() {
                         {calendarEvents.length} evento{calendarEvents.length !== 1 ? 's' : ''} encontrado{calendarEvents.length !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    {calendarEvents.map(event => (
-                      <div key={event.id} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
-                        <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{event.summary || 'Sem título'}</h3>
-                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          Data: {event.start?.dateTime ? new Date(event.start.dateTime).toLocaleString('pt-BR') : event.start?.date || 'Data não definida'}
-                        </p>
-                        {event.description && <p className={`text-sm mt-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{event.description}</p>}
-                      </div>
-                    ))}
+                    {calendarEvents.map(event => {
+                      const done = !!eventStatus[event.id];
+                      return (
+                        <div key={event.id}
+                          className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}
+                          style={{ border: done ? '1px solid #166534' : '1px solid transparent', transition: 'border-color 0.2s' }}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <h3 className={`text-lg font-semibold mb-2`}
+                                style={{ color: done ? '#6b7280' : (darkMode ? '#f9fafb' : '#1f2937'), textDecoration: done ? 'line-through' : 'none', transition: 'all 0.2s' }}
+                              >
+                                {event.summary || 'Sem título'}
+                              </h3>
+                              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                Data: {event.start?.dateTime ? new Date(event.start.dateTime).toLocaleString('pt-BR') : event.start?.date || 'Data não definida'}
+                              </p>
+                              {event.description && <p className={`text-sm mt-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{event.description}</p>}
+                            </div>
+                            <button
+                              onClick={() => toggleEventStatus(event.id)}
+                              className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
+                              style={{
+                                background: done ? '#166534' : '#78350f',
+                                color: done ? '#bbf7d0' : '#fde68a',
+                                border: 'none',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {done ? '✓ Realizada' : '● Pendente'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </>
                 )}
               </div>
