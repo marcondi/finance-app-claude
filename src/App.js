@@ -178,6 +178,7 @@ export default function FinanceApp() {
     let isActive = true;
     let retryTimeout = null;
     let stopEventChecks = null;
+    let refreshInterval = null;
 
     // Aguarda provider_token do Google OAuth antes de carregar eventos/notificacoes
     const initWithSession = async () => {
@@ -203,12 +204,43 @@ export default function FinanceApp() {
       await tryInit();
     };
 
+    // Recarrega contas vencendo a cada 30 minutos e mostra toast se houver pendências
+    const runPeriodicCheck = async () => {
+      if (!isActive) return;
+      await loadBannerEvents();
+      // upcomingDueDates é recalculado via useMemo após loadBannerEvents atualizar o state
+      // Usamos uma leitura direta das transações para o toast, sem depender do state assíncrono
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const fiveDays = new Date(today);
+      fiveDays.setDate(today.getDate() + 5);
+      fiveDays.setHours(23, 59, 59, 999);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: pendentes } = await supabase
+        .from('finance_scheduled')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('is_paid', false);
+      const count = (pendentes || []).filter(s => {
+        const [y, m, d] = s.due_date.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        return dt >= today && dt <= fiveDays;
+      }).length;
+      if (count > 0) {
+        showToast(`Lembrete: você tem ${count} conta${count > 1 ? 's' : ''} vencendo nos próximos 5 dias.`, 'warning');
+      }
+    };
+
+    refreshInterval = setInterval(runPeriodicCheck, 30 * 60 * 1000);
+
     initWithSession();
 
     return () => {
       isActive = false;
       if (retryTimeout) clearTimeout(retryTimeout);
       if (typeof stopEventChecks === 'function') stopEventChecks();
+      if (refreshInterval) clearInterval(refreshInterval);
     };
   }, [currentUser]);
 
