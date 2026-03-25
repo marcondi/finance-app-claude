@@ -349,7 +349,7 @@ export default function FinanceApp() {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0); // 0=hidden, 1=welcome, 2=category, 3=done
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // eslint-disable-line no-unused-vars
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [sendingReport, setSendingReport] = useState(false);
