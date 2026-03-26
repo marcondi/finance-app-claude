@@ -79,270 +79,6 @@ const formatDate = (date) => {
   return dateObj.toLocaleDateString('pt-BR');
 };
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// AuthScreen — componente externo ao FinanceApp (evita recriação a cada render)
-// ─────────────────────────────────────────────────────────────────────────────
-function AuthScreen({ darkMode, showToast }) {
-  const [isLogin, setIsLogin] = useState(true);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [forgotSent, setForgotSent] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(false);
-
-  const inputClass = `w-full px-4 py-3 rounded-lg border ${
-    darkMode
-      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-      : 'bg-white border-gray-300 text-gray-900'
-  } focus:outline-none focus:ring-2 focus:ring-blue-500`;
-
-  const handleGoogleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-          scopes: 'https://www.googleapis.com/auth/calendar.events'
-        }
-      });
-      if (error) throw error;
-    } catch (error) {
-      console.error('Erro no login com Google:', error);
-      showToast('Erro ao fazer login com Google: ' + error.message, 'error');
-    }
-  };
-
-  const handleAuth = async () => {
-    if (isAuthLoading) return;
-    if (!email || !password) { showToast('Preencha e-mail e senha.', 'warning'); return; }
-    if (!isLogin && !name) { showToast('Preencha seu nome.', 'warning'); return; }
-    if (!isLogin && password.length < 6) { showToast('A senha deve ter no mínimo 6 caracteres.', 'warning'); return; }
-
-    setIsAuthLoading(true);
-    try {
-      if (isLogin) {
-        // Login seguro — Supabase verifica o hash internamente, senha nunca fica exposta
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) showToast('E-mail ou senha incorretos.', 'warning');
-        // Se sucesso: onAuthStateChange no FinanceApp detecta e carrega o usuário
-      } else {
-        // Cadastro — senha vai direto pro Supabase Auth (criptografada com bcrypt)
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: name }, emailRedirectTo: window.location.origin }
-        });
-        if (error) throw error;
-        showToast('Conta criada! Verifique seu e-mail se solicitado.', 'success');
-      }
-    } catch (error) {
-      console.error('Erro na autenticação:', error);
-      showToast('Erro: ' + error.message, 'error');
-    } finally {
-      setIsAuthLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async () => {
-    if (!email) { showToast('Digite seu e-mail para receber o link de recuperação.', 'warning'); return; }
-    setIsAuthLoading(true);
-    try {
-      // Supabase envia e-mail com token seguro de uso único — sem expor a senha
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin
-      });
-      if (error) throw error;
-      setForgotSent(true);
-    } catch (error) {
-      console.error('Erro ao enviar recuperação:', error);
-      showToast('Erro: ' + error.message, 'error');
-    } finally {
-      setIsAuthLoading(false);
-    }
-  };
-
-  return (
-    <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'}`}>
-      <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-        <div className="flex items-center justify-center mb-8">
-          <Wallet className={`w-12 h-12 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-          <h1 className={`ml-3 text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>FinanceApp</h1>
-        </div>
-
-        {isForgotPassword ? (
-          <>
-            <h2 className={`text-xl font-semibold mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              Recuperar Senha
-            </h2>
-            {forgotSent ? (
-              <div className="text-center space-y-4">
-                <div className="text-5xl mb-2">📬</div>
-                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Link enviado para <strong>{email}</strong>.<br />
-                  Clique no link do e-mail para criar uma nova senha.
-                </p>
-                <button
-                  onClick={() => { setIsForgotPassword(false); setForgotSent(false); setEmail(''); }}
-                  className={`w-full py-2 rounded-xl text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
-                >
-                  Voltar ao login
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className={`text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Digite seu e-mail e enviaremos um link seguro para redefinir sua senha.
-                </p>
-                <input
-                  type="email"
-                  placeholder="E-mail cadastrado"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleForgotPassword()}
-                  className={inputClass}
-                />
-                <button
-                  onClick={handleForgotPassword}
-                  disabled={isAuthLoading}
-                  className={`w-full bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${isAuthLoading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-700'}`}
-                >
-                  {isAuthLoading && (
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                  )}
-                  Enviar link de recuperação
-                </button>
-                <button
-                  onClick={() => { setIsForgotPassword(false); setEmail(''); }}
-                  className={`w-full ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'} font-medium py-2 transition-colors`}
-                >
-                  Voltar ao login
-                </button>
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <div className="flex mb-6 border-b border-gray-300">
-              <button
-                onClick={() => setIsLogin(true)}
-                className={`flex-1 py-2 text-center font-medium transition-colors ${
-                  isLogin
-                    ? `border-b-2 ${darkMode ? 'border-blue-400 text-blue-400' : 'border-blue-600 text-blue-600'}`
-                    : darkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}
-              >
-                Login
-              </button>
-              <button
-                onClick={() => setIsLogin(false)}
-                className={`flex-1 py-2 text-center font-medium transition-colors ${
-                  !isLogin
-                    ? `border-b-2 ${darkMode ? 'border-blue-400 text-blue-400' : 'border-blue-600 text-blue-600'}`
-                    : darkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}
-              >
-                Cadastro
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {!isLogin && (
-                <input
-                  type="text"
-                  placeholder="Nome"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className={inputClass}
-                />
-              )}
-              <input
-                type="email"
-                placeholder="E-mail"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
-                className={inputClass}
-              />
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Senha"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
-                  className={`${inputClass} pr-12`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(p => !p)}
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-
-              <button
-                onClick={handleAuth}
-                disabled={isAuthLoading}
-                className={`w-full bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${isAuthLoading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-700'}`}
-              >
-                {isAuthLoading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                    {isLogin ? 'Entrando...' : 'Criando conta...'}
-                  </>
-                ) : (
-                  isLogin ? 'Entrar' : 'Criar Conta'
-                )}
-              </button>
-
-              {/* Divisor "OU" */}
-              <div className="relative flex items-center justify-center my-4">
-                <div className={`absolute w-full h-px ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
-                <span className={`relative px-4 text-sm ${darkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>ou</span>
-              </div>
-
-              {/* Botão Google */}
-              <button
-                onClick={handleGoogleLogin}
-                className={`w-full flex items-center justify-center gap-3 ${
-                  darkMode
-                    ? 'bg-white hover:bg-gray-100 text-gray-800'
-                    : 'bg-white hover:bg-gray-50 text-gray-800 border border-gray-300'
-                } font-semibold py-3 rounded-lg transition-colors shadow-sm`}
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Entrar com Google
-              </button>
-
-              {isLogin && (
-                <button
-                  onClick={() => setIsForgotPassword(true)}
-                  className={`w-full ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} text-sm font-medium py-2 transition-colors`}
-                >
-                  Esqueci minha senha
-                </button>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function FinanceApp() {
   const [darkMode, setDarkMode] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -407,9 +143,7 @@ export default function FinanceApp() {
   const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
   // ─────────────────────────────────────────────────────────────────────────
 
-
-  // ── Sessão: detecta login/logout/refresh automaticamente ──────────────────
-  // Substitui o restoreSession + polling de provider_token
+  // Detecta login/logout/refresh automaticamente — substitui o restoreSession
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -423,17 +157,23 @@ export default function FinanceApp() {
 
         if (session?.user) {
           const user = session.user;
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('name')
-            .eq('id', user.id)
-            .single();
+          // Busca o registro existente em finance_users (compatível com dados já existentes)
+          const { data: existingUser } = await supabase
+            .from('finance_users')
+            .select('*')
+            .eq('email', user.email)
+            .limit(1);
 
-          setCurrentUser({
-            id: user.id,
-            email: user.email,
-            name: profile?.name || user.user_metadata?.full_name || user.email?.split('@')[0],
-          });
+          if (existingUser && existingUser.length > 0) {
+            setCurrentUser(existingUser[0]);
+          } else {
+            // Usuário novo ainda sem registro em finance_users
+            setCurrentUser({
+              id: user.id,
+              email: user.email,
+              name: user.user_metadata?.full_name || user.email?.split('@')[0],
+            });
+          }
           setGooglePhotoUrl(
             user.user_metadata?.avatar_url ||
             user.user_metadata?.picture    ||
@@ -467,6 +207,8 @@ export default function FinanceApp() {
 
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.provider_token || attempts >= 10) {
+          // loadBannerEvents retorna os eventos e ja dispara notificacoes
+          // evitando depender do state todayEvents/tomorrowEvents que ainda esta vazio
           const { todayEvts, tomorrowEvts } = await loadBannerEvents();
           if (isActive) {
             stopEventChecks = checkUpcomingEvents(todayEvts, tomorrowEvts);
@@ -484,6 +226,8 @@ export default function FinanceApp() {
     const runPeriodicCheck = async () => {
       if (!isActive) return;
       await loadBannerEvents();
+      // upcomingDueDates é recalculado via useMemo após loadBannerEvents atualizar o state
+      // Usamos uma leitura direta das transações para o toast, sem depender do state assíncrono
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const fiveDays = new Date(today);
@@ -518,6 +262,10 @@ export default function FinanceApp() {
     };
   }, [currentUser]);
 
+  // Resetar pagina ao mudar filtro ou ordenacao
+  useEffect(() => { setCurrentPage(1); }, [filterType, sortBy, searchTerm]);
+
+  // PWA install prompt
   useEffect(() => {
     const handler = (e) => {
       e.preventDefault();
@@ -760,15 +508,281 @@ export default function FinanceApp() {
     }
   };
 
+  const AuthScreen = () => {
+    const [isLogin, setIsLogin] = useState(true);
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
+    const [forgotSent, setForgotSent] = useState(false);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [isAuthLoading, setIsAuthLoading] = useState(false);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AUTENTICAÇÃO REESCRITA COM SUPABASE AUTH NATIVO
-// - Senhas nunca são armazenadas no banco (o Supabase cuida disso)
-// - Recuperação de senha por e-mail seguro com token de uso único
-// - onAuthStateChange detecta login/logout automaticamente
-// ─────────────────────────────────────────────────────────────────────────────
+    const inputClass = `w-full px-4 py-3 rounded-lg border ${
+      darkMode
+        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+        : 'bg-white border-gray-300 text-gray-900'
+    } focus:outline-none focus:ring-2 focus:ring-blue-500`;
 
-  const handleGoogleLogin = async () => {
+    const handleGoogleLogin = async () => {
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin,
+            scopes: 'https://www.googleapis.com/auth/calendar.events'
+          }
+        });
+        if (error) throw error;
+      } catch (error) {
+        console.error('Erro no login com Google:', error);
+        showToast('Erro ao fazer login com Google: ' + error.message, 'error');
+      }
+    };
+
+    const handleAuth = async () => {
+      if (isAuthLoading) return;
+      if (!email || !password) { showToast('Preencha e-mail e senha.', 'warning'); return; }
+      if (!isLogin && !name) { showToast('Preencha seu nome.', 'warning'); return; }
+      if (!isLogin && password.length < 6) { showToast('A senha deve ter no mínimo 6 caracteres.', 'warning'); return; }
+
+      setIsAuthLoading(true);
+      try {
+        if (isLogin) {
+          // Senha verificada pelo Supabase Auth — nunca comparada em texto puro
+          const { error } = await supabase.auth.signInWithPassword({ email, password });
+          if (error) showToast('E-mail ou senha incorretos.', 'warning');
+          // onAuthStateChange detecta o login e carrega o usuário automaticamente
+        } else {
+          // Cadastro: cria no Supabase Auth + registro em finance_users para compatibilidade
+          const { data: authData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: name }, emailRedirectTo: window.location.origin }
+          });
+          if (signUpError) throw signUpError;
+
+          if (authData?.user) {
+            await supabase.from('finance_users').insert([{
+              id: authData.user.id,
+              name,
+              email,
+              password: 'supabase-auth'
+            }]);
+          }
+          showToast('Conta criada! Verifique seu e-mail se solicitado.', 'success');
+        }
+      } catch (error) {
+        console.error('Erro na autenticação:', error);
+        showToast('Erro: ' + error.message, 'error');
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    const handleForgotPassword = async () => {
+      if (!email) { showToast('Digite seu e-mail para receber o link de recuperação.', 'warning'); return; }
+      setIsAuthLoading(true);
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin
+        });
+        if (error) throw error;
+        setForgotSent(true);
+      } catch (error) {
+        console.error('Erro ao enviar recuperação:', error);
+        showToast('Erro: ' + error.message, 'error');
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'}`}>
+        <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className="flex items-center justify-center mb-8">
+            <Wallet className={`w-12 h-12 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+            <h1 className={`ml-3 text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>FinanceApp</h1>
+          </div>
+
+          {isForgotPassword ? (
+            <>
+              <h2 className={`text-xl font-semibold mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                Recuperar Senha
+              </h2>
+              {forgotSent ? (
+                <div className="text-center space-y-4">
+                  <div className="text-5xl mb-2">📬</div>
+                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    Link enviado para <strong>{email}</strong>.<br />
+                    Clique no link do e-mail para criar uma nova senha.
+                  </p>
+                  <button
+                    onClick={() => { setIsForgotPassword(false); setForgotSent(false); setEmail(''); }}
+                    className={`w-full py-2 rounded-xl text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
+                  >
+                    Voltar ao login
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className={`text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Digite seu e-mail e enviaremos um link seguro para redefinir sua senha.
+                  </p>
+                  <input
+                    type="email"
+                    placeholder="E-mail cadastrado"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleForgotPassword()}
+                    className={inputClass}
+                  />
+                  <button
+                    onClick={handleForgotPassword}
+                    disabled={isAuthLoading}
+                    className={`w-full bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${isAuthLoading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-700'}`}
+                  >
+                    {isAuthLoading && (
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                    )}
+                    Enviar link de recuperação
+                  </button>
+                  <button
+                    onClick={() => { setIsForgotPassword(false); setEmail(''); }}
+                    className={`w-full ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'} font-medium py-2 transition-colors`}
+                  >
+                    Voltar ao login
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex mb-6 border-b border-gray-300">
+                <button
+                  onClick={() => setIsLogin(true)}
+                  className={`flex-1 py-2 text-center font-medium transition-colors ${
+                    isLogin
+                      ? `border-b-2 ${darkMode ? 'border-blue-400 text-blue-400' : 'border-blue-600 text-blue-600'}`
+                      : darkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => setIsLogin(false)}
+                  className={`flex-1 py-2 text-center font-medium transition-colors ${
+                    !isLogin
+                      ? `border-b-2 ${darkMode ? 'border-blue-400 text-blue-400' : 'border-blue-600 text-blue-600'}`
+                      : darkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                >
+                  Cadastro
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {!isLogin && (
+                  <input
+                    type="text"
+                    placeholder="Nome"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={inputClass}
+                  />
+                )}
+                <input
+                  type="email"
+                  placeholder="E-mail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+                  className={inputClass}
+                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+                    className={`${inputClass} pr-12`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(p => !p)}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    {showPassword
+                      ? <EyeOff className="w-5 h-5" />
+                      : <Eye className="w-5 h-5" />
+                    }
+                  </button>
+                </div>
+                <button
+                  onClick={handleAuth}
+                  disabled={isAuthLoading}
+                  className={`w-full bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${isAuthLoading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-700'}`}
+                >
+                  {isAuthLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                      {isLogin ? 'Entrando...' : 'Criando conta...'}
+                    </>
+                  ) : (
+                    isLogin ? 'Entrar' : 'Criar Conta'
+                  )}
+                </button>
+
+                {/* Divisor "OU" */}
+                <div className="relative flex items-center justify-center my-4">
+                  <div className={`absolute w-full h-px ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+                  <span className={`relative px-4 text-sm ${darkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>
+                    ou
+                  </span>
+                </div>
+
+                {/* Botão Google */}
+                <button
+                  onClick={handleGoogleLogin}
+                  className={`w-full flex items-center justify-center gap-3 ${
+                    darkMode 
+                      ? 'bg-white hover:bg-gray-100 text-gray-800' 
+                      : 'bg-white hover:bg-gray-50 text-gray-800 border border-gray-300'
+                  } font-semibold py-3 rounded-lg transition-colors shadow-sm`}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  Entrar com Google
+                </button>
+                
+                {isLogin && (
+                  <button
+                    onClick={() => setIsForgotPassword(true)}
+                    className={`w-full ${
+                      darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
+                    } text-sm font-medium py-2 transition-colors`}
+                  >
+                    Esqueci minha senha
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+    const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -783,7 +797,6 @@ export default function FinanceApp() {
       showToast('Erro ao fazer login com Google: ' + error.message, 'error');
     }
   };
-
 
   const AgendaCalendario = ({ darkMode, scheduled, transactions, currentDate, categories, formatCurrency, setShowTransactionModal, setEditingTransaction, googlePhotoUrl, handleGoogleLogin }) => {
     const [selectedDay, setSelectedDay] = useState(null);
@@ -2176,7 +2189,7 @@ export default function FinanceApp() {
   }
 
   if (!currentUser) {
-    return <AuthScreen darkMode={darkMode} showToast={showToast} />;
+    return <AuthScreen />;
   }
 
   return (
@@ -2331,7 +2344,7 @@ export default function FinanceApp() {
                           setIsLoggingOut(true);
                           try {
                             await supabase.auth.signOut();
-                            // setCurrentUser(null) é chamado automaticamente pelo onAuthStateChange
+                            // setCurrentUser(null) chamado automaticamente pelo onAuthStateChange
                           } catch (error) {
                             console.error('Erro ao fazer logout:', error);
                             setIsLoggingOut(false);
