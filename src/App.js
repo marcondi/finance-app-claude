@@ -93,7 +93,7 @@ export default function FinanceApp() {
   const [categories, setCategories] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [scheduled, setScheduled] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // eslint-disable-line no-unused-vars
   const [checkingSession, setCheckingSession] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState('dashboard');
