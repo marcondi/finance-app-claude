@@ -283,6 +283,21 @@ export default function FinanceApp() {
   // Resetar pagina ao mudar filtro ou ordenacao
   useEffect(() => { setCurrentPage(1); }, [filterType, sortBy, searchTerm]);
 
+  // Carregar eventos do Google Calendar automaticamente ao entrar na aba Agenda
+  useEffect(() => {
+    if (view === 'scheduled' && googlePhotoUrl) {
+      fetchCalendarEvents(calendarFilter);
+    }
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Recarregar dados ao voltar o foco para a janela (resolve perda de funções após inatividade)
+  useEffect(() => {
+    if (!currentUser) return;
+    const onFocus = () => { loadUserData(); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // PWA install prompt
   useEffect(() => {
     const handler = (e) => {
@@ -2076,13 +2091,30 @@ export default function FinanceApp() {
       const month = monthNames[now.getMonth()];
       const year = now.getFullYear();
 
-      const income   = currentMonthTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-      const expenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-      const balance  = income - expenses;
+      // Totais do relatório são calculados após o fetch completo do Supabase (veja abaixo)
 
-      const txList = currentMonthTransactions
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .map(t => {
+      // Busca TODAS as transações do mês diretamente do Supabase para garantir
+      // que o relatório não seja limitado pela paginação da tela (pageSize)
+      const reportYear  = now.getFullYear();
+      const reportMonth = now.getMonth();
+      const firstDay = new Date(reportYear, reportMonth, 1).toISOString().split('T')[0];
+      const lastDay  = new Date(reportYear, reportMonth + 1, 0).toISOString().split('T')[0];
+
+      const { data: allMonthTx } = await supabase
+        .from('finance_transactions')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .gte('date', firstDay)
+        .lte('date', lastDay)
+        .order('date', { ascending: false });
+
+      const allTx = allMonthTx || [];
+      // Recalcular totais com todos os dados do mês (ignora filtro de mês da UI)
+      const reportIncome   = allTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const reportExpenses = allTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const reportBalance  = reportIncome - reportExpenses;
+
+      const txList = allTx.map(t => {
           const cat = categories.find(c => c.id === t.category_id);
           const [y, m, d] = t.date.split('-');
           return {
@@ -2113,9 +2145,9 @@ export default function FinanceApp() {
           userName: currentUser.name || currentUser.email.split('@')[0],
           month,
           year,
-          income,
-          expenses,
-          balance,
+          income: reportIncome,
+          expenses: reportExpenses,
+          balance: reportBalance,
           transactions: txList,
         }),
       });
@@ -2132,6 +2164,87 @@ export default function FinanceApp() {
       setSendingReport(false);
     }
   };
+
+  // ── Relatório mensal automático ─────────────────────────────────────────────
+  // Verifica 1x por hora se é o último dia do mês e envia o relatório automaticamente
+  // se ainda não foi enviado hoje (controle via localStorage por usuário).
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const tryAutoReport = async () => {
+      const today = new Date();
+      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      if (today.getDate() !== lastDayOfMonth) return; // não é o último dia
+
+      const storageKey = `financeapp_autoreport_${currentUser.id}_${today.getFullYear()}_${today.getMonth()}`;
+      try {
+        const alreadySent = localStorage.getItem(storageKey);
+        if (alreadySent) return; // já enviou este mês
+      } catch {}
+
+      // Buscar todas as transações do mês
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+      const lastDay  = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      const { data: allTx } = await supabase
+        .from('finance_transactions')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .gte('date', firstDay)
+        .lte('date', lastDay)
+        .order('date', { ascending: false });
+
+      const txs = allTx || [];
+      if (txs.length === 0) return; // mês sem transações, não envia
+
+      const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+        'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+      const autoIncome   = txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const autoExpenses = txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const autoBalance  = autoIncome - autoExpenses;
+
+      const txList = txs.map(t => {
+        const cat = categories.find(c => c.id === t.category_id);
+        const [y, m, d] = t.date.split('-');
+        return { date: d+'/'+m+'/'+y, description: t.description, category: cat?.name||'-', amount: t.amount, type: t.type };
+      });
+
+      try {
+        const supabaseUrl = (supabase).supabaseUrl || process.env.REACT_APP_SUPABASE_URL || '';
+        const res = await fetch(supabaseUrl + '/functions/v1/send-monthly-report', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + session.access_token,
+            'apikey': (supabase).supabaseKey || process.env.REACT_APP_SUPABASE_ANON_KEY || '',
+          },
+          body: JSON.stringify({
+            to: currentUser.email,
+            userName: currentUser.name || currentUser.email.split('@')[0],
+            month: monthNames[today.getMonth()],
+            year: today.getFullYear(),
+            income: autoIncome,
+            expenses: autoExpenses,
+            balance: autoBalance,
+            transactions: txList,
+          }),
+        });
+        if (res.ok) {
+          try { localStorage.setItem(storageKey, '1'); } catch {}
+          showToast('Relatório mensal enviado automaticamente para ' + currentUser.email, 'success');
+        }
+      } catch (err) {
+        console.error('Erro no relatório automático:', err);
+      }
+    };
+
+    tryAutoReport(); // verifica ao carregar
+    const autoInterval = setInterval(tryAutoReport, 60 * 60 * 1000); // e a cada 1 hora
+    return () => clearInterval(autoInterval);
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Busca eventos do Google Calendar com base no filtro selecionado
   const fetchCalendarEvents = async (filter) => {
@@ -3054,8 +3167,10 @@ export default function FinanceApp() {
                                       <button
                                         aria-label="Editar transacao"
                                         onClick={() => {
+                                          // Setar editingTransaction ANTES de abrir o modal
+                                          // evita que o modal monte com state vazio
                                           setEditingTransaction(transaction);
-                                          setShowTransactionModal(true);
+                                          setTimeout(() => setShowTransactionModal(true), 0);
                                         }}
                                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                       >
