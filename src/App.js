@@ -145,12 +145,30 @@ export default function FinanceApp() {
 
   // Detecta login/logout/refresh automaticamente — substitui o restoreSession
   useEffect(() => {
+    let resolved = false;
+
+    // Timeout de segurança: resolve o loading se nada disparar em 3s
+    const sessionTimeout = setTimeout(() => {
+      if (!resolved) { resolved = true; setCheckingSession(false); }
+    }, 3000);
+
+    // Verifica sessão imediatamente — resolve o loading quando não há sessão ativa
+    // (onAuthStateChange sozinho não dispara se o usuário não estiver logado)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session && !resolved) {
+        resolved = true;
+        clearTimeout(sessionTimeout);
+        setCheckingSession(false);
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_OUT') {
           setCurrentUser(null);
           setGooglePhotoUrl(null);
           setIsLoggingOut(false);
+          if (!resolved) { resolved = true; clearTimeout(sessionTimeout); }
           setCheckingSession(false);
           return;
         }
@@ -181,10 +199,11 @@ export default function FinanceApp() {
           );
         }
 
+        if (!resolved) { resolved = true; clearTimeout(sessionTimeout); }
         setCheckingSession(false);
       }
     );
-    return () => subscription.unsubscribe();
+    return () => { subscription.unsubscribe(); clearTimeout(sessionTimeout); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
