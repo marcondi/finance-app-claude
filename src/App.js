@@ -260,8 +260,7 @@ export default function FinanceApp() {
       if (typeof stopEventChecks === 'function') stopEventChecks();
       if (refreshInterval) clearInterval(refreshInterval);
     };
-  }, [currentUser]);
-
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // Resetar pagina ao mudar filtro ou ordenacao
   useEffect(() => { setCurrentPage(1); }, [filterType, sortBy, searchTerm]);
 
@@ -438,6 +437,8 @@ export default function FinanceApp() {
 
   const loadUserData = async () => {
     setLoading(true);
+    // Timeout de segurança: garante que loading nunca trava o app indefinidamente
+    const safetyTimer = setTimeout(() => setLoading(false), 15000);
     try {
       // Carregar categorias
       const { data: cats, error: catsError } = await supabase
@@ -504,6 +505,7 @@ export default function FinanceApp() {
       console.error('Erro ao carregar dados:', error);
       showToast('Erro ao carregar dados: ' + error.message, 'error');
     } finally {
+      clearTimeout(safetyTimer);
       setLoading(false);
     }
   };
@@ -2172,7 +2174,7 @@ export default function FinanceApp() {
   const toastLabel  = { success: 'Sucesso', warning: 'Aviso', error: 'Erro' };
   // ─────────────────────────────────────────────────────────────────────────
 
-  if (checkingSession || loading) {
+  if (checkingSession) {
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
         <div className="flex items-center gap-3 mb-4">
