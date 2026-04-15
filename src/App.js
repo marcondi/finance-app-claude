@@ -197,6 +197,9 @@ export default function FinanceApp() {
             user.user_metadata?.picture    ||
             null
           );
+          if (session?.provider_token) {
+            localStorage.setItem('financeapp_gtoken', session.provider_token);
+          }
         }
 
         if (!resolved) { resolved = true; clearTimeout(sessionTimeout); }
@@ -2251,8 +2254,13 @@ export default function FinanceApp() {
     setLoadingCalendar(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.provider_token) {
-        showToast('Conecte sua conta Google para acessar o Calendar.', 'warning');
+
+      // Tenta provider_token da sessão atual, senão usa o salvo no localStorage
+      const token = session?.provider_token || localStorage.getItem('financeapp_gtoken');
+
+      if (!token) {
+        showToast('Sessão do Google expirada. Faça login novamente para usar a Agenda.', 'warning');
+        setLoadingCalendar(false);
         return;
       }
 
@@ -2283,8 +2291,16 @@ export default function FinanceApp() {
 
       const response = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&orderBy=startTime&singleEvents=true`,
-        { headers: { Authorization: `Bearer ${session.provider_token}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // Token expirado (401) — limpa o cache e avisa
+      if (response.status === 401) {
+        localStorage.removeItem('financeapp_gtoken');
+        showToast('Sessão do Google expirada. Faça login novamente para usar a Agenda.', 'warning');
+        setLoadingCalendar(false);
+        return;
+      }
 
       const data = await response.json();
       setCalendarEvents(data.items || []);
