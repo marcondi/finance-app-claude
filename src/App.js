@@ -111,6 +111,7 @@ export default function FinanceApp() {
   const [aiTips, setAiTips] = useState([]);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
+  const [confirmModal, setConfirmModal] = useState({ open: false, message: '', onConfirm: null });
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [eventStatus, setEventStatus] = useState(() => {
     try { return JSON.parse(localStorage.getItem('financeapp_event_status') || '{}'); }
@@ -2036,48 +2037,53 @@ export default function FinanceApp() {
     }
   };
 
-  const deleteTransaction = async (id) => {
-    const confirmed = window.confirm('Deseja realmente excluir esta transacao? Esta acao não pode ser desfeita.');
-    if (!confirmed) return;
-
-    try {
-      const { error } = await supabase
-        .from('finance_transactions')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      setTransactions(prev => prev.filter(t => t.id !== id));
-    } catch (error) {
-      console.error('Erro ao excluir transação:', error);
-      showToast('Erro ao excluir transação: ' + error.message, 'error');
-    }
+  const deleteTransaction = (id) => {
+    setConfirmModal({
+      open: true,
+      message: 'Deseja realmente excluir esta transação? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        setConfirmModal({ open: false, message: '', onConfirm: null });
+        try {
+          const { error } = await supabase
+            .from('finance_transactions')
+            .delete()
+            .eq('id', id);
+          if (error) throw error;
+          setTransactions(prev => prev.filter(t => t.id !== id));
+          showToast('Transação excluída com sucesso.', 'success');
+        } catch (error) {
+          console.error('Erro ao excluir transação:', error);
+          showToast('Erro ao excluir transação: ' + error.message, 'error');
+        }
+      }
+    });
   };
 
-  const deleteCategory = async (id) => {
-    const confirmed = window.confirm('Deseja realmente excluir esta categoria?');
-    if (!confirmed) return;
-
+  const deleteCategory = (id) => {
     const hasTransactions = transactions.some(t => t.category_id === id);
     if (hasTransactions) {
       showToast('Não é possível excluir uma categoria com transações associadas.', 'warning');
       return;
     }
-
-    try {
-      const { error } = await supabase
-        .from('finance_categories')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      setCategories(prev => prev.filter(c => c.id !== id));
-    } catch (error) {
-      console.error('Erro ao excluir categoria:', error);
-      showToast('Erro ao excluir categoria: ' + error.message, 'error');
-    }
+    setConfirmModal({
+      open: true,
+      message: 'Deseja realmente excluir esta categoria? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        setConfirmModal({ open: false, message: '', onConfirm: null });
+        try {
+          const { error } = await supabase
+            .from('finance_categories')
+            .delete()
+            .eq('id', id);
+          if (error) throw error;
+          setCategories(prev => prev.filter(c => c.id !== id));
+          showToast('Categoria excluída com sucesso.', 'success');
+        } catch (error) {
+          console.error('Erro ao excluir categoria:', error);
+          showToast('Erro ao excluir categoria: ' + error.message, 'error');
+        }
+      }
+    });
   };
 
   // Enviar relatório mensal por e-mail via Supabase Edge Function
@@ -3918,6 +3924,35 @@ export default function FinanceApp() {
           );
         })()}
 
+
+      {/* ── Modal de confirmação (substitui window.confirm) ──────────────── */}
+      {confirmModal.open && (
+        <div className="fixed inset-0 z-[9997] flex items-center justify-center bg-black/60 p-4">
+          <div className={`w-full max-w-sm rounded-2xl shadow-2xl p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Confirmar exclusão</h3>
+            </div>
+            <p className={`text-sm mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{confirmModal.message}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal({ open: false, message: '', onConfirm: null })}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-600 hover:bg-red-700 text-white transition-colors"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Onboarding modal para novos usuários */}
       {onboardingStep > 0 && (
