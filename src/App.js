@@ -3741,8 +3741,9 @@ export default function FinanceApp() {
             const m = d.getMonth();
             const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
             const monthTx = transactions.filter(t => {
-              const td = new Date(t.date);
-              return td.getFullYear() === y && td.getMonth() === m && t.user_id === currentUser.id;
+              // Parseia YYYY-MM-DD diretamente para evitar shift de timezone UTC
+              const [ty, tm] = t.date.split('-').map(Number);
+              return ty === y && (tm - 1) === m && t.user_id === currentUser.id;
             });
             const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
             const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
