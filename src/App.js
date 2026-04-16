@@ -3863,61 +3863,73 @@ export default function FinanceApp() {
 
                 {/* PIE for balance - show bar instead */}
                 {reportChart === 'pie' && reportFilter === 'balance' && (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={last6Months} barCategoryGap="30%">
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
-                      <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
-                      <Legend />
-                      <Bar dataKey="Entradas" fill="#16a34a" radius={[4,4,0,0]} />
-                      <Bar dataKey="Saídas" fill="#dc2626" radius={[4,4,0,0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div style={{ overflowX: 'auto', overflowY: 'hidden' }}>
+                    <div style={{ minWidth: 500 }}>
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart data={last6Months} barCategoryGap="30%">
+                          <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                          <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
+                          <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                          <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
+                          <Legend />
+                          <Bar dataKey="Entradas" fill="#16a34a" radius={[4,4,0,0]} />
+                          <Bar dataKey="Saídas" fill="#dc2626" radius={[4,4,0,0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 )}
 
                 {/* LINE CHART */}
                 {reportChart === 'line' && (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <LineChart data={last6Months}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
-                      <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
-                      <Legend />
-                      {reportFilter === 'balance' ? (
-                        <Line type="monotone" dataKey="Saldo" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5, fill: '#3b82f6' }} />
-                      ) : reportFilter === 'expenses-category' ? (
-                        <Line type="monotone" dataKey="Saídas" stroke="#dc2626" strokeWidth={3} dot={{ r: 5, fill: '#dc2626' }} />
-                      ) : (
-                        <Line type="monotone" dataKey="Entradas" stroke="#16a34a" strokeWidth={3} dot={{ r: 5, fill: '#16a34a' }} />
-                      )}
-                    </LineChart>
-                  </ResponsiveContainer>
+                  <div style={{ overflowX: 'auto', overflowY: 'hidden' }}>
+                    <div style={{ minWidth: 500 }}>
+                      <ResponsiveContainer width="100%" height={320}>
+                        <LineChart data={last6Months}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                          <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
+                          <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                          <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
+                          <Legend />
+                          {reportFilter === 'balance' ? (
+                            <Line type="monotone" dataKey="Saldo" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5, fill: '#3b82f6' }} />
+                          ) : reportFilter === 'expenses-category' ? (
+                            <Line type="monotone" dataKey="Saídas" stroke="#dc2626" strokeWidth={3} dot={{ r: 5, fill: '#dc2626' }} />
+                          ) : (
+                            <Line type="monotone" dataKey="Entradas" stroke="#16a34a" strokeWidth={3} dot={{ r: 5, fill: '#16a34a' }} />
+                          )}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 )}
 
                 {/* BAR CHART */}
                 {reportChart === 'bar' && (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={reportFilter !== 'balance' ? pieData.map(d => ({ name: d.name, Valor: d.value, color: d.color })) : last6Months} barCategoryGap="30%">
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
-                      <XAxis dataKey="name" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
-                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
-                      {reportFilter === 'balance' ? (
-                        <>
-                          <Legend />
-                          <Bar dataKey="Entradas" fill="#16a34a" radius={[4,4,0,0]} />
-                          <Bar dataKey="Saídas" fill="#dc2626" radius={[4,4,0,0]} />
-                          <Bar dataKey="Saldo" fill="#3b82f6" radius={[4,4,0,0]} />
-                        </>
-                      ) : (
-                        <Bar dataKey="Valor" radius={[4,4,0,0]}>
-                          {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                        </Bar>
-                      )}
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div style={{ overflowX: 'auto', overflowY: 'hidden' }}>
+                    <div style={{ minWidth: Math.max(500, pieData.length * 80) }}>
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart data={reportFilter !== 'balance' ? pieData.map(d => ({ name: d.name, Valor: d.value, color: d.color })) : last6Months} barCategoryGap="30%">
+                          <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                          <XAxis dataKey="name" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
+                          <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                          <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
+                          {reportFilter === 'balance' ? (
+                            <>
+                              <Legend />
+                              <Bar dataKey="Entradas" fill="#16a34a" radius={[4,4,0,0]} />
+                              <Bar dataKey="Saídas" fill="#dc2626" radius={[4,4,0,0]} />
+                              <Bar dataKey="Saldo" fill="#3b82f6" radius={[4,4,0,0]} />
+                            </>
+                          ) : (
+                            <Bar dataKey="Valor" radius={[4,4,0,0]}>
+                              {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                            </Bar>
+                          )}
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
