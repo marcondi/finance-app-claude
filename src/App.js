@@ -1976,8 +1976,33 @@ export default function FinanceApp() {
 
   const gerarDicasIA = async () => {
     setAiTips(['⏳ Analisando suas finanças...']);
+
+    /**
+     * Gera fallback dinâmico baseado nos dados reais do usuário.
+     * Chamado sempre que a Edge Function falha ou excede o timeout.
+     */
+    const mostrarFallback = () => {
+      const fallback = [];
+      if (expenses > income) {
+        fallback.push('⚠️ Suas saídas (' + formatCurrency(expenses) + ') superam as entradas (' + formatCurrency(income) + '). Revise os maiores gastos urgentemente.');
+      } else {
+        fallback.push('✅ Você economizou ' + formatCurrency(income - expenses) + ' este mês (' + (income > 0 ? (((income - expenses) / income) * 100).toFixed(0) : 0) + '% da renda). Excelente!');
+      }
+      if (expensesByCategory.length > 0) {
+        const top = expensesByCategory[0];
+        fallback.push('📊 Seu maior gasto é "' + top.name + '" com ' + formatCurrency(top.value) + ' (' + (income > 0 ? ((top.value / income) * 100).toFixed(0) : 0) + '% da renda). Veja se há como reduzir.');
+      }
+      fallback.push('🎯 Meta recomendada: reserve ' + formatCurrency(income * 0.1) + ' (10% da renda) todo mês como poupança de emergência.');
+      setAiTips(fallback);
+    };
+
     const focos = ['economia no dia a dia', 'investimentos e reserva de emergência', 'controle de gastos por categoria', 'metas financeiras de longo prazo', 'redução de despesas fixas'];
     const foco = focos[Math.floor(Math.random() * focos.length)];
+
+    // Timeout de 10s para não travar na tela de loading indefinidamente
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     try {
       const mes = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
       const gastos = expensesByCategory.slice(0, 5).map(c => c.name + ': ' + formatCurrency(c.value)).join(', ');
@@ -1986,8 +2011,14 @@ export default function FinanceApp() {
       const token = session?.access_token || '';
       const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://oooegbbvrwifilavlvgt.supabase.co';
       const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+
+      if (!SUPABASE_ANON_KEY) {
+        throw new Error('SUPABASE_ANON_KEY não configurada');
+      }
+
       const res = await fetch(SUPABASE_URL + '/functions/v1/financial-tips', {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_ANON_KEY,
@@ -1995,28 +2026,25 @@ export default function FinanceApp() {
         },
         body: JSON.stringify({ resumo })
       });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        throw new Error('Edge Function retornou status ' + res.status);
+      }
+
       const json = await res.json();
       console.log('financial-tips status:', res.status, 'response:', json);
+
       if (json.tips && json.tips.length > 0) {
         setAiTips(json.tips);
       } else {
         throw new Error(json.error || 'Resposta vazia da API');
       }
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error('Erro dicas IA:', err);
-      // Fallback dinâmico baseado nos dados reais
-      const fallback = [];
-      if (expenses > income) {
-        fallback.push('⚠️ Suas saídas (' + formatCurrency(expenses) + ') superam as entradas (' + formatCurrency(income) + '). Revise os maiores gastos urgentemente.');
-      } else {
-        fallback.push('✅ Você economizou ' + formatCurrency(income - expenses) + ' este mês (' + (income > 0 ? ((( income - expenses) / income) * 100).toFixed(0) : 0) + '% da renda). Excelente!');
-      }
-      if (expensesByCategory.length > 0) {
-        const top = expensesByCategory[0];
-        fallback.push('📊 Seu maior gasto é "' + top.name + '" com ' + formatCurrency(top.value) + ' (' + (income > 0 ? ((top.value / income) * 100).toFixed(0) : 0) + '% da renda). Veja se há como reduzir.');
-      }
-      fallback.push('🎯 Meta recomendada: reserve ' + formatCurrency(income * 0.1) + ' (10% da renda) todo mês como poupança de emergência.');
-      setAiTips(fallback);
+      mostrarFallback();
     }
   };
 
