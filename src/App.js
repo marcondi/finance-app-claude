@@ -2526,12 +2526,35 @@ export default function FinanceApp() {
                         onClick={async () => {
                           setShowUserMenu(false);
                           setIsLoggingOut(true);
+
+                          // Fallback: se onAuthStateChange não disparar em 3s, força reset local
+                          const fallbackTimer = setTimeout(() => {
+                            setCurrentUser(null);
+                            setGooglePhotoUrl(null);
+                            setTransactions([]);
+                            setCategories([]);
+                            setScheduled([]);
+                            setIsLoggingOut(false);
+                            localStorage.removeItem('financeapp_gtoken');
+                          }, 3000);
+
                           try {
                             await supabase.auth.signOut();
                             // setCurrentUser(null) chamado automaticamente pelo onAuthStateChange
+                            // que também chama clearTimeout(fallbackTimer) via resolved
+                            clearTimeout(fallbackTimer);
+                            localStorage.removeItem('financeapp_gtoken');
                           } catch (error) {
+                            clearTimeout(fallbackTimer);
                             console.error('Erro ao fazer logout:', error);
+                            // Força reset mesmo com erro na API
+                            setCurrentUser(null);
+                            setGooglePhotoUrl(null);
+                            setTransactions([]);
+                            setCategories([]);
+                            setScheduled([]);
                             setIsLoggingOut(false);
+                            localStorage.removeItem('financeapp_gtoken');
                           }
                         }}
                         className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
