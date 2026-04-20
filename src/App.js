@@ -1984,98 +1984,93 @@ export default function FinanceApp() {
     }
   };
 
+  // Pool de dicas — índices já mostrados para garantir variedade entre gerações
+  const shownTipIndexesRef = React.useRef([]);
+
   const gerarDicasIA = async () => {
     setIsGeneratingTips(true);
     setAiTips([]);
 
-    // Aguarda um tick para garantir que o estado de loading renderize antes do fallback
-    await new Promise(r => setTimeout(r, 50));
+    // Pequeno delay para o loading aparecer antes das dicas
+    await new Promise(r => setTimeout(r, 600));
 
-    const focos = ['economia no dia a dia', 'investimentos e reserva de emergência', 'controle de gastos por categoria', 'metas financeiras de longo prazo', 'redução de despesas fixas'];
-    const foco = focos[Math.floor(Math.random() * focos.length)];
+    // Lê sempre valores atuais via ref (nunca closure stale)
+    const inc = incomeRef.current;
+    const exp = expensesRef.current;
+    const expByCat = expensesByCategoryRef.current;
+    const saldo = inc - exp;
+    const pct = (v) => inc > 0 ? ((v / inc) * 100).toFixed(0) : 0;
+    const top1 = expByCat[0];
+    const top2 = expByCat[1];
 
-    /**
-     * Gera fallback dinâmico baseado nos dados reais do usuário.
-     * Chamado sempre que a Edge Function falha ou excede o timeout.
-     */
-    const mostrarFallback = () => {
-      // Lê sempre os valores mais recentes via ref (evita closure stale)
-      const inc = incomeRef.current;
-      const exp = expensesRef.current;
-      const expByCat = expensesByCategoryRef.current;
-      const fallback = [];
-      if (exp > inc) {
-        fallback.push('⚠️ Suas saídas (' + formatCurrency(exp) + ') superam as entradas (' + formatCurrency(inc) + '). Revise os maiores gastos urgentemente.');
-      } else {
-        fallback.push('✅ Você economizou ' + formatCurrency(inc - exp) + ' este mês (' + (inc > 0 ? (((inc - exp) / inc) * 100).toFixed(0) : 0) + '% da renda). Excelente!');
-      }
-      if (expByCat.length > 0) {
-        const top = expByCat[0];
-        fallback.push('📊 Seu maior gasto é "' + top.name + '" com ' + formatCurrency(top.value) + ' (' + (inc > 0 ? ((top.value / inc) * 100).toFixed(0) : 0) + '% da renda). Veja se há como reduzir.');
-      }
-      // Dica variada conforme o foco sorteado
-      const dicasFoco = {
-        'economia no dia a dia': '💡 Foco de hoje: pequenas economias diárias se acumulam. Revise assinaturas e gastos recorrentes que podem ser cortados.',
-        'investimentos e reserva de emergência': '🎯 Meta recomendada: reserve ' + formatCurrency(inc * 0.1) + ' (10% da renda) todo mês como reserva de emergência antes de investir.',
-        'controle de gastos por categoria': '📂 Analise cada categoria de gasto e defina um teto mensal para as 3 maiores despesas.',
-        'metas financeiras de longo prazo': '🏁 Defina uma meta de longo prazo (ex: viagem, imóvel) e calcule quanto precisa guardar por mês para atingi-la.',
-        'redução de despesas fixas': '✂️ Despesas fixas são as mais difíceis de cortar, mas as que mais impactam. Revise contratos, planos e mensalidades.',
-      };
-      fallback.push(dicasFoco[foco] || '🎯 Meta recomendada: reserve ' + formatCurrency(inc * 0.1) + ' (10% da renda) todo mês como poupança de emergência.');
-      setAiTips(fallback);
-    };
+    // Pool de dicas personalizadas com os dados reais do usuário
+    const pool = [
+      // — Saldo / visão geral —
+      exp > inc
+        ? `⚠️ Atenção: suas saídas (${formatCurrency(exp)}) superam as entradas (${formatCurrency(inc)}) em ${formatCurrency(exp - inc)}. Revise os maiores gastos antes do fim do mês.`
+        : `✅ Parabéns! Você está no positivo em ${formatCurrency(saldo)} (${pct(saldo)}% da renda). Continue assim.`,
 
-    // Timeout de 10s para não travar na tela de loading indefinidamente
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+      inc > 0
+        ? `📈 Sua taxa de poupança este mês é de ${pct(saldo)}%. O ideal é manter acima de 20% para construir reservas sólidas.`
+        : `💡 Registre suas entradas para que o app calcule sua taxa de poupança mensal.`,
 
-    try {
-      const mes = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-      const gastos = expensesByCategoryRef.current.slice(0, 5).map(c => c.name + ': ' + formatCurrency(c.value)).join(', ');
-      const inc = incomeRef.current;
-      const exp = expensesRef.current;
-      const resumo = 'Mes: ' + mes + '\nEntradas: ' + formatCurrency(inc) + '\nSaídas: ' + formatCurrency(exp) + '\nSaldo: ' + formatCurrency(inc - exp) + '\nPrincipais gastos: ' + (gastos || 'nenhum') + '\nFoco desta analise: ' + foco;
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || '';
-      const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://oooegbbvrwifilavlvgt.supabase.co';
-      const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+      `🎯 Meta de reserva de emergência: acumule ${formatCurrency(inc * 6)} (6 meses de renda). Reserve ${formatCurrency(inc * 0.1)} por mês e atinja isso em 5 anos.`,
 
-      if (!SUPABASE_ANON_KEY) {
-        throw new Error('SUPABASE_ANON_KEY não configurada');
-      }
+      // — Categorias de despesa —
+      top1
+        ? `📊 Maior gasto: "${top1.name}" com ${formatCurrency(top1.value)} (${pct(top1.value)}% da renda). Defina um teto mensal para essa categoria.`
+        : `📂 Categorize todos os gastos para identificar onde cortar mais facilmente.`,
 
-      const res = await fetch(SUPABASE_URL + '/functions/v1/financial-tips', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': 'Bearer ' + (token || SUPABASE_ANON_KEY),
-        },
-        body: JSON.stringify({ resumo })
-      });
+      top2
+        ? `🔍 Segundo maior gasto: "${top2.name}" com ${formatCurrency(top2.value)}. Avalie se há alternativas mais baratas.`
+        : `🏷️ Crie categorias específicas para seus gastos recorrentes e acompanhe a evolução mês a mês.`,
 
-      clearTimeout(timeoutId);
+      expByCat.length >= 3
+        ? `💡 Suas 3 maiores despesas somam ${formatCurrency(expByCat.slice(0,3).reduce((s,c)=>s+c.value,0))} (${pct(expByCat.slice(0,3).reduce((s,c)=>s+c.value,0))}% da renda). Focar nelas tem o maior impacto.`
+        : `📋 Quanto mais detalhadas suas categorias, mais fácil identificar desperdícios.`,
 
-      if (!res.ok) {
-        throw new Error('Edge Function retornou status ' + res.status);
-      }
+      // — Hábitos e estratégias —
+      `✂️ Revise assinaturas e serviços recorrentes. Serviços esquecidos podem custar ${formatCurrency(inc * 0.05)} ou mais por mês sem perceber.`,
 
-      const json = await res.json();
-      console.log('financial-tips status:', res.status, 'response:', json);
+      `🛒 A regra 50/30/20 sugere: 50% para necessidades (${formatCurrency(inc * 0.5)}), 30% para desejos (${formatCurrency(inc * 0.3)}) e 20% para poupança (${formatCurrency(inc * 0.2)}).`,
 
-      if (json.tips && json.tips.length > 0) {
-        setAiTips(json.tips);
-      } else {
-        throw new Error(json.error || 'Resposta vazia da API');
-      }
-    } catch (err) {
-      clearTimeout(timeoutId);
-      console.error('Erro dicas IA:', err);
-      mostrarFallback();
-    } finally {
-      setIsGeneratingTips(false);
+      `⏰ Pagamentos no vencimento evitam juros. Programe débito automático para contas fixas e elimine multas desnecessárias.`,
+
+      `🏦 Separe uma conta específica para guardar ${formatCurrency(inc * 0.1)} assim que receber o salário — "pague-se primeiro" antes dos gastos.`,
+
+      // — Cartão de crédito / dívidas —
+      `💳 Se usa cartão de crédito, pague sempre o total da fatura. Juros rotativos costumam ultrapassar 300% ao ano — o crédito mais caro do mercado.`,
+
+      `📉 Dívidas com juros altos (cartão, cheque especial) devem ser prioridade. Quite a mais cara primeiro e use o valor liberado para a próxima.`,
+
+      // — Investimento —
+      `📦 Antes de investir, forme uma reserva de emergência de ${formatCurrency(inc * 3)} (3 meses de renda) em aplicações de liquidez diária.`,
+
+      `📊 Com saldo positivo de ${formatCurrency(Math.max(saldo, 0))}, considere dividir: 50% em liquidez imediata (Tesouro Selic) e 50% em renda fixa de médio prazo.`,
+
+      // — Metas —
+      `🏁 Defina uma meta financeira com valor e prazo. Ex: ${formatCurrency(inc * 12)} em 12 meses = guardar ${formatCurrency(inc)} por mês — use o app para acompanhar.`,
+
+      `🔄 Revise seu orçamento toda virada de mês. Pequenos ajustes consistentes têm mais impacto que grandes cortes esporádicos.`,
+    ];
+
+    // Garante que a nova seleção não repita os índices da geração anterior
+    const prev = shownTipIndexesRef.current;
+    const available = pool.map((_, i) => i).filter(i => !prev.includes(i));
+    // Se restaram menos de 3 disponíveis, reseta o histórico
+    const source = available.length >= 3 ? available : pool.map((_, i) => i);
+
+    // Sorteia 3 índices únicos do pool disponível
+    const chosen = [];
+    const temp = [...source];
+    while (chosen.length < 3 && temp.length > 0) {
+      const ri = Math.floor(Math.random() * temp.length);
+      chosen.push(temp.splice(ri, 1)[0]);
     }
+
+    shownTipIndexesRef.current = chosen;
+    setAiTips(chosen.map(i => pool[i]));
+    setIsGeneratingTips(false);
   };
 
   const toggleTransactionPaid = async (transaction) => {
