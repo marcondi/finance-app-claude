@@ -1618,12 +1618,7 @@ export default function FinanceApp() {
       };
     }).sort((a, b) => b.value - a.value);
 
-    // Top 6 + agrupar restante em "Outros"
-    if (all.length <= 6) return all;
-    const top6 = all.slice(0, 6);
-    const others = all.slice(6);
-    const othersValue = others.reduce((s, c) => s + c.value, 0);
-    return [...top6, { name: `Outros (${others.length})`, value: othersValue, color: '#9ca3af' }];
+    return all; // Mostra todas as categorias sem agrupar em 'Outros'
   }, [currentMonthTransactions, categories]);
 
 
@@ -2837,6 +2832,14 @@ export default function FinanceApp() {
                         outerRadius={100}
                         paddingAngle={5}
                         dataKey="value"
+                        cursor="pointer"
+                        onClick={(data) => {
+                          if (!data) return;
+                          setHighlightedCategory(data.name);
+                          setFilterType('expense');
+                          setSearchTerm('');
+                          setView('transactions');
+                        }}
                       >
                         {expensesByCategory.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
@@ -3037,6 +3040,28 @@ export default function FinanceApp() {
 
         {view === 'transactions' && (
           <>
+            {/* Banner de filtro ativo por categoria (vindo do clique no gráfico) */}
+            {highlightedCategory && (
+              <div className={`flex items-center justify-between gap-3 mb-4 px-4 py-3 rounded-xl border ${
+                darkMode ? 'bg-blue-900/30 border-blue-700 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-700'
+              }`}>
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                  </svg>
+                  Filtrando por categoria: <strong>{highlightedCategory}</strong>
+                </div>
+                <button
+                  onClick={() => setHighlightedCategory(null)}
+                  className={`text-xs px-3 py-1 rounded-lg font-medium transition-colors ${
+                    darkMode ? 'bg-blue-800 hover:bg-blue-700 text-blue-200' : 'bg-blue-100 hover:bg-blue-200 text-blue-600'
+                  }`}
+                >
+                  ✕ Limpar filtro
+                </button>
+              </div>
+            )}
+
             <div className="mb-6">
               <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
                 <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -3172,6 +3197,14 @@ export default function FinanceApp() {
                         );
                       }
 
+                      // Filtro por categoria (vindo do clique no gráfico)
+                      if (highlightedCategory) {
+                        filtered = filtered.filter(t => {
+                          const cat = categories.find(c => c.id === t.category_id);
+                          return cat?.name === highlightedCategory;
+                        });
+                      }
+
                       filtered = [...filtered].sort((a, b) => {
                         switch (sortBy) {
                           case 'date-desc':
@@ -3213,9 +3246,11 @@ export default function FinanceApp() {
                               const category = categories.find(c => c.id === transaction.category_id);
                               return (
                                 <tr key={transaction.id} className={`transition-colors ${
-                                  transaction.is_paid
-                                    ? darkMode ? 'bg-green-900/20 hover:bg-green-900/30' : 'bg-green-50 hover:bg-green-100'
-                                    : darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                                  highlightedCategory && categories.find(c => c.id === transaction.category_id)?.name === highlightedCategory
+                                    ? darkMode ? 'bg-blue-900/40 ring-1 ring-inset ring-blue-500' : 'bg-blue-50 ring-1 ring-inset ring-blue-300'
+                                    : transaction.is_paid
+                                      ? darkMode ? 'bg-green-900/20 hover:bg-green-900/30' : 'bg-green-50 hover:bg-green-100'
+                                      : darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
                                 }`}>
                                   <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                     {formatDate(transaction.date)}
@@ -3923,7 +3958,23 @@ export default function FinanceApp() {
                     <div className="flex-1">
                       <ResponsiveContainer width="100%" height={320}>
                         <PieChart>
-                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={3} dataKey="value">
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={80}
+                            outerRadius={130}
+                            paddingAngle={3}
+                            dataKey="value"
+                            cursor="pointer"
+                            onClick={(data) => {
+                              if (!data) return;
+                              setHighlightedCategory(data.name);
+                              setFilterType(reportFilter === 'expenses-category' ? 'expense' : 'income');
+                              setSearchTerm('');
+                              setView('transactions');
+                            }}
+                          >
                             {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                           </Pie>
                           <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb', borderRadius: '8px', color: darkMode ? '#f9fafb' : '#111827', fontSize: '13px' }} labelStyle={{ color: darkMode ? '#f9fafb' : '#111827', fontWeight: 600 }} itemStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }} />
