@@ -1626,6 +1626,15 @@ export default function FinanceApp() {
     return [...top6, { name: `Outros (${others.length})`, value: othersValue, color: '#9ca3af' }];
   }, [currentMonthTransactions, categories]);
 
+
+  // Refs para garantir que gerarDicasIA sempre leia os valores mais recentes (evita closure stale)
+  const incomeRef = React.useRef(0);
+  const expensesRef = React.useRef(0);
+  const expensesByCategoryRef = React.useRef([]);
+  incomeRef.current = income;
+  expensesRef.current = expenses;
+  expensesByCategoryRef.current = expensesByCategory;
+
   const upcomingDueDates = useMemo(() => {
     if (!currentUser) return [];
 
@@ -1990,25 +1999,29 @@ export default function FinanceApp() {
      * Chamado sempre que a Edge Function falha ou excede o timeout.
      */
     const mostrarFallback = () => {
+      // Lê sempre os valores mais recentes via ref (evita closure stale)
+      const inc = incomeRef.current;
+      const exp = expensesRef.current;
+      const expByCat = expensesByCategoryRef.current;
       const fallback = [];
-      if (expenses > income) {
-        fallback.push('⚠️ Suas saídas (' + formatCurrency(expenses) + ') superam as entradas (' + formatCurrency(income) + '). Revise os maiores gastos urgentemente.');
+      if (exp > inc) {
+        fallback.push('⚠️ Suas saídas (' + formatCurrency(exp) + ') superam as entradas (' + formatCurrency(inc) + '). Revise os maiores gastos urgentemente.');
       } else {
-        fallback.push('✅ Você economizou ' + formatCurrency(income - expenses) + ' este mês (' + (income > 0 ? (((income - expenses) / income) * 100).toFixed(0) : 0) + '% da renda). Excelente!');
+        fallback.push('✅ Você economizou ' + formatCurrency(inc - exp) + ' este mês (' + (inc > 0 ? (((inc - exp) / inc) * 100).toFixed(0) : 0) + '% da renda). Excelente!');
       }
-      if (expensesByCategory.length > 0) {
-        const top = expensesByCategory[0];
-        fallback.push('📊 Seu maior gasto é "' + top.name + '" com ' + formatCurrency(top.value) + ' (' + (income > 0 ? ((top.value / income) * 100).toFixed(0) : 0) + '% da renda). Veja se há como reduzir.');
+      if (expByCat.length > 0) {
+        const top = expByCat[0];
+        fallback.push('📊 Seu maior gasto é "' + top.name + '" com ' + formatCurrency(top.value) + ' (' + (inc > 0 ? ((top.value / inc) * 100).toFixed(0) : 0) + '% da renda). Veja se há como reduzir.');
       }
       // Dica variada conforme o foco sorteado
       const dicasFoco = {
         'economia no dia a dia': '💡 Foco de hoje: pequenas economias diárias se acumulam. Revise assinaturas e gastos recorrentes que podem ser cortados.',
-        'investimentos e reserva de emergência': '🎯 Meta recomendada: reserve ' + formatCurrency(income * 0.1) + ' (10% da renda) todo mês como reserva de emergência antes de investir.',
+        'investimentos e reserva de emergência': '🎯 Meta recomendada: reserve ' + formatCurrency(inc * 0.1) + ' (10% da renda) todo mês como reserva de emergência antes de investir.',
         'controle de gastos por categoria': '📂 Analise cada categoria de gasto e defina um teto mensal para as 3 maiores despesas.',
         'metas financeiras de longo prazo': '🏁 Defina uma meta de longo prazo (ex: viagem, imóvel) e calcule quanto precisa guardar por mês para atingi-la.',
         'redução de despesas fixas': '✂️ Despesas fixas são as mais difíceis de cortar, mas as que mais impactam. Revise contratos, planos e mensalidades.',
       };
-      fallback.push(dicasFoco[foco] || '🎯 Meta recomendada: reserve ' + formatCurrency(income * 0.1) + ' (10% da renda) todo mês como poupança de emergência.');
+      fallback.push(dicasFoco[foco] || '🎯 Meta recomendada: reserve ' + formatCurrency(inc * 0.1) + ' (10% da renda) todo mês como poupança de emergência.');
       setAiTips(fallback);
     };
 
@@ -2018,8 +2031,10 @@ export default function FinanceApp() {
 
     try {
       const mes = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-      const gastos = expensesByCategory.slice(0, 5).map(c => c.name + ': ' + formatCurrency(c.value)).join(', ');
-      const resumo = 'Mes: ' + mes + '\nEntradas: ' + formatCurrency(income) + '\nSaídas: ' + formatCurrency(expenses) + '\nSaldo: ' + formatCurrency(income - expenses) + '\nPrincipais gastos: ' + (gastos || 'nenhum') + '\nFoco desta analise: ' + foco;
+      const gastos = expensesByCategoryRef.current.slice(0, 5).map(c => c.name + ': ' + formatCurrency(c.value)).join(', ');
+      const inc = incomeRef.current;
+      const exp = expensesRef.current;
+      const resumo = 'Mes: ' + mes + '\nEntradas: ' + formatCurrency(inc) + '\nSaídas: ' + formatCurrency(exp) + '\nSaldo: ' + formatCurrency(inc - exp) + '\nPrincipais gastos: ' + (gastos || 'nenhum') + '\nFoco desta analise: ' + foco;
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || '';
       const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://oooegbbvrwifilavlvgt.supabase.co';
