@@ -109,6 +109,7 @@ export default function FinanceApp() {
   const [savingsGoal, setSavingsGoal] = useState(0);
   const [showTips, setShowTips] = useState(false);
   const [aiTips, setAiTips] = useState([]);
+  const [isGeneratingTips, setIsGeneratingTips] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
   const [confirmModal, setConfirmModal] = useState({ open: false, message: '', onConfirm: null });
@@ -1975,7 +1976,14 @@ export default function FinanceApp() {
   };
 
   const gerarDicasIA = async () => {
-    setAiTips(['⏳ Analisando suas finanças...']);
+    setIsGeneratingTips(true);
+    setAiTips([]);
+
+    // Aguarda um tick para garantir que o estado de loading renderize antes do fallback
+    await new Promise(r => setTimeout(r, 50));
+
+    const focos = ['economia no dia a dia', 'investimentos e reserva de emergência', 'controle de gastos por categoria', 'metas financeiras de longo prazo', 'redução de despesas fixas'];
+    const foco = focos[Math.floor(Math.random() * focos.length)];
 
     /**
      * Gera fallback dinâmico baseado nos dados reais do usuário.
@@ -1992,12 +2000,17 @@ export default function FinanceApp() {
         const top = expensesByCategory[0];
         fallback.push('📊 Seu maior gasto é "' + top.name + '" com ' + formatCurrency(top.value) + ' (' + (income > 0 ? ((top.value / income) * 100).toFixed(0) : 0) + '% da renda). Veja se há como reduzir.');
       }
-      fallback.push('🎯 Meta recomendada: reserve ' + formatCurrency(income * 0.1) + ' (10% da renda) todo mês como poupança de emergência.');
+      // Dica variada conforme o foco sorteado
+      const dicasFoco = {
+        'economia no dia a dia': '💡 Foco de hoje: pequenas economias diárias se acumulam. Revise assinaturas e gastos recorrentes que podem ser cortados.',
+        'investimentos e reserva de emergência': '🎯 Meta recomendada: reserve ' + formatCurrency(income * 0.1) + ' (10% da renda) todo mês como reserva de emergência antes de investir.',
+        'controle de gastos por categoria': '📂 Analise cada categoria de gasto e defina um teto mensal para as 3 maiores despesas.',
+        'metas financeiras de longo prazo': '🏁 Defina uma meta de longo prazo (ex: viagem, imóvel) e calcule quanto precisa guardar por mês para atingi-la.',
+        'redução de despesas fixas': '✂️ Despesas fixas são as mais difíceis de cortar, mas as que mais impactam. Revise contratos, planos e mensalidades.',
+      };
+      fallback.push(dicasFoco[foco] || '🎯 Meta recomendada: reserve ' + formatCurrency(income * 0.1) + ' (10% da renda) todo mês como poupança de emergência.');
       setAiTips(fallback);
     };
-
-    const focos = ['economia no dia a dia', 'investimentos e reserva de emergência', 'controle de gastos por categoria', 'metas financeiras de longo prazo', 'redução de despesas fixas'];
-    const foco = focos[Math.floor(Math.random() * focos.length)];
 
     // Timeout de 10s para não travar na tela de loading indefinidamente
     const controller = new AbortController();
@@ -2045,6 +2058,8 @@ export default function FinanceApp() {
       clearTimeout(timeoutId);
       console.error('Erro dicas IA:', err);
       mostrarFallback();
+    } finally {
+      setIsGeneratingTips(false);
     }
   };
 
@@ -2960,27 +2975,36 @@ export default function FinanceApp() {
               {!showTips ? (
                 <button
                   onClick={async () => { setShowTips(true); await gerarDicasIA(); }}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all"
+                  disabled={isGeneratingTips}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all disabled:opacity-70"
                 >
-                  ✨ Gerar Dicas com IA
+                  {isGeneratingTips ? '⏳ Analisando suas finanças...' : '✨ Gerar Dicas com IA'}
                 </button>
               ) : (
                 <div className="space-y-3">
-                  {aiTips.map((tip, index) => (
-                    <div key={index} className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
-                      <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{tip}</p>
+                  {isGeneratingTips ? (
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
+                      <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>⏳ Analisando suas finanças...</p>
                     </div>
-                  ))}
+                  ) : (
+                    aiTips.map((tip, index) => (
+                      <div key={index} className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
+                        <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{tip}</p>
+                      </div>
+                    ))
+                  )}
                   <div className="flex gap-4 mt-1">
                     <button
                       onClick={gerarDicasIA}
-                      className={`text-sm font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                      disabled={isGeneratingTips}
+                      className={`text-sm font-medium transition-opacity ${isGeneratingTips ? 'opacity-40 cursor-not-allowed' : ''} ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                     >
-                      🔄 Regerar dicas
+                      {isGeneratingTips ? '⏳ Gerando...' : '🔄 Regerar dicas'}
                     </button>
                     <button
                       onClick={() => setShowTips(false)}
-                      className={`text-sm ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} underline`}
+                      disabled={isGeneratingTips}
+                      className={`text-sm underline ${isGeneratingTips ? 'opacity-40 cursor-not-allowed' : ''} ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                       Ocultar dicas
                     </button>
