@@ -103,6 +103,7 @@ export default function FinanceApp() {
   const [editingCategory, setEditingCategory] = useState(null);
   const [filterType, setFilterType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [highlightedCategory, setHighlightedCategory] = useState(null);
   const [sortBy, setSortBy] = useState('date-desc');
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
