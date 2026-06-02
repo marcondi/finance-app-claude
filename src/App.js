@@ -21,37 +21,20 @@ import {
   Calendar
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-
-const STORAGE_KEY = 'finance_app_v1';
+import { supabase } from './supabaseClient';
 
 const defaultCategories = [
-  { id: 'cat-1', name: 'Alimentação', color: '#ef4444', type: 'expense' },
-  { id: 'cat-2', name: 'Transporte', color: '#f59e0b', type: 'expense' },
-  { id: 'cat-3', name: 'Moradia', color: '#8b5cf6', type: 'expense' },
-  { id: 'cat-4', name: 'Lazer', color: '#ec4899', type: 'expense' },
-  { id: 'cat-5', name: 'Saúde', color: '#14b8a6', type: 'expense' },
-  { id: 'cat-6', name: 'Educação', color: '#3b82f6', type: 'expense' },
-  { id: 'cat-7', name: 'Salário', color: '#10b981', type: 'income' },
-  { id: 'cat-8', name: 'Freelance', color: '#22c55e', type: 'income' },
-  { id: 'cat-9', name: 'Investimentos', color: '#059669', type: 'income' },
+  { id: 'cat-1', name: 'Alimentação', color: '#ef4444', type: 'expense', user_id: null },
+  { id: 'cat-2', name: 'Transporte', color: '#f59e0b', type: 'expense', user_id: null },
+  { id: 'cat-3', name: 'Moradia', color: '#8b5cf6', type: 'expense', user_id: null },
+  { id: 'cat-4', name: 'Lazer', color: '#ec4899', type: 'expense', user_id: null },
+  { id: 'cat-5', name: 'Saúde', color: '#14b8a6', type: 'expense', user_id: null },
+  { id: 'cat-6', name: 'Educação', color: '#3b82f6', type: 'expense', user_id: null },
+  { id: 'cat-7', name: 'Salário', color: '#10b981', type: 'income', user_id: null },
+  { id: 'cat-8', name: 'Freelance', color: '#22c55e', type: 'income', user_id: null },
+  { id: 'cat-9', name: 'Investimentos', color: '#059669', type: 'income', user_id: null },
+  { id: 'cat-10', name: 'Poupança', color: '#6366f1', type: 'income', user_id: null },
 ];
-
-const loadData = () => {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    return JSON.parse(stored);
-  }
-  return {
-    users: [],
-    categories: defaultCategories,
-    transactions: [],
-    scheduled: []
-  };
-};
-
-const saveData = (data) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-};
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -63,7 +46,6 @@ const formatCurrency = (value) => {
 };
 
 const formatDate = (date) => {
-  // Parse manual para evitar problema de timezone
   const dateParts = date.split('-');
   const dateObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
   return dateObj.toLocaleDateString('pt-BR');
@@ -72,7 +54,10 @@ const formatDate = (date) => {
 export default function FinanceApp() {
   const [darkMode, setDarkMode] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [appData, setAppData] = useState(loadData());
+  const [categories, setCategories] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [scheduled, setScheduled] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState('dashboard');
   const [showTransactionModal, setShowTransactionModal] = useState(false);
@@ -80,57 +65,194 @@ export default function FinanceApp() {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all'); // all, income, expense
-  const [sortBy, setSortBy] = useState('date-desc'); // date-desc, date-asc, description-asc, description-desc, amount-desc, amount-asc
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [savingsGoal, setSavingsGoal] = useState(0); // Meta de economia mensal
+  const [filterType, setFilterType] = useState('all');
+  const [sortBy, setSortBy] = useState('date-desc');
+  const [savingsGoal, setSavingsGoal] = useState(0);
   const [showTips, setShowTips] = useState(false);
   const [aiTips, setAiTips] = useState([]);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
-  const [scheduleView, setScheduleView] = useState('month'); // day, week, month
 
   useEffect(() => {
-    saveData(appData);
-  }, [appData]);
+    if (currentUser) {
+      loadUserData();
+    }
+  }, [currentUser]);
+
+  const loadUserData = async () => {
+    setLoading(true);
+    try {
+      // Carregar categorias
+      const { data: cats, error: catsError } = await supabase
+        .from('finance_categories')
+        .select('*')
+        .or(`user_id.eq.${currentUser.id},user_id.is.null`);
+      
+      if (catsError) throw catsError;
+      
+      // Se não houver categorias, criar as padrões
+      if (!cats || cats.length === 0) {
+        const categoriesToInsert = defaultCategories.map(cat => ({
+          ...cat,
+          user_id: null
+        }));
+        
+        const { data: newCats, error: insertError } = await supabase
+          .from('finance_categories')
+          .insert(categoriesToInsert)
+          .select();
+        
+        if (insertError) throw insertError;
+        setCategories(newCats);
+      } else {
+        setCategories(cats);
+      }
+
+      // Carregar transações
+      const { data: trans, error: transError } = await supabase
+        .from('finance_transactions')
+        .select('*')
+        .eq('user_id', currentUser.id);
+      
+      if (transError) throw transError;
+      setTransactions(trans || []);
+
+      // Carregar agendamentos
+      const { data: sched, error: schedError } = await supabase
+        .from('finance_scheduled')
+        .select('*')
+        .eq('user_id', currentUser.id);
+      
+      if (schedError) throw schedError;
+      setScheduled(sched || []);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      alert('Erro ao carregar dados: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const AuthScreen = () => {
     const [isLogin, setIsLogin] = useState(true);
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
 
-    const handleAuth = () => {
+    const handleAuth = async () => {
       if (isLogin) {
-        const user = appData.users.find(u => u.email === email && u.password === password);
-        if (user) {
-          setCurrentUser(user);
-        } else {
-          alert('Credenciais inválidas!');
+        try {
+          const { data: users, error } = await supabase
+            .from('finance_users')
+            .select('*')
+            .eq('email', email)
+            .eq('password', password);
+
+          if (error) throw error;
+
+          if (users && users.length > 0) {
+            setCurrentUser(users[0]);
+          } else {
+            alert('Credenciais inválidas!');
+          }
+        } catch (error) {
+          console.error('Erro no login:', error);
+          alert('Erro ao fazer login: ' + error.message);
         }
       } else {
-        const newUser = {
-          id: generateId(),
-          name,
-          email,
-          password
-        };
-        setAppData(prev => ({
-          ...prev,
-          users: [...prev.users, newUser]
-        }));
-        setCurrentUser(newUser);
+        if (!name || !email || !password) {
+          alert('Preencha todos os campos!');
+          return;
+        }
+
+        try {
+          const { data: existingUser, error: checkError } = await supabase
+            .from('finance_users')
+            .select('*')
+            .eq('email', email);
+
+          if (checkError) throw checkError;
+
+          if (existingUser && existingUser.length > 0) {
+            alert('Este e-mail já está cadastrado!');
+            return;
+          }
+
+          const newUser = {
+            id: generateId(),
+            name,
+            email,
+            password
+          };
+
+          const { data, error } = await supabase
+            .from('finance_users')
+            .insert([newUser])
+            .select();
+
+          if (error) throw error;
+
+          setCurrentUser(data[0]);
+        } catch (error) {
+          console.error('Erro ao cadastrar:', error);
+          alert('Erro ao criar conta: ' + error.message);
+        }
       }
     };
 
-    const handleGuest = () => {
-      const guestUser = {
-        id: `guest-${generateId()}`,
-        name: 'Convidado',
-        email: '',
-        password: ''
-      };
-      setCurrentUser(guestUser);
+    const handleForgotPassword = async () => {
+      if (!email) {
+        alert('Digite seu e-mail para recuperar a senha!');
+        return;
+      }
+
+      if (!newPassword || !confirmPassword) {
+        alert('Preencha os campos de nova senha!');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        alert('As senhas não coincidem!');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        alert('A senha deve ter no mínimo 6 caracteres!');
+        return;
+      }
+
+      try {
+        const { data: users, error: findError } = await supabase
+          .from('finance_users')
+          .select('*')
+          .eq('email', email);
+
+        if (findError) throw findError;
+
+        if (!users || users.length === 0) {
+          alert('E-mail não encontrado!');
+          return;
+        }
+
+        const { error: updateError } = await supabase
+          .from('finance_users')
+          .update({ password: newPassword })
+          .eq('email', email);
+
+        if (updateError) throw updateError;
+
+        alert('✅ Senha redefinida com sucesso!');
+        setIsForgotPassword(false);
+        setEmail('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } catch (error) {
+        console.error('Erro ao redefinir senha:', error);
+        alert('Erro ao redefinir senha: ' + error.message);
+      }
     };
 
     return (
@@ -141,80 +263,147 @@ export default function FinanceApp() {
             <h1 className={`ml-3 text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>FinanceApp</h1>
           </div>
 
-          <div className="flex mb-6 border-b border-gray-300">
-            <button
-              onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2 text-center font-medium transition-colors ${
-                isLogin
-                  ? `border-b-2 ${darkMode ? 'border-blue-400 text-blue-400' : 'border-blue-600 text-blue-600'}`
-                  : darkMode ? 'text-gray-400' : 'text-gray-500'
-              }`}
-            >
-              Login
-            </button>
-            <button
-              onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2 text-center font-medium transition-colors ${
-                !isLogin
-                  ? `border-b-2 ${darkMode ? 'border-blue-400 text-blue-400' : 'border-blue-600 text-blue-600'}`
-                  : darkMode ? 'text-gray-400' : 'text-gray-500'
-              }`}
-            >
-              Cadastro
-            </button>
-          </div>
+          {isForgotPassword ? (
+            <>
+              <h2 className={`text-xl font-semibold mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                Recuperar Senha
+              </h2>
+              <div className="space-y-4">
+                <input
+                  type="email"
+                  placeholder="E-mail cadastrado"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                <input
+                  type="password"
+                  placeholder="Nova senha (mín. 6 caracteres)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                <input
+                  type="password"
+                  placeholder="Confirmar nova senha"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                <button
+                  onClick={handleForgotPassword}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
+                >
+                  Redefinir Senha
+                </button>
+                <button
+                  onClick={() => {
+                    setIsForgotPassword(false);
+                    setEmail('');
+                    setNewPassword('');
+                    setConfirmPassword('');
+                  }}
+                  className={`w-full ${
+                    darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'
+                  } font-medium py-2 transition-colors`}
+                >
+                  ← Voltar ao login
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex mb-6 border-b border-gray-300">
+                <button
+                  onClick={() => setIsLogin(true)}
+                  className={`flex-1 py-2 text-center font-medium transition-colors ${
+                    isLogin
+                      ? `border-b-2 ${darkMode ? 'border-blue-400 text-blue-400' : 'border-blue-600 text-blue-600'}`
+                      : darkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => setIsLogin(false)}
+                  className={`flex-1 py-2 text-center font-medium transition-colors ${
+                    !isLogin
+                      ? `border-b-2 ${darkMode ? 'border-blue-400 text-blue-400' : 'border-blue-600 text-blue-600'}`
+                      : darkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                >
+                  Cadastro
+                </button>
+              </div>
 
-          <div className="space-y-4">
-            {!isLogin && (
-              <input
-                type="text"
-                placeholder="Nome"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              />
-            )}
-            <input
-              type="email"
-              placeholder="E-mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={`w-full px-4 py-3 rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            />
-            <input
-              type="password"
-              placeholder="Senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={`w-full px-4 py-3 rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            />
-            <button
-              onClick={handleAuth}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
-            >
-              {isLogin ? 'Entrar' : 'Criar Conta'}
-            </button>
-            <button
-              onClick={handleGuest}
-              className={`w-full ${
-                darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
-              } ${darkMode ? 'text-white' : 'text-gray-800'} font-medium py-3 rounded-lg transition-colors`}
-            >
-              Continuar como Convidado
-            </button>
-          </div>
+              <div className="space-y-4">
+                {!isLogin && (
+                  <input
+                    type="text"
+                    placeholder="Nome"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-lg border ${
+                      darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                        : 'bg-white border-gray-300 text-gray-900'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                )}
+                <input
+                  type="email"
+                  placeholder="E-mail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                <input
+                  type="password"
+                  placeholder="Senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                <button
+                  onClick={handleAuth}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
+                >
+                  {isLogin ? 'Entrar' : 'Criar Conta'}
+                </button>
+                
+                {isLogin && (
+                  <button
+                    onClick={() => setIsForgotPassword(true)}
+                    className={`w-full ${
+                      darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
+                    } text-sm font-medium py-2 transition-colors`}
+                  >
+                    Esqueci minha senha
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -234,111 +423,120 @@ export default function FinanceApp() {
         setType(editingTransaction.type);
         setAmount(editingTransaction.amount.toString());
         setDescription(editingTransaction.description);
-        setCategoryId(editingTransaction.categoryId);
+        setCategoryId(editingTransaction.category_id);
         setDate(editingTransaction.date);
-        setIsRecurring(editingTransaction.isRecurring || false);
-        setRecurringMonths((editingTransaction.recurringMonths || 1).toString());
+        setIsRecurring(editingTransaction.is_recurring || false);
+        setRecurringMonths((editingTransaction.recurring_months || 1).toString());
       }
     }, [editingTransaction]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
       if (!amount || !description || !categoryId) {
         alert('Preencha todos os campos!');
         return;
       }
 
       const baseTransaction = {
-        userId: currentUser.id,
+        user_id: currentUser.id,
         type: type === 'scheduled' ? 'expense' : type,
         amount: parseFloat(amount),
         description,
-        categoryId,
+        category_id: categoryId,
         date,
-        isRecurring,
-        recurringMonths: isRecurring ? parseInt(recurringMonths) : undefined
+        is_recurring: isRecurring,
+        recurring_months: isRecurring ? parseInt(recurringMonths) : null,
+        parent_id: null
       };
 
-      if (type === 'scheduled') {
-        const baseScheduled = {
-          userId: currentUser.id,
-          amount: parseFloat(amount),
-          description,
-          categoryId,
-          isPaid: false
-        };
-        
-        const scheduledList = [];
-        const months = parseInt(recurringMonths) || 1;
-        
-        // Gerar agendamentos para N meses
-        for (let i = 0; i < months; i++) {
-          const scheduledDate = new Date(date);
-          scheduledDate.setMonth(scheduledDate.getMonth() + i);
-          
-          scheduledList.push({
-            ...baseScheduled,
-            id: generateId(),
-            dueDate: scheduledDate.toISOString().split('T')[0]
-          });
-        }
-        
-        console.log(`Criando ${scheduledList.length} agendamento(s)`);
-        
-        setAppData(prev => ({
-          ...prev,
-          scheduled: [...prev.scheduled, ...scheduledList]
-        }));
-      } else {
-        if (editingTransaction) {
-          setAppData(prev => ({
-            ...prev,
-            transactions: prev.transactions.map(t =>
-              t.id === editingTransaction.id ? { ...t, ...baseTransaction } : t
-            )
-          }));
-        } else {
-          const newTransaction = {
-            id: generateId(),
-            ...baseTransaction
+      try {
+        if (type === 'scheduled') {
+          const baseScheduled = {
+            user_id: currentUser.id,
+            amount: parseFloat(amount),
+            description,
+            category_id: categoryId,
+            is_paid: false
           };
-
-          console.log('Nova transação criada:', newTransaction);
-
-          const transactions = [newTransaction];
-
-          if (isRecurring && recurringMonths) {
-            const months = parseInt(recurringMonths);
-            for (let i = 1; i < months; i++) {
-              const futureDate = new Date(date);
-              futureDate.setMonth(futureDate.getMonth() + i);
-              transactions.push({
-                ...newTransaction,
-                id: generateId(),
-                date: futureDate.toISOString().split('T')[0],
-                parentId: newTransaction.id
-              });
-            }
+          
+          const scheduledList = [];
+          const months = parseInt(recurringMonths) || 1;
+          
+          for (let i = 0; i < months; i++) {
+            const scheduledDate = new Date(date);
+            scheduledDate.setMonth(scheduledDate.getMonth() + i);
+            
+            scheduledList.push({
+              ...baseScheduled,
+              due_date: scheduledDate.toISOString().split('T')[0]
+            });
           }
+          
+          const { data, error } = await supabase
+            .from('finance_scheduled')
+            .insert(scheduledList)
+            .select();
+          
+          if (error) throw error;
+          
+          setScheduled([...scheduled, ...data]);
+        } else {
+          if (editingTransaction) {
+            const { error } = await supabase
+              .from('finance_transactions')
+              .update(baseTransaction)
+              .eq('id', editingTransaction.id);
+            
+            if (error) throw error;
+            
+            setTransactions(transactions.map(t =>
+              t.id === editingTransaction.id ? { ...t, ...baseTransaction } : t
+            ));
+          } else {
+            const transactionsToInsert = [];
+            const firstTransaction = {
+              ...baseTransaction,
+              id: generateId()
+            };
+            
+            transactionsToInsert.push(firstTransaction);
 
-          setAppData(prev => ({
-            ...prev,
-            transactions: [...prev.transactions, ...transactions]
-          }));
-          
-          // Navegar para o mês da transação criada (parse correto da data)
-          const dateParts = date.split('-');
-          const transactionDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-          console.log('Navegando para data:', transactionDate, 'Mês:', transactionDate.getMonth(), 'Ano:', transactionDate.getFullYear());
-          setCurrentDate(transactionDate);
-          
-          // Voltar para o dashboard para ver o resultado
-          setView('dashboard');
+            if (isRecurring && recurringMonths) {
+              const months = parseInt(recurringMonths);
+              for (let i = 1; i < months; i++) {
+                const futureDate = new Date(date);
+                futureDate.setMonth(futureDate.getMonth() + i);
+                transactionsToInsert.push({
+                  ...baseTransaction,
+                  id: generateId(),
+                  date: futureDate.toISOString().split('T')[0],
+                  parent_id: firstTransaction.id
+                });
+              }
+            }
+
+            const { data, error } = await supabase
+              .from('finance_transactions')
+              .insert(transactionsToInsert)
+              .select();
+            
+            if (error) throw error;
+            
+            setTransactions([...transactions, ...data]);
+            
+            const dateParts = date.split('-');
+            const transactionDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+            setCurrentDate(transactionDate);
+            setView('dashboard');
+          }
         }
-      }
 
-      setShowTransactionModal(false);
-      setEditingTransaction(null);
-      resetForm();
+        setShowTransactionModal(false);
+        setEditingTransaction(null);
+        resetForm();
+      } catch (error) {
+        console.error('Erro ao salvar transação:', error);
+        alert('Erro ao salvar: ' + error.message);
+      }
     };
 
     const resetForm = () => {
@@ -350,11 +548,7 @@ export default function FinanceApp() {
       setRecurringMonths('1');
     };
 
-    const availableCategories = appData.categories.filter(c => {
-      // Mostrar categoria se:
-      // 1. Não tem userId (categoria padrão) OU
-      // 2. UserId é do usuário atual OU
-      // 3. UserId existe mas queremos mostrar todas do tipo certo (para categorias importadas)
+    const availableCategories = categories.filter(c => {
       const matchesType = type === 'scheduled' ? c.type === 'expense' : c.type === type;
       return matchesType;
     });
@@ -568,37 +762,52 @@ export default function FinanceApp() {
       }
     }, [editingCategory]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
       if (!name) {
         alert('Digite um nome para a categoria!');
         return;
       }
 
-      if (editingCategory) {
-        setAppData(prev => ({
-          ...prev,
-          categories: prev.categories.map(c =>
+      try {
+        if (editingCategory) {
+          const { error } = await supabase
+            .from('finance_categories')
+            .update({ name, color, type })
+            .eq('id', editingCategory.id);
+          
+          if (error) throw error;
+          
+          setCategories(categories.map(c =>
             c.id === editingCategory.id ? { ...c, name, color, type } : c
-          )
-        }));
-      } else {
-        const newCategory = {
-          id: generateId(),
-          name,
-          color,
-          type
-        };
-        setAppData(prev => ({
-          ...prev,
-          categories: [...prev.categories, newCategory]
-        }));
-      }
+          ));
+        } else {
+          const newCategory = {
+            id: generateId(),
+            name,
+            color,
+            type,
+            user_id: currentUser.id
+          };
 
-      setShowCategoryModal(false);
-      setEditingCategory(null);
-      setName('');
-      setColor('#3b82f6');
-      setType('expense');
+          const { data, error } = await supabase
+            .from('finance_categories')
+            .insert([newCategory])
+            .select();
+          
+          if (error) throw error;
+          
+          setCategories([...categories, ...data]);
+        }
+
+        setShowCategoryModal(false);
+        setEditingCategory(null);
+        setName('');
+        setColor('#3b82f6');
+        setType('expense');
+      } catch (error) {
+        console.error('Erro ao salvar categoria:', error);
+        alert('Erro ao salvar categoria: ' + error.message);
+      }
     };
 
     return (
@@ -694,16 +903,15 @@ export default function FinanceApp() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
-    return appData.transactions.filter(t => {
-      if (t.userId !== currentUser.id) return false;
+    return transactions.filter(t => {
+      if (t.user_id !== currentUser.id) return false;
       
-      // Corrigir parsing de data para evitar problema de timezone
       const dateParts = t.date.split('-');
       const tDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
       
       return tDate.getFullYear() === year && tDate.getMonth() === month;
     });
-  }, [appData.transactions, currentUser, currentDate]);
+  }, [transactions, currentUser, currentDate]);
 
   const income = useMemo(() => 
     currentMonthTransactions
@@ -720,18 +928,16 @@ export default function FinanceApp() {
   const balance = income - expenses;
 
   const savingsAmount = useMemo(() => {
-    // Procurar categoria "Poupança" (case insensitive)
-    const savingsCategory = appData.categories.find(c => 
+    const savingsCategory = categories.find(c => 
       c.name.toLowerCase() === 'poupança' || c.name.toLowerCase() === 'poupanca'
     );
     
     if (!savingsCategory) return 0;
     
-    // Somar todas as transações da categoria Poupança no mês atual
     return currentMonthTransactions
-      .filter(t => t.categoryId === savingsCategory.id)
+      .filter(t => t.category_id === savingsCategory.id)
       .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
-  }, [currentMonthTransactions, appData.categories]);
+  }, [currentMonthTransactions, categories]);
 
   const expensesByCategory = useMemo(() => {
     const categoryMap = new Map();
@@ -739,19 +945,19 @@ export default function FinanceApp() {
     currentMonthTransactions
       .filter(t => t.type === 'expense')
       .forEach(t => {
-        const current = categoryMap.get(t.categoryId) || 0;
-        categoryMap.set(t.categoryId, current + t.amount);
+        const current = categoryMap.get(t.category_id) || 0;
+        categoryMap.set(t.category_id, current + t.amount);
       });
 
     return Array.from(categoryMap.entries()).map(([categoryId, amount]) => {
-      const category = appData.categories.find(c => c.id === categoryId);
+      const category = categories.find(c => c.id === categoryId);
       return {
         name: category?.name || 'Sem categoria',
         value: amount,
         color: category?.color || '#666'
       };
     });
-  }, [currentMonthTransactions, appData.categories]);
+  }, [currentMonthTransactions, categories]);
 
   const upcomingDueDates = useMemo(() => {
     if (!currentUser) return [];
@@ -760,14 +966,14 @@ export default function FinanceApp() {
     const fiveDaysFromNow = new Date(today);
     fiveDaysFromNow.setDate(today.getDate() + 5);
 
-    return appData.scheduled.filter(s => {
-      if (s.userId !== currentUser.id || s.isPaid) return false;
-      const dueDate = new Date(s.dueDate);
+    return scheduled.filter(s => {
+      if (s.user_id !== currentUser.id || s.is_paid) return false;
+      const dueDate = new Date(s.due_date);
       return dueDate >= today && dueDate <= fiveDaysFromNow;
     });
-  }, [appData.scheduled, currentUser]);
+  }, [scheduled, currentUser]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     try {
       if (!currentUser) {
         alert('❌ Erro: Usuário não identificado. Faça login novamente.');
@@ -776,13 +982,11 @@ export default function FinanceApp() {
 
       const userRelatedData = {
         user: currentUser,
-        categories: appData.categories,
-        transactions: appData.transactions.filter(t => t.userId === currentUser.id),
-        scheduled: appData.scheduled.filter(s => s.userId === currentUser.id),
+        categories: categories.filter(c => c.user_id === currentUser.id || !c.user_id),
+        transactions: transactions.filter(t => t.user_id === currentUser.id),
+        scheduled: scheduled.filter(s => s.user_id === currentUser.id),
         exportDate: new Date().toISOString()
       };
-
-      console.log('Exportando dados:', userRelatedData);
 
       const dataStr = JSON.stringify(userRelatedData, null, 2);
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -795,163 +999,190 @@ export default function FinanceApp() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      console.log('✅ Backup criado com sucesso!');
+      alert('✅ Backup criado com sucesso!');
     } catch (error) {
       console.error('Erro ao exportar:', error);
-      alert('❌ Erro ao criar backup. Verifique o console para detalhes.');
+      alert('❌ Erro ao criar backup: ' + error.message);
     }
   };
 
-  const handleImport = (event) => {
+  const handleImport = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const imported = JSON.parse(e.target?.result);
         
-        // Cores padrão para categorias sem cor
         const defaultColors = [
           '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', 
           '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
         ];
         
-        // Processar categorias: adicionar cores se não existirem
         const processedCategories = (imported.categories || []).map((cat, index) => ({
-          ...cat,
+          id: cat.id,
+          name: cat.name,
           color: cat.color || defaultColors[index % defaultColors.length],
-          // Manter ID original
-          id: cat.id
+          type: cat.type,
+          user_id: currentUser.id
         }));
         
-        // Processar transações: converter formato antigo para novo
-        const processedTransactions = (imported.transactions || []).map(t => {
-          // Converter recurrence para isRecurring/recurringMonths
-          let isRecurring = false;
-          let recurringMonths = undefined;
-          
-          if (t.recurrence === 'monthly') {
-            isRecurring = true;
-            // Contar quantas transações existem com o mesmo recurrenceId
-            if (t.recurrenceId) {
-              const sameGroup = imported.transactions.filter(tr => tr.recurrenceId === t.recurrenceId);
-              recurringMonths = sameGroup.length;
-            }
-          }
-          
-          return {
-            id: t.id,
-            userId: currentUser.id, // Usar o ID do usuário atual
-            type: t.type,
-            amount: t.amount,
-            description: t.description,
-            categoryId: t.category || t.categoryId, // Aceitar ambos os formatos
-            date: t.date.split('T')[0], // Converter ISO para formato YYYY-MM-DD
-            isRecurring,
-            recurringMonths,
-            parentId: t.recurrenceId || t.parentId
-          };
-        });
+        const processedTransactions = (imported.transactions || []).map(t => ({
+          id: generateId(),
+          user_id: currentUser.id,
+          type: t.type,
+          amount: t.amount,
+          description: t.description,
+          category_id: t.category || t.categoryId || t.category_id,
+          date: t.date.split('T')[0],
+          is_recurring: t.isRecurring || t.is_recurring || false,
+          recurring_months: t.recurringMonths || t.recurring_months || null,
+          parent_id: t.parentId || t.parent_id || null
+        }));
         
-        // Mesclar categorias (evitar duplicatas por nome)
-        const existingCategoryNames = appData.categories.map(c => c.name.toLowerCase());
+        // Inserir categorias
+        const existingCategoryNames = categories.map(c => c.name.toLowerCase());
         const newCategories = processedCategories.filter(
           cat => !existingCategoryNames.includes(cat.name.toLowerCase())
         );
         
-        setAppData(prev => ({
-          ...prev,
-          categories: [...prev.categories, ...newCategories],
-          transactions: [
-            ...prev.transactions.filter(t => t.userId !== currentUser.id),
-            ...processedTransactions
-          ],
-          scheduled: imported.scheduled ? [
-            ...prev.scheduled.filter(s => s.userId !== currentUser.id),
-            ...imported.scheduled.map(s => ({
-              ...s,
-              userId: currentUser.id,
-              categoryId: s.category || s.categoryId
-            }))
-          ] : prev.scheduled
-        }));
+        if (newCategories.length > 0) {
+          const { data: insertedCats, error: catsError } = await supabase
+            .from('finance_categories')
+            .insert(newCategories)
+            .select();
+          
+          if (catsError) throw catsError;
+          setCategories([...categories, ...insertedCats]);
+        }
+        
+        // Inserir transações
+        if (processedTransactions.length > 0) {
+          const { data: insertedTrans, error: transError } = await supabase
+            .from('finance_transactions')
+            .insert(processedTransactions)
+            .select();
+          
+          if (transError) throw transError;
+          setTransactions([...transactions, ...insertedTrans]);
+        }
+        
+        // Inserir agendamentos
+        if (imported.scheduled && imported.scheduled.length > 0) {
+          const processedScheduled = imported.scheduled.map(s => ({
+            user_id: currentUser.id,
+            amount: s.amount,
+            description: s.description,
+            category_id: s.category || s.categoryId || s.category_id,
+            due_date: s.dueDate || s.due_date,
+            is_paid: s.isPaid || s.is_paid || false
+          }));
+          
+          const { data: insertedSched, error: schedError } = await supabase
+            .from('finance_scheduled')
+            .insert(processedScheduled)
+            .select();
+          
+          if (schedError) throw schedError;
+          setScheduled([...scheduled, ...insertedSched]);
+        }
 
         alert(`✅ Dados importados com sucesso!\n\n📊 ${processedTransactions.length} transações\n🏷️ ${newCategories.length} novas categorias`);
         
-        // Pequeno delay antes de recarregar para garantir que salvou
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
+        await loadUserData();
       } catch (error) {
         console.error('Erro na importação:', error);
-        alert('❌ Erro ao importar dados. Verifique se o arquivo está correto.\n\nDetalhes: ' + error.message);
+        alert('❌ Erro ao importar dados: ' + error.message);
       }
     };
     reader.readAsText(file);
   };
 
-  const deleteTransaction = (id) => {
-    console.log('Excluindo transação com ID:', id);
-    
-    setAppData(prev => {
-      const novasTransacoes = prev.transactions.filter(t => t.id !== id);
-      console.log('Transações antes:', prev.transactions.length);
-      console.log('Transações depois:', novasTransacoes.length);
+  const deleteTransaction = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('finance_transactions')
+        .delete()
+        .eq('id', id);
       
-      return {
-        ...prev,
-        transactions: novasTransacoes
-      };
-    });
-    
-    console.log('✅ Transação excluída!');
+      if (error) throw error;
+      
+      setTransactions(transactions.filter(t => t.id !== id));
+    } catch (error) {
+      console.error('Erro ao excluir transação:', error);
+      alert('Erro ao excluir transação: ' + error.message);
+    }
   };
 
-  const deleteCategory = (id) => {
-    const hasTransactions = appData.transactions.some(t => t.categoryId === id);
+  const deleteCategory = async (id) => {
+    const hasTransactions = transactions.some(t => t.category_id === id);
     if (hasTransactions) {
-      // Usar alert apenas para informar (não requer confirmação)
-      console.log('❌ Categoria tem transações associadas');
+      alert('❌ Não é possível excluir uma categoria com transações associadas!');
       return;
     }
 
-    console.log('Excluindo categoria com ID:', id);
-    setAppData(prev => ({
-      ...prev,
-      categories: prev.categories.filter(c => c.id !== id)
-    }));
+    try {
+      const { error } = await supabase
+        .from('finance_categories')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setCategories(categories.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Erro ao excluir categoria:', error);
+      alert('Erro ao excluir categoria: ' + error.message);
+    }
   };
 
-  const payScheduled = (scheduled) => {
-    console.log('Marcando como pago:', scheduled);
-    
-    const newTransaction = {
-      id: generateId(),
-      userId: currentUser.id,
-      type: 'expense',
-      amount: scheduled.amount,
-      description: scheduled.description,
-      categoryId: scheduled.categoryId,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    console.log('Nova transação criada:', newTransaction);
-
-    setAppData(prev => {
-      const updatedScheduled = prev.scheduled.map(s =>
-        s.id === scheduled.id ? { ...s, isPaid: true } : s
-      );
-      
-      console.log('Agendamento atualizado para isPaid: true');
-      
-      return {
-        ...prev,
-        transactions: [...prev.transactions, newTransaction],
-        scheduled: updatedScheduled
+  const payScheduled = async (scheduledItem) => {
+    try {
+      const newTransaction = {
+        id: generateId(),
+        user_id: currentUser.id,
+        type: 'expense',
+        amount: scheduledItem.amount,
+        description: scheduledItem.description,
+        category_id: scheduledItem.category_id,
+        date: new Date().toISOString().split('T')[0],
+        is_recurring: false,
+        recurring_months: null,
+        parent_id: null
       };
-    });
+
+      const { data: transData, error: transError } = await supabase
+        .from('finance_transactions')
+        .insert([newTransaction])
+        .select();
+      
+      if (transError) throw transError;
+
+      const { error: schedError } = await supabase
+        .from('finance_scheduled')
+        .update({ is_paid: true })
+        .eq('id', scheduledItem.id);
+      
+      if (schedError) throw schedError;
+
+      setTransactions([...transactions, ...transData]);
+      setScheduled(scheduled.map(s =>
+        s.id === scheduledItem.id ? { ...s, is_paid: true } : s
+      ));
+    } catch (error) {
+      console.error('Erro ao marcar como pago:', error);
+      alert('Erro ao marcar como pago: ' + error.message);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-xl">Carregando...</div>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return <AuthScreen />;
@@ -1151,7 +1382,6 @@ export default function FinanceApp() {
               </div>
             )}
 
-            {/* Poupômetro */}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -1206,7 +1436,6 @@ export default function FinanceApp() {
               )}
             </div>
 
-            {/* Dicas Financeiras com IA */}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
               <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                 💡 Dicas Financeiras Personalizadas
@@ -1245,7 +1474,6 @@ export default function FinanceApp() {
                       const tips = data.content[0].text.split('\n').filter(t => t.trim());
                       setAiTips(tips);
                     } catch (error) {
-                      // Fallback com dicas genéricas
                       setAiTips([
                         '💡 Revise seus gastos com alimentação - pequenas economias diárias fazem diferença!',
                         '📊 Considere criar uma reserva de emergência equivalente a 3-6 meses de despesas.',
@@ -1312,7 +1540,6 @@ export default function FinanceApp() {
         {view === 'transactions' && (
           <>
             <div className="space-y-4 mb-6">
-              {/* Barra de busca e botão adicionar */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className={`relative flex-1 max-w-md`}>
                   <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -1338,10 +1565,8 @@ export default function FinanceApp() {
                 </button>
               </div>
 
-              {/* Filtros e Ordenação */}
               <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
-                <div className="flex flex-col lg:flex-row gap-4">
-                  {/* Filtro por Tipo */}
+                <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex-1">
                     <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       Tipo de Transação
@@ -1380,28 +1605,6 @@ export default function FinanceApp() {
                     </div>
                   </div>
 
-                  {/* Filtro por Categoria */}
-                  <div className="flex-1">
-                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Categoria
-                    </label>
-                    <select
-                      value={filterCategory}
-                      onChange={(e) => setFilterCategory(e.target.value)}
-                      className={`w-full px-4 py-2 rounded-lg border ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white' 
-                          : 'bg-white border-gray-300 text-gray-900'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    >
-                      <option value="all">Todas as categorias</option>
-                      {appData.categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Ordenação */}
                   <div className="flex-1">
                     <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       Ordenar por
@@ -1443,10 +1646,9 @@ export default function FinanceApp() {
                     {(() => {
                       let filtered = currentMonthTransactions;
 
-                      // Aplicar filtro de busca
                       if (searchTerm) {
                         filtered = filtered.filter(t => {
-                          const category = appData.categories.find(c => c.id === t.categoryId);
+                          const category = categories.find(c => c.id === t.category_id);
                           return (
                             t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             category?.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1454,17 +1656,10 @@ export default function FinanceApp() {
                         });
                       }
 
-                      // Aplicar filtro de tipo
                       if (filterType !== 'all') {
                         filtered = filtered.filter(t => t.type === filterType);
                       }
 
-                      // Aplicar filtro de categoria
-                      if (filterCategory !== 'all') {
-                        filtered = filtered.filter(t => t.categoryId === filterCategory);
-                      }
-
-                      // Aplicar ordenação
                       filtered = [...filtered].sort((a, b) => {
                         switch (sortBy) {
                           case 'date-desc':
@@ -1488,7 +1683,7 @@ export default function FinanceApp() {
                         <>
                           {filtered.length > 0 ? (
                             filtered.map(transaction => {
-                              const category = appData.categories.find(c => c.id === transaction.categoryId);
+                              const category = categories.find(c => c.id === transaction.category_id);
                               return (
                                 <tr key={transaction.id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
                                   <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -1536,7 +1731,7 @@ export default function FinanceApp() {
                             <tr>
                               <td colSpan={5} className="text-center py-12">
                                 <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                  {searchTerm || filterType !== 'all' || filterCategory !== 'all'
+                                  {searchTerm || filterType !== 'all'
                                     ? 'Nenhuma transação encontrada com os filtros aplicados.'
                                     : 'Nenhuma transação encontrada neste mês.'}
                                 </p>
@@ -1549,19 +1744,17 @@ export default function FinanceApp() {
                   </tbody>
                 </table>
 
-                {/* Contador de resultados */}
                 {currentMonthTransactions.length > 0 && (
                   <div className={`px-6 py-3 border-t ${darkMode ? 'border-gray-700 bg-gray-750' : 'border-gray-200 bg-gray-50'}`}>
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       Mostrando {(() => {
                         let count = currentMonthTransactions;
                         if (searchTerm) count = count.filter(t => {
-                          const category = appData.categories.find(c => c.id === t.categoryId);
+                          const category = categories.find(c => c.id === t.category_id);
                           return t.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
                                  category?.name.toLowerCase().includes(searchTerm.toLowerCase());
                         });
                         if (filterType !== 'all') count = count.filter(t => t.type === filterType);
-                        if (filterCategory !== 'all') count = count.filter(t => t.categoryId === filterCategory);
                         return count.length;
                       })()} de {currentMonthTransactions.length} transações
                     </p>
@@ -1574,9 +1767,9 @@ export default function FinanceApp() {
 
         {view === 'scheduled' && (
           <>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="flex justify-between items-center mb-6">
               <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                Contas Agendadas
+                Contas Agendadas - {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
               </h2>
               <button
                 onClick={() => setShowTransactionModal(true)}
@@ -1587,123 +1780,52 @@ export default function FinanceApp() {
               </button>
             </div>
 
-            {/* Filtros de Visualização */}
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4 mb-6`}>
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setScheduleView('day')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      scheduleView === 'day'
-                        ? 'bg-blue-600 text-white'
-                        : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    📅 Dia
-                  </button>
-                  <button
-                    onClick={() => setScheduleView('week')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      scheduleView === 'week'
-                        ? 'bg-blue-600 text-white'
-                        : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    📆 Semana
-                  </button>
-                  <button
-                    onClick={() => setScheduleView('month')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      scheduleView === 'month'
-                        ? 'bg-blue-600 text-white'
-                        : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    🗓️ Mês
-                  </button>
-                </div>
-                
-                <div className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {scheduleView === 'day' && `Dia: ${currentDate.toLocaleDateString('pt-BR')}`}
-                  {scheduleView === 'week' && `Semana de ${currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`}
-                  {scheduleView === 'month' && currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
-                </div>
-              </div>
-            </div>
-
             <div className="grid gap-4">
               {(() => {
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
-                const day = currentDate.getDate();
                 
-                let filteredScheduled = appData.scheduled.filter(s => {
-                  if (s.userId !== currentUser.id) return false;
-                  
-                  const dateParts = s.dueDate.split('-');
-                  const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-                  
-                  if (scheduleView === 'day') {
-                    // Filtrar apenas o dia atual
-                    return dueDate.getFullYear() === year && 
-                           dueDate.getMonth() === month && 
-                           dueDate.getDate() === day;
-                  } else if (scheduleView === 'week') {
-                    // Filtrar a semana atual (domingo a sábado)
-                    const currentDayOfWeek = currentDate.getDay(); // 0 = domingo
-                    const startOfWeek = new Date(currentDate);
-                    startOfWeek.setDate(currentDate.getDate() - currentDayOfWeek);
-                    startOfWeek.setHours(0, 0, 0, 0);
+                const currentMonthScheduled = scheduled
+                  .filter(s => {
+                    if (s.user_id !== currentUser.id) return false;
                     
-                    const endOfWeek = new Date(startOfWeek);
-                    endOfWeek.setDate(startOfWeek.getDate() + 6);
-                    endOfWeek.setHours(23, 59, 59, 999);
+                    const dateParts = s.due_date.split('-');
+                    const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
                     
-                    return dueDate >= startOfWeek && dueDate <= endOfWeek;
-                  } else {
-                    // Filtrar o mês atual
                     return dueDate.getFullYear() === year && dueDate.getMonth() === month;
-                  }
-                })
-                .sort((a, b) => {
-                  const dateA = a.dueDate.split('-').map(n => parseInt(n));
-                  const dateB = b.dueDate.split('-').map(n => parseInt(n));
-                  const dA = new Date(dateA[0], dateA[1] - 1, dateA[2]);
-                  const dB = new Date(dateB[0], dateB[1] - 1, dateB[2]);
-                  return dA.getTime() - dB.getTime();
-                });
+                  })
+                  .sort((a, b) => {
+                    const dateA = a.due_date.split('-').map(n => parseInt(n));
+                    const dateB = b.due_date.split('-').map(n => parseInt(n));
+                    const dA = new Date(dateA[0], dateA[1] - 1, dateA[2]);
+                    const dB = new Date(dateB[0], dateB[1] - 1, dateB[2]);
+                    return dA.getTime() - dB.getTime();
+                  });
                 
-                if (filteredScheduled.length === 0) {
+                if (currentMonthScheduled.length === 0) {
                   return (
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
                       <Calendar className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
                       <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {scheduleView === 'day' && 'Nenhum agendamento para hoje.'}
-                        {scheduleView === 'week' && 'Nenhum agendamento para esta semana.'}
-                        {scheduleView === 'month' && 'Nenhum agendamento para este mês.'}
+                        Nenhum agendamento para este mês.
                       </p>
                     </div>
                   );
                 }
                 
-                return filteredScheduled.map(scheduled => {                    </div>
-                  );
-                }
-                
-                return currentMonthScheduled.map(scheduled => {
-                  const category = appData.categories.find(c => c.id === scheduled.categoryId);
+                return currentMonthScheduled.map(scheduledItem => {
+                  const category = categories.find(c => c.id === scheduledItem.category_id);
                   
-                  // Parse correto da data para evitar timezone
-                  const dateParts = scheduled.dueDate.split('-');
+                  const dateParts = scheduledItem.due_date.split('-');
                   const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
                   
-                  const isPastDue = dueDate < today && !scheduled.isPaid;
+                  const isPastDue = dueDate < today && !scheduledItem.is_paid;
                   
                   return (
                     <div
-                      key={scheduled.id}
+                      key={scheduledItem.id}
                       className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 ${
                         isPastDue ? 'border-2 border-red-500' : ''
                       }`}
@@ -1712,9 +1834,9 @@ export default function FinanceApp() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                              {scheduled.description}
+                              {scheduledItem.description}
                             </h3>
-                            {scheduled.isPaid ? (
+                            {scheduledItem.is_paid ? (
                               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                                 <Check className="w-4 h-4 mr-1" />
                                 Pago
@@ -1740,22 +1862,18 @@ export default function FinanceApp() {
                               {category?.name}
                             </span>
                             <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                              Vencimento: {formatDate(scheduled.dueDate)}
+                              Vencimento: {formatDate(scheduledItem.due_date)}
                             </span>
                             <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                              {formatCurrency(scheduled.amount)}
+                              {formatCurrency(scheduledItem.amount)}
                             </span>
                           </div>
                         </div>
 
-                        {!scheduled.isPaid && (
+                        {!scheduledItem.is_paid && (
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              console.log('Botão Pagar clicado!', scheduled.id);
-                              payScheduled(scheduled);
-                            }}
-                            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap shadow-lg"
+                            onClick={() => payScheduled(scheduledItem)}
+                            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
                           >
                             Marcar como Pago
                           </button>
@@ -1790,7 +1908,7 @@ export default function FinanceApp() {
                   Categorias de Despesa
                 </h3>
                 <div className="space-y-3">
-                  {appData.categories
+                  {categories
                     .filter(c => c.type === 'expense')
                     .map(category => (
                       <div
@@ -1835,7 +1953,7 @@ export default function FinanceApp() {
                   Categorias de Receita
                 </h3>
                 <div className="space-y-3">
-                  {appData.categories
+                  {categories
                     .filter(c => c.type === 'income')
                     .map(category => (
                       <div
@@ -1882,7 +2000,6 @@ export default function FinanceApp() {
       {showTransactionModal && <TransactionModal />}
       {showCategoryModal && <CategoryModal />}
       
-      {/* Modal de Meta de Economia */}
       {showGoalModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className={`w-full max-w-md rounded-xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
