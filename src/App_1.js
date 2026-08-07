@@ -72,6 +72,7 @@ export default function FinanceApp() {
   const [aiTips, setAiTips] = useState([]);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
+  const [filterPaid, setFilterPaid] = useState('all'); // all, paid, unpaid
 
   useEffect(() => {
     if (currentUser) {
@@ -1461,7 +1462,7 @@ export default function FinanceApp() {
                           'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                          model: 'claude-sonnet-4-20250514',
+                          model: 'claude-sonnet-4-6',
                           max_tokens: 1000,
                           messages: [{
                             role: 'user',
@@ -1780,12 +1781,53 @@ export default function FinanceApp() {
               </button>
             </div>
 
+            {/* Filtro por status de pagamento */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4 mb-6`}>
+              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Status de Pagamento
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setFilterPaid('all')}
+                  className={`px-4 py-2 rounded-full font-medium text-sm transition-colors ${
+                    filterPaid === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setFilterPaid('paid')}
+                  className={`inline-flex items-center gap-1 px-4 py-2 rounded-full font-medium text-sm transition-colors ${
+                    filterPaid === 'paid'
+                      ? 'bg-green-600 text-white'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Check className="w-4 h-4" />
+                  Pago
+                </button>
+                <button
+                  onClick={() => setFilterPaid('unpaid')}
+                  className={`inline-flex items-center gap-1 px-4 py-2 rounded-full font-medium text-sm border transition-colors ${
+                    filterPaid === 'unpaid'
+                      ? darkMode ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-300 text-gray-800 border-gray-400'
+                      : darkMode ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4" />
+                  A pagar
+                </button>
+              </div>
+            </div>
+
             <div className="grid gap-4">
               {(() => {
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
                 
-                const currentMonthScheduled = scheduled
+                let currentMonthScheduled = scheduled
                   .filter(s => {
                     if (s.user_id !== currentUser.id) return false;
                     
@@ -1801,13 +1843,22 @@ export default function FinanceApp() {
                     const dB = new Date(dateB[0], dateB[1] - 1, dateB[2]);
                     return dA.getTime() - dB.getTime();
                   });
+
+                // Aplicar filtro de status de pagamento
+                if (filterPaid === 'paid') {
+                  currentMonthScheduled = currentMonthScheduled.filter(s => s.is_paid);
+                } else if (filterPaid === 'unpaid') {
+                  currentMonthScheduled = currentMonthScheduled.filter(s => !s.is_paid);
+                }
                 
                 if (currentMonthScheduled.length === 0) {
                   return (
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
                       <Calendar className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
                       <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        Nenhum agendamento para este mês.
+                        {filterPaid !== 'all'
+                          ? 'Nenhum agendamento encontrado com esse status.'
+                          : 'Nenhum agendamento para este mês.'}
                       </p>
                     </div>
                   );
