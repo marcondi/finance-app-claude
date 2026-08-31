@@ -75,8 +75,6 @@ export default function FinanceApp() {
     const saved = localStorage.getItem('savings_goal');
     return saved ? parseFloat(saved) : 0;
   });
-  const [showTips, setShowTips] = useState(false);
-  const [aiTips, setAiTips] = useState([]);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
   const [filterPaid, setFilterPaid] = useState('all');
