@@ -53,8 +53,10 @@ const formatDate = (date) => {
 };
 
 export default function FinanceApp() {
+  // Padrão: Modo Escuro (true) se ainda não houver escolha salva
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
+    const saved = localStorage.getItem('theme');
+    return saved !== null ? saved === 'dark' : true;
   });
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -79,13 +81,15 @@ export default function FinanceApp() {
   const [goalInput, setGoalInput] = useState('');
   const [filterPaid, setFilterPaid] = useState('all');
 
-  // Gerenciamento do tema Dark/Light com persistência
+  // Gerenciamento do tema Dark/Light com persistência e cor de fundo integrada
   useEffect(() => {
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
     if (darkMode) {
       document.documentElement.classList.add('dark');
+      document.body.style.backgroundColor = '#111827';
     } else {
       document.documentElement.classList.remove('dark');
+      document.body.style.backgroundColor = '#f9fafb';
     }
   }, [darkMode]);
 
@@ -95,7 +99,9 @@ export default function FinanceApp() {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
-        setCurrentUser(session?.user || null);
+        if (session?.user) {
+          setCurrentUser(session.user);
+        }
       } catch (err) {
         console.error('Erro ao verificar sessão:', err);
       } finally {
@@ -105,8 +111,12 @@ export default function FinanceApp() {
 
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUser(session?.user || null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setCurrentUser(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+      }
       setAuthLoading(false);
     });
 
@@ -125,7 +135,7 @@ export default function FinanceApp() {
     if (!currentUser) return;
     setLoading(true);
     try {
-      // Carregar categorias
+      // Carregar categorias do usuário
       const { data: cats, error: catsError } = await supabase
         .from('finance_categories')
         .select('*')
@@ -135,8 +145,11 @@ export default function FinanceApp() {
       
       if (!cats || cats.length === 0) {
         const categoriesToInsert = defaultCategories.map(cat => ({
-          ...cat,
-          user_id: null
+          id: generateId(),
+          name: cat.name,
+          color: cat.color,
+          type: cat.type,
+          user_id: currentUser.id
         }));
         
         const { data: newCats, error: insertError } = await supabase
@@ -144,8 +157,10 @@ export default function FinanceApp() {
           .insert(categoriesToInsert)
           .select();
         
-        if (insertError) throw insertError;
-        setCategories(newCats || []);
+        if (insertError) {
+          console.warn('Categorias:', insertError);
+        }
+        setCategories(newCats || defaultCategories);
       } else {
         setCategories(cats);
       }
