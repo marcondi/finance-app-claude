@@ -1796,4 +1796,1668 @@ export default function FinanceApp() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('dashboard')}>
-                <Wallet className={`w-8 h-8 ${darkMode ? 'text-blue-400' : 'text-blue
+                <Wallet className={`w-8 h-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  FinanceApp
+                </h1>
+              </div>
+
+              {/* Menu Desktop */}
+              <nav className="hidden md:flex items-center gap-2">
+                {[
+                  { key: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+                  { key: 'transactions', label: 'Transações', Icon: ArrowLeftRight },
+                  { key: 'scheduled', label: 'Agenda', Icon: CalendarDays },
+                  { key: 'reports', label: 'Relatórios', Icon: BarChart2 },
+                  { key: 'categories', label: 'Categorias', Icon: Plus },
+                ].map(({ key, label, Icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => setView(key)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      view === key
+                        ? 'bg-blue-600 text-white shadow'
+                        : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Menu Lateral / Usuário */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
+                title={darkMode ? 'Modo Claro' : 'Modo Escuro'}
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-colors ${
+                    darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                    {(currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || currentUser.email || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline text-sm font-medium max-w-[120px] truncate">
+                    {currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]}
+                  </span>
+                  <ChevronDown className="w-4 h-4 opacity-60" />
+                </button>
+
+                {showUserMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                    <div className={`absolute right-0 top-full mt-2 w-48 rounded-xl shadow-2xl z-50 py-1 ${
+                      darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                    }`}>
+                      <button
+                        onClick={() => { setShowSettings(true); setShowUserMenu(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                          darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Settings className="w-4 h-4" />
+                        Configurações
+                      </button>
+                      <div className={`my-1 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`} />
+                      <button
+                        onClick={handleLogout}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                          darkMode ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'
+                        }`}
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sair
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Navegação Mobile */}
+          <div className="flex md:hidden gap-2 mt-4 overflow-x-auto pb-1">
+            {[
+              { key: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+              { key: 'transactions', label: 'Transações', Icon: ArrowLeftRight },
+              { key: 'scheduled', label: 'Agenda', Icon: CalendarDays },
+              { key: 'reports', label: 'Relatórios', Icon: BarChart2 },
+              { key: 'categories', label: 'Categorias', Icon: Plus },
+            ].map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                onClick={() => setView(key)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${
+                  view === key
+                    ? 'bg-blue-600 text-white'
+                    : darkMode ? 'text-gray-300 bg-gray-700' : 'text-gray-600 bg-gray-100'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* Conteúdo Principal */}
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* Seletor de Mês */}
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => {
+              const newDate = new Date(currentDate);
+              newDate.setMonth(newDate.getMonth() - 1);
+              setCurrentDate(newDate);
+            }}
+            className={`p-2 rounded-lg ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-600'} shadow hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          
+          <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+            {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+          </h2>
+          
+          <button
+            onClick={() => {
+              const newDate = new Date(currentDate);
+              newDate.setMonth(newDate.getMonth() + 1);
+              setCurrentDate(newDate);
+            }}
+            className={`p-2 rounded-lg ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-600'} shadow hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Alerta de Contas Vencendo */}
+        {upcomingDueDates.length > 0 && view === 'dashboard' && (
+          <div className="mb-6 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-orange-800 dark:text-orange-300">
+                Atenção: Você tem {upcomingDueDates.length} conta{upcomingDueDates.length > 1 ? 's' : ''} vencendo nos próximos 5 dias.
+              </p>
+              <button
+                onClick={() => { setView('scheduled'); setAgendaSubTab('bills'); }}
+                className="text-sm text-orange-700 dark:text-orange-400 underline mt-1 font-semibold"
+              >
+                Ver detalhes na Agenda
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ABA: DASHBOARD */}
+        {view === 'dashboard' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    Entradas
+                  </h3>
+                  <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg">
+                    <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  {formatCurrency(income)}
+                </p>
+              </div>
+
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    Saídas
+                  </h3>
+                  <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg">
+                    <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  </div>
+                </div>
+                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  {formatCurrency(expenses)}
+                </p>
+              </div>
+
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    Saldo
+                  </h3>
+                  <div className={`${balance >= 0 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-red-100 dark:bg-red-900/30'} p-2 rounded-lg`}>
+                    <DollarSign className={`w-5 h-5 ${balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`} />
+                  </div>
+                </div>
+                <p className={`text-3xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(balance)}
+                </p>
+              </div>
+            </div>
+
+            {/* Gráfico de Gastos por Categoria no Dashboard */}
+            {expensesByCategory.length > 0 && (
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                    Gastos por Categoria
+                  </h3>
+                  <button
+                    onClick={() => setView('reports')}
+                    className={`text-sm font-semibold ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                  >
+                    Ver Relatórios Completos →
+                  </button>
+                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={expensesByCategory}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                      cursor="pointer"
+                      onClick={(data) => {
+                        if (!data) return;
+                        setHighlightedCategory(data.name);
+                        setFilterType('expense');
+                        setView('transactions');
+                      }}
+                    >
+                      {expensesByCategory.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => formatCurrency(value)}
+                      contentStyle={{
+                        backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                        border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        color: darkMode ? '#ffffff' : '#000000'
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Poupômetro */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  💰 Poupômetro
+                </h3>
+                <button
+                  onClick={() => setShowGoalModal(true)}
+                  className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  {savingsGoal > 0 ? 'Editar Meta' : 'Definir Meta'}
+                </button>
+              </div>
+
+              {savingsGoal > 0 ? (
+                <>
+                  <div className="mb-4">
+                    <div className="flex justify-between mb-2">
+                      <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Poupado: {formatCurrency(savingsAmount)}
+                      </span>
+                      <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Meta: {formatCurrency(savingsGoal)}
+                      </span>
+                    </div>
+                    <div className={`w-full h-4 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                      <div
+                        className={`h-4 rounded-full transition-all ${
+                          savingsAmount >= savingsGoal ? 'bg-green-500' : savingsAmount >= savingsGoal * 0.7 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${Math.min((savingsAmount / savingsGoal) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {savingsAmount >= savingsGoal 
+                        ? '🎉 Parabéns! Você atingiu sua meta de poupança!' 
+                        : `Faltam ${formatCurrency(savingsGoal - savingsAmount)} para atingir a meta`}
+                    </p>
+                  </div>
+                  <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    💡 Dica: Lance valores na categoria "Poupança" para alimentar o poupômetro
+                  </p>
+                </>
+              ) : (
+                <div>
+                  <p className={`text-sm mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Defina uma meta mensal de poupança para acompanhar seu progresso! 🎯
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Dicas Financeiras com IA */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-500" />
+                  <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                    Dicas Financeiras com IA
+                  </h3>
+                </div>
+              </div>
+              
+              {!showTips ? (
+                <button
+                  onClick={async () => { setShowTips(true); await gerarDicasIA(); }}
+                  disabled={isGeneratingTips}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {isGeneratingTips ? 'Analisando suas finanças...' : 'Gerar Dicas com IA'}
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  {isGeneratingTips ? (
+                    <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-blue-50'} flex items-center gap-3`}>
+                      <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                      <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Analisando suas entradas, saídas e categorias...</p>
+                    </div>
+                  ) : (
+                    aiTips.map((tip, index) => (
+                      <div key={index} className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700/70 border border-gray-600' : 'bg-purple-50/70 border border-purple-100'}`}>
+                        <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{tip}</p>
+                      </div>
+                    ))
+                  )}
+                  <div className="flex gap-4 pt-2">
+                    <button
+                      onClick={gerarDicasIA}
+                      disabled={isGeneratingTips}
+                      className={`text-sm font-semibold transition-opacity ${darkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700'}`}
+                    >
+                      🔄 Regerar novas dicas
+                    </button>
+                    <button
+                      onClick={() => setShowTips(false)}
+                      disabled={isGeneratingTips}
+                      className={`text-sm underline ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                      Ocultar dicas
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Ações Rápidas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                onClick={() => setShowTransactionModal(true)}
+                className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Adicionar Lançamento
+              </button>
+
+              <button
+                onClick={handleExportPDF}
+                className={`flex items-center justify-center gap-3 ${
+                  darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                } font-semibold py-4 rounded-xl shadow-lg transition-colors`}
+              >
+                <FileText className="w-5 h-5 text-red-500" />
+                Exportar PDF
+              </button>
+
+              <button
+                onClick={handleExportExcel}
+                className={`flex items-center justify-center gap-3 ${
+                  darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                } font-semibold py-4 rounded-xl shadow-lg transition-colors`}
+              >
+                <FileSpreadsheet className="w-5 h-5 text-green-500" />
+                Exportar Excel
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ABA: TRANSAÇÕES */}
+        {view === 'transactions' && (
+          <>
+            {highlightedCategory && (
+              <div className={`flex items-center justify-between gap-3 mb-4 px-4 py-3 rounded-xl border ${
+                darkMode ? 'bg-blue-900/30 border-blue-700 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-700'
+              }`}>
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  Filtrando por categoria: <strong>{highlightedCategory}</strong>
+                </div>
+                <button
+                  onClick={() => setHighlightedCategory(null)}
+                  className={`text-xs px-3 py-1 rounded-lg font-medium transition-colors ${
+                    darkMode ? 'bg-blue-800 hover:bg-blue-700 text-blue-200' : 'bg-blue-100 hover:bg-blue-200 text-blue-600'
+                  }`}
+                >
+                  ✕ Limpar filtro
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-4 mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="relative flex-1 max-w-md">
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <input
+                    type="text"
+                    placeholder="Buscar por descrição ou categoria..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                      darkMode 
+                        ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
+                        : 'bg-white border-gray-300 text-gray-900'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                </div>
+
+                <button
+                  onClick={() => setShowTransactionModal(true)}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
+                >
+                  <Plus className="w-5 h-5" />
+                  Nova Transação
+                </button>
+              </div>
+
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Tipo de Transação
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setFilterType('all')}
+                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                          filterType === 'all'
+                            ? 'bg-blue-600 text-white'
+                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Todas
+                      </button>
+                      <button
+                        onClick={() => setFilterType('income')}
+                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                          filterType === 'income'
+                            ? 'bg-green-600 text-white'
+                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        💚 Entradas
+                      </button>
+                      <button
+                        onClick={() => setFilterType('expense')}
+                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                          filterType === 'expense'
+                            ? 'bg-red-600 text-white'
+                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        🔴 Saídas
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex-1">
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Ordenar por
+                    </label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className={`w-full px-4 py-2 rounded-lg border ${
+                        darkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white' 
+                          : 'bg-white border-gray-300 text-gray-900'
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    >
+                      <option value="date-desc">📅 Data (mais recente)</option>
+                      <option value="date-asc">📅 Data (mais antiga)</option>
+                      <option value="description-asc">🔤 Descrição (A-Z)</option>
+                      <option value="description-desc">🔤 Descrição (Z-A)</option>
+                      <option value="amount-desc">💰 Valor (maior)</option>
+                      <option value="amount-asc">💰 Valor (menor)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg overflow-hidden`}>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
+                    <tr>
+                      <th className={`px-6 py-4 text-left text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Data</th>
+                      <th className={`px-6 py-4 text-left text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Descrição</th>
+                      <th className={`px-6 py-4 text-left text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Categoria</th>
+                      <th className={`px-6 py-4 text-right text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Valor</th>
+                      <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Status</th>
+                      <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {(() => {
+                      let filtered = currentMonthTransactions;
+
+                      if (searchTerm) {
+                        filtered = filtered.filter(t => {
+                          const category = categories.find(c => c.id === t.category_id);
+                          return (
+                            t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            category?.name.toLowerCase().includes(searchTerm.toLowerCase())
+                          );
+                        });
+                      }
+
+                      if (filterType !== 'all') {
+                        filtered = filtered.filter(t => t.type === filterType);
+                      }
+
+                      if (highlightedCategory) {
+                        filtered = filtered.filter(t => {
+                          const category = categories.find(c => c.id === t.category_id);
+                          return category?.name === highlightedCategory;
+                        });
+                      }
+
+                      filtered = [...filtered].sort((a, b) => {
+                        switch (sortBy) {
+                          case 'date-desc':
+                            return (b.date || '').localeCompare(a.date || '');
+                          case 'date-asc':
+                            return (a.date || '').localeCompare(b.date || '');
+                          case 'description-asc':
+                            return (a.description || '').localeCompare(b.description || '');
+                          case 'description-desc':
+                            return (b.description || '').localeCompare(a.description || '');
+                          case 'amount-desc':
+                            return (Number(b.amount) || 0) - (Number(a.amount) || 0);
+                          case 'amount-asc':
+                            return (Number(a.amount) || 0) - (Number(b.amount) || 0);
+                          default:
+                            return 0;
+                        }
+                      });
+
+                      const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+                      const safePage = Math.min(currentPage, totalPages);
+                      const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+                      return (
+                        <>
+                          {paginated.length > 0 ? (
+                            paginated.map(transaction => {
+                              const category = categories.find(c => c.id === transaction.category_id);
+                              return (
+                                <tr key={transaction.id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                                  <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    {formatDate(transaction.date)}
+                                  </td>
+                                  <td className={`px-6 py-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {transaction.description}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span
+                                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white"
+                                      style={{ backgroundColor: category?.color || '#6b7280' }}
+                                    >
+                                      {category?.name || 'Geral'}
+                                    </span>
+                                  </td>
+                                  <td className={`px-6 py-4 text-right font-semibold ${
+                                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                                  }`}>
+                                    {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                                  </td>
+                                  <td className="px-6 py-4 text-center">
+                                    {transaction.type === 'expense' ? (
+                                      <button
+                                        onClick={() => toggleTransactionPaid(transaction)}
+                                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+                                          transaction.is_paid
+                                            ? 'bg-green-500 border-green-500 text-white'
+                                            : darkMode ? 'border-gray-500 text-gray-400 hover:border-green-400' : 'border-gray-300 text-gray-500 hover:border-green-500'
+                                        }`}
+                                      >
+                                        {transaction.is_paid ? <Check className="w-3 h-3" /> : null}
+                                        {transaction.is_paid ? 'Pago' : 'Pagar'}
+                                      </button>
+                                    ) : (
+                                      <span className="text-xs text-green-600 font-medium">Recebido</span>
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center justify-center gap-2">
+                                      <button
+                                        onClick={() => {
+                                          setEditingTransaction(transaction);
+                                          setShowTransactionModal(true);
+                                        }}
+                                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                      >
+                                        <Edit2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => deleteTransaction(transaction.id)}
+                                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            <tr>
+                              <td colSpan={6} className="text-center py-12">
+                                <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  {searchTerm || filterType !== 'all'
+                                    ? 'Nenhuma transação encontrada com os filtros aplicados.'
+                                    : 'Nenhuma transação encontrada neste mês.'}
+                                </p>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Paginação */}
+              {currentMonthTransactions.length > 0 && (
+                <div className={`px-6 py-3 border-t flex flex-wrap items-center justify-between gap-4 ${darkMode ? 'border-gray-700' : 'border-gray-200 bg-gray-50'}`}>
+                  <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Total: {currentMonthTransactions.length} transações
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Linhas por página:</span>
+                    <select
+                      value={pageSize}
+                      onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                      className={`text-sm px-2 py-1 rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ABA: AGENDA & CALENDÁRIO / GOOGLE CALENDAR */}
+        {view === 'scheduled' && (() => {
+          const year = currentDate.getFullYear();
+          const month = currentDate.getMonth();
+          const monthStr = String(month + 1).padStart(2, '0');
+          const targetPrefix = `${year}-${monthStr}`;
+          const todayStr = getTodayDateString();
+
+          const monthScheduled = scheduled.filter(s => {
+            if (s.user_id !== currentUser.id) return false;
+            const sDate = (s.due_date || '').split('T')[0];
+            return sDate.startsWith(targetPrefix);
+          });
+
+          const totalMes = monthScheduled.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+          const totalPago = monthScheduled.filter(c => c.is_paid).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+          const totalPendente = totalMes - totalPago;
+
+          const contasPorDia = {};
+          monthScheduled.forEach(s => {
+            const d = parseInt((s.due_date || '').split('T')[0].split('-')[2]);
+            if (!isNaN(d)) {
+              if (!contasPorDia[d]) contasPorDia[d] = [];
+              contasPorDia[d].push(s);
+            }
+          });
+
+          const primeiroDiaSemana = new Date(year, month, 1).getDay();
+          const totalDiasNoMes = new Date(year, month + 1, 0).getDate();
+          const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+          const contasDiaSelecionado = selectedCalendarDay ? (contasPorDia[selectedCalendarDay] || []) : [];
+
+          return (
+            <div>
+              {/* Alternador de Sub-Aba: Contas vs Google Calendar */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className={`flex gap-2 p-1.5 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
+                  <button
+                    onClick={() => setAgendaSubTab('bills')}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                      agendaSubTab === 'bills'
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+                    }`}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Contas Agendadas
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAgendaSubTab('google-calendar');
+                      fetchCalendarEvents(calendarFilter);
+                    }}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                      agendaSubTab === 'google-calendar'
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+                    }`}
+                  >
+                    <CalendarDays className="w-4 h-4 text-red-500" />
+                    Google Calendar
+                  </button>
+                </div>
+
+                {agendaSubTab === 'bills' ? (
+                  <button
+                    onClick={() => setShowTransactionModal(true)}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Novo Agendamento
+                  </button>
+                ) : (
+                  !hasGoogleToken && (
+                    <button
+                      onClick={handleGoogleLogin}
+                      className="flex items-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow text-sm"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                      </svg>
+                      Conectar Google Calendar
+                    </button>
+                  )
+                )}
+              </div>
+
+              {/* CONTEÚDO: CONTAS AGENDADAS COM CALENDÁRIO */}
+              {agendaSubTab === 'bills' && (
+                <>
+                  {/* Resumo Financeiro do Mês */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow p-4 text-center`}>
+                      <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>TOTAL AGENDADO</p>
+                      <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(totalMes)}</p>
+                    </div>
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow p-4 text-center`}>
+                      <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>JÁ PAGO</p>
+                      <p className="text-xl font-bold text-green-500">{formatCurrency(totalPago)}</p>
+                    </div>
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow p-4 text-center`}>
+                      <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>A PAGAR</p>
+                      <p className="text-xl font-bold text-orange-500">{formatCurrency(totalPendente)}</p>
+                    </div>
+                  </div>
+
+                  {/* Calendário Interativo em Grid */}
+                  <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+                    <div className="grid grid-cols-7 mb-3 text-center">
+                      {diasSemana.map(d => (
+                        <div key={d} className={`text-xs font-bold py-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {d}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-2">
+                      {Array.from({ length: primeiroDiaSemana }).map((_, i) => (
+                        <div key={`empty-${i}`} className="aspect-square opacity-0" />
+                      ))}
+
+                      {Array.from({ length: totalDiasNoMes }, (_, i) => i + 1).map(dia => {
+                        const contas = contasPorDia[dia] || [];
+                        const ehHoje = new Date().getDate() === dia && new Date().getMonth() === month && new Date().getFullYear() === year;
+                        const temConta = contas.length > 0;
+                        const todasPagas = temConta && contas.every(c => c.is_paid);
+                        const selecionado = selectedCalendarDay === dia;
+
+                        return (
+                          <button
+                            key={dia}
+                            onClick={() => setSelectedCalendarDay(selecionado ? null : dia)}
+                            className={`relative aspect-square rounded-xl flex flex-col items-center justify-center p-1 text-sm font-semibold transition-all border ${
+                              selecionado 
+                                ? 'ring-2 ring-blue-500 border-blue-500 scale-105 z-10' 
+                                : 'border-transparent'
+                            } ${
+                              ehHoje
+                                ? 'bg-blue-600 text-white font-bold shadow'
+                                : temConta
+                                ? todasPagas
+                                  ? darkMode ? 'bg-green-950/40 text-green-300 border-green-800' : 'bg-green-100 text-green-800 border-green-300'
+                                  : darkMode ? 'bg-orange-950/40 text-orange-300 border-orange-800' : 'bg-orange-100 text-orange-800 border-orange-300'
+                                : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            <span>{dia}</span>
+                            {temConta && (
+                              <span className={`text-[10px] font-bold px-1 rounded-full ${
+                                ehHoje ? 'text-white bg-blue-700' : todasPagas ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400 font-extrabold'
+                              }`}>
+                                {contas.length} {contas.length === 1 ? 'conta' : 'contas'}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Legenda do Calendário */}
+                    <div className="flex gap-4 mt-5 justify-center flex-wrap pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="w-3 h-3 rounded bg-blue-600" />
+                        <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Hoje</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="w-3 h-3 rounded bg-orange-400" />
+                        <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Contas a Pagar</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="w-3 h-3 rounded bg-green-500" />
+                        <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Contas Pagas</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Detalhes do Dia Selecionado */}
+                  {selectedCalendarDay && (
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                          📅 Contas do Dia {selectedCalendarDay}/{monthStr}/{year}
+                        </h4>
+                        <button
+                          onClick={() => setSelectedCalendarDay(null)}
+                          className={`text-xs px-2.5 py-1 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
+                        >
+                          ✕ Fechar dia
+                        </button>
+                      </div>
+
+                      {contasDiaSelecionado.length === 0 ? (
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Nenhuma conta cadastrada com vencimento neste dia.
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {contasDiaSelecionado.map(c => {
+                            const cat = categories.find(category => category.id === c.category_id);
+                            return (
+                              <div key={c.id} className={`flex items-center justify-between p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                                <div className="flex items-center gap-3">
+                                  {cat && <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ background: cat.color }} />}
+                                  <div>
+                                    <p className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{c.description}</p>
+                                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                      {cat?.name || 'Geral'} · {c.is_paid ? '✅ Pago' : '⏳ A pagar'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <span className="text-base font-bold text-red-500">{formatCurrency(c.amount)}</span>
+                                  {!c.is_paid && (
+                                    <button
+                                      onClick={() => payScheduled(c)}
+                                      className="bg-green-600 hover:bg-green-700 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-colors"
+                                    >
+                                      Pagar
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Filtro de Status das Contas */}
+                  <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4 mb-6`}>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Filtrar Lista de Contas
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setFilterPaid('all')}
+                        className={`px-4 py-2 rounded-full font-medium text-sm transition-colors ${
+                          filterPaid === 'all'
+                            ? 'bg-blue-600 text-white'
+                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Todas
+                      </button>
+                      <button
+                        onClick={() => setFilterPaid('paid')}
+                        className={`inline-flex items-center gap-1 px-4 py-2 rounded-full font-medium text-sm transition-colors ${
+                          filterPaid === 'paid'
+                            ? 'bg-green-600 text-white'
+                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Check className="w-4 h-4" />
+                        Pagas
+                      </button>
+                      <button
+                        onClick={() => setFilterPaid('unpaid')}
+                        className={`inline-flex items-center gap-1 px-4 py-2 rounded-full font-medium text-sm border transition-colors ${
+                          filterPaid === 'unpaid'
+                            ? darkMode ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-300 text-gray-800 border-gray-400'
+                            : darkMode ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Calendar className="w-4 h-4" />
+                        A pagar
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Lista de Contas Agendadas */}
+                  <div className="grid gap-4">
+                    {(() => {
+                      let filteredList = monthScheduled.sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''));
+
+                      if (filterPaid === 'paid') {
+                        filteredList = filteredList.filter(s => s.is_paid);
+                      } else if (filterPaid === 'unpaid') {
+                        filteredList = filteredList.filter(s => !s.is_paid);
+                      }
+
+                      if (filteredList.length === 0) {
+                        return (
+                          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
+                            <Calendar className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+                            <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {filterPaid !== 'all'
+                                ? 'Nenhum agendamento encontrado com esse status.'
+                                : 'Nenhum agendamento para este mês.'}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return filteredList.map(scheduledItem => {
+                        const category = categories.find(c => c.id === scheduledItem.category_id);
+                        const sDateStr = (scheduledItem.due_date || '').split('T')[0];
+                        const isPastDue = sDateStr < todayStr && !scheduledItem.is_paid;
+
+                        return (
+                          <div
+                            key={scheduledItem.id}
+                            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 ${
+                              isPastDue ? 'border-2 border-red-500' : ''
+                            }`}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                                    {scheduledItem.description}
+                                  </h3>
+                                  {scheduledItem.is_paid ? (
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                      <Check className="w-4 h-4 mr-1" />
+                                      Pago
+                                    </span>
+                                  ) : isPastDue ? (
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                      <AlertCircle className="w-4 h-4 mr-1" />
+                                      Atrasado
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                      <Calendar className="w-4 h-4 mr-1" />
+                                      Pendente
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <div className="flex flex-wrap items-center gap-4 text-sm">
+                                  <span
+                                    className="inline-flex items-center px-3 py-1 rounded-full text-white font-medium"
+                                    style={{ backgroundColor: category?.color || '#6b7280' }}
+                                  >
+                                    {category?.name || 'Geral'}
+                                  </span>
+                                  <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                    Vencimento: {formatDate(scheduledItem.due_date)}
+                                  </span>
+                                  <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                                    {formatCurrency(scheduledItem.amount)}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {!scheduledItem.is_paid && (
+                                <button
+                                  onClick={() => payScheduled(scheduledItem)}
+                                  className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
+                                >
+                                  Marcar como Pago
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </>
+              )}
+
+              {/* CONTEÚDO: GOOGLE CALENDAR */}
+              {agendaSubTab === 'google-calendar' && (
+                <>
+                  <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {[
+                        { key: 'today', label: 'Hoje' },
+                        { key: 'tomorrow', label: 'Amanhã' },
+                        { key: 'week', label: 'Esta Semana' },
+                        { key: 'month', label: 'Este Mês' },
+                      ].map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => {
+                            setCalendarFilter(key);
+                            fetchCalendarEvents(key);
+                          }}
+                          className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                            calendarFilter === key
+                              ? 'bg-blue-600 text-white shadow'
+                              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {loadingCalendar && calendarFilter === key ? 'Carregando...' : label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => fetchCalendarEvents(calendarFilter)}
+                      className={`text-sm font-semibold flex items-center gap-1 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}
+                    >
+                      🔄 Atualizar Eventos
+                    </button>
+                  </div>
+
+                  {!hasGoogleToken && (
+                    <div className={`p-6 rounded-2xl border mb-6 text-center ${
+                      darkMode ? 'bg-blue-900/20 border-blue-800 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800'
+                    }`}>
+                      <CalendarDays className="w-12 h-12 mx-auto mb-3 text-blue-500" />
+                      <h3 className="text-lg font-bold mb-2">Conecte sua conta do Google</h3>
+                      <p className="text-sm mb-4 max-w-md mx-auto">
+                        Faça login com o Google para visualizar seus compromissos e eventos do Google Calendar diretamente no FinanceApp!
+                      </p>
+                      <button
+                        onClick={handleGoogleLogin}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow"
+                      >
+                        Conectar com o Google
+                      </button>
+                    </div>
+                  )}
+
+                  {loadingCalendar ? (
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
+                      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                      <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Carregando compromissos do Google Calendar...</p>
+                    </div>
+                  ) : calendarEvents.length > 0 ? (
+                    <div className="grid gap-4">
+                      {calendarEvents.map(event => (
+                        <div
+                          key={event.id}
+                          className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4`}
+                        >
+                          <div>
+                            <h4 className={`text-lg font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                              {event.summary || 'Sem título'}
+                            </h4>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                              <Clock className="w-4 h-4" />
+                              <span>
+                                {event.start?.dateTime
+                                  ? new Date(event.start.dateTime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                                  : event.start?.date
+                                  ? formatDate(event.start.date)
+                                  : 'Data não informada'}
+                              </span>
+                            </div>
+                            {event.description && (
+                              <p className={`text-sm mt-2 line-clamp-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                {event.description}
+                              </p>
+                            )}
+                          </div>
+
+                          {event.htmlLink && (
+                            <a
+                              href={event.htmlLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={`flex items-center gap-1 text-xs font-semibold px-3 py-2 rounded-lg border transition-colors ${
+                                darkMode ? 'border-gray-700 hover:bg-gray-700 text-blue-400' : 'border-gray-200 hover:bg-gray-50 text-blue-600'
+                              }`}
+                            >
+                              Abrir no Google <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : hasGoogleToken ? (
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
+                      <CalendarDays className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+                      <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        Nenhum evento encontrado no Google Calendar para o período selecionado.
+                      </p>
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ABA: RELATÓRIOS E GRÁFICOS */}
+        {view === 'reports' && (() => {
+          const pieExpenses = categories
+            .filter(c => c.type === 'expense')
+            .map(c => ({
+              name: c.name,
+              color: c.color,
+              value: currentMonthTransactions.filter(t => t.category_id === c.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0)
+            })).filter(c => c.value > 0);
+
+          const pieIncomes = categories
+            .filter(c => c.type === 'income')
+            .map(c => ({
+              name: c.name,
+              color: c.color,
+              value: currentMonthTransactions.filter(t => t.category_id === c.id && t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0)
+            })).filter(c => c.value > 0);
+
+          const pieData = reportFilter === 'expenses-category' ? pieExpenses : pieIncomes;
+          const totalPie = pieData.reduce((s, c) => s + c.value, 0);
+
+          return (
+            <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Relatórios e Análise Financeira
+                </h2>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleExportPDF}
+                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                  >
+                    <FileText className="w-4 h-4" />
+                    PDF
+                  </button>
+                  <button
+                    onClick={handleExportExcel}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Excel
+                  </button>
+                </div>
+              </div>
+
+              {/* Seletores de Tipo de Gráfico e Filtro */}
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div className={`flex gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  {[
+                    { key: 'pie', label: 'Pizza' },
+                    { key: 'line', label: 'Linha' },
+                    { key: 'bar', label: 'Barras' },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setReportChart(key)}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        reportChart === key
+                          ? 'bg-blue-600 text-white shadow'
+                          : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className={`flex gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  {[
+                    { key: 'expenses-category', label: 'Despesas por Categoria' },
+                    { key: 'income-category', label: 'Receitas por Categoria' },
+                    { key: 'balance', label: 'Evolução do Saldo' },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setReportFilter(key)}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        reportFilter === key
+                          ? 'bg-blue-600 text-white shadow'
+                          : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Card do Gráfico */}
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+                <h3 className={`text-lg font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  {reportFilter === 'expenses-category' ? 'Despesas por Categoria' :
+                   reportFilter === 'income-category' ? 'Receitas por Categoria' :
+                   'Evolução Mensal (Últimos 6 meses)'}
+                </h3>
+
+                {/* Gráfico de Pizza */}
+                {reportChart === 'pie' && reportFilter !== 'balance' && (
+                  <div className="flex flex-col md:flex-row gap-6 items-center">
+                    <div className="w-full md:w-1/2">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={75}
+                            outerRadius={120}
+                            paddingAngle={3}
+                            dataKey="value"
+                            cursor="pointer"
+                            onClick={(data) => {
+                              if (!data) return;
+                              setHighlightedCategory(data.name);
+                              setFilterType(reportFilter === 'expenses-category' ? 'expense' : 'income');
+                              setView('transactions');
+                            }}
+                          >
+                            {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                          </Pie>
+                          <Tooltip formatter={(v) => formatCurrency(v)} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="w-full md:w-1/2 space-y-2 max-h-80 overflow-y-auto pr-2">
+                      {pieData.map((cat, i) => (
+                        <div key={i} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: cat.color }} />
+                            <span className={`text-sm truncate ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className={`text-sm font-semibold ${reportFilter === 'expenses-category' ? 'text-red-500' : 'text-green-500'}`}>
+                              {formatCurrency(cat.value)}
+                            </div>
+                            <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                              {totalPie > 0 ? ((cat.value / totalPie) * 100).toFixed(1) : 0}%
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Gráfico de Barras */}
+                {(reportChart === 'bar' || (reportChart === 'pie' && reportFilter === 'balance')) && (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <BarChart data={reportFilter === 'balance' ? last6MonthsData : pieData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                      <XAxis dataKey={reportFilter === 'balance' ? 'label' : 'name'} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} />
+                      {reportFilter === 'balance' ? (
+                        <>
+                          <Legend />
+                          <Bar dataKey="Entradas" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="Saídas" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                        </>
+                      ) : (
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                          {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        </Bar>
+                      )}
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+
+                {/* Gráfico de Linha */}
+                {reportChart === 'line' && (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart data={last6MonthsData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                      <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} />
+                      <Legend />
+                      <Line type="monotone" dataKey="Entradas" stroke="#16a34a" strokeWidth={3} />
+                      <Line type="monotone" dataKey="Saídas" stroke="#dc2626" strokeWidth={3} />
+                      <Line type="monotone" dataKey="Saldo" stroke="#3b82f6" strokeWidth={3} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ABA: CATEGORIAS */}
+        {view === 'categories' && (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                Gerenciar Categorias
+              </h2>
+              <button
+                onClick={() => setShowCategoryModal(true)}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Nova Categoria
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+                <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Categorias de Despesa
+                </h3>
+                <div className="space-y-3">
+                  {categories
+                    .filter(c => c.type === 'expense')
+                    .map(category => (
+                      <div
+                        key={category.id}
+                        className={`flex items-center justify-between p-4 rounded-lg ${
+                          darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingCategory(category);
+                              setShowCategoryModal(true);
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteCategory(category.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+                <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Categorias de Receita
+                </h3>
+                <div className="space-y-3">
+                  {categories
+                    .filter(c => c.type === 'income')
+                    .map(category => (
+                      <div
+                        key={category.id}
+                        className={`flex items-center justify-between p-4 rounded-lg ${
+                          darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingCategory(category);
+                              setShowCategoryModal(true);
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteCategory(category.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </main>
+
+      {/* Modal de Nova / Editar Transação */}
+      {showTransactionModal && <TransactionModal />}
+
+      {/* Modal de Categoria */}
+      {showCategoryModal && <CategoryModal />}
+
+      {/* Modal de Configurações */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-lg rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} max-h-[90vh] overflow-y-auto`}>
+            <div className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 flex items-center justify-between`}>
+              <div className="flex items-center gap-3">
+                <Settings className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Configurações
+                </h2>
+              </div>
+              <button onClick={() => setShowSettings(false)}>
+                <X className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Relatório Mensal por E-mail */}
+              <div>
+                <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  RELATÓRIO MENSAL POR E-MAIL
+                </p>
+                <button
+                  onClick={handleSendMonthlyReport}
+                  disabled={sendingReport}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-colors ${
+                    sendingReport
+                      ? 'bg-blue-400 cursor-not-allowed text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  <Mail className="w-4 h-4" />
+                  {sendingReport ? 'Enviando Relatório...' : 'Enviar Resumo do Mês por E-mail'}
+                </button>
+                <p className={`text-xs mt-2 text-center ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  Será enviado para <strong>{currentUser?.email}</strong>
+                </p>
+              </div>
+
+              {/* Conexão com Google Calendar */}
+              <div className={`pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  GOOGLE CALENDAR
+                </p>
+                <button
+                  onClick={handleGoogleLogin}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold border transition-colors ${
+                    darkMode
+                      ? 'bg-gray-700 hover:bg-gray-600 text-white border-gray-600'
+                      : 'bg-white hover:bg-gray-50 text-gray-800 border-gray-300'
+                  }`}
+                >
+                  <CalendarDays className="w-4 h-4 text-red-500" />
+                  {hasGoogleToken ? 'Sincronizar Google Calendar novamente' : 'Conectar Google Calendar'}
+                </button>
+              </div>
+
+              {/* Exportar / Importar */}
+              <div className={`pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  EXPORTAÇÃO E BACKUP
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => { handleExportPDF(); setShowSettings(false); }}
+                    className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Exportar PDF
+                  </button>
+
+                  <button
+                    onClick={() => { handleExportExcel(); setShowSettings(false); }}
+                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Exportar Excel
+                  </button>
+
+                  <button
+                    onClick={() => { handleExport(); setShowSettings(false); }}
+                    className={`flex items-center justify-center gap-2 ${
+                      darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                    } font-semibold py-3 rounded-xl transition-colors text-sm`}
+                  >
+                    <Download className="w-4 h-4" />
+                    Backup JSON
+                  </button>
+
+                  <label className={`flex items-center justify-center gap-2 ${
+                    darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                  } font-semibold py-3 rounded-xl transition-colors cursor-pointer text-sm`}>
+                    <Upload className="w-4 h-4" />
+                    Importar Backup
+                    <input type="file" accept=".json" onChange={(e) => { handleImport(e); setShowSettings(false); }} className="hidden" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Meta de Poupança */}
+      {showGoalModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6`}>
+              <div className="flex justify-between items-center">
+                <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  💰 Definir Meta de Economia
+                </h2>
+                <button onClick={() => {
+                  setShowGoalModal(false);
+                  setGoalInput('');
+                }}>
+                  <X className={darkMode ? 'text-gray-400' : 'text-gray-500'} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Quanto você quer poupar por mês?
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={goalInput}
+                  onChange={(e) => setGoalInput(e.target.value)}
+                  placeholder="Ex: 1000.00"
+                  className={`w-full px-4 py-3 rounded-lg border text-lg ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  autoFocus
+                />
+              </div>
+
+              <button
+                onClick={() => {
+                  const val = parseFloat(goalInput.replace(',', '.'));
+                  if (!isNaN(val) && val > 0) {
+                    setSavingsGoal(val);
+                    localStorage.setItem('savings_goal', val.toString());
+                    setShowGoalModal(false);
+                    setGoalInput('');
+                    showToast('Meta de poupança atualizada!', 'success');
+                  } else {
+                    showToast('Por favor, digite um valor válido!', 'warning');
+                  }
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
+              >
+                Salvar Meta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação */}
+      {confirmModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className={`w-full max-w-sm rounded-2xl shadow-2xl p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Confirmar exclusão</h3>
+            </div>
+            <p className={`text-sm mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{confirmModal.message}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal({ open: false, message: '', onConfirm: null })}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-600 hover:bg-red-700 text-white transition-colors"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
