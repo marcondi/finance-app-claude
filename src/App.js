@@ -38,6 +38,14 @@ const defaultCategories = [
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+// Helper para obter a data local no formato YYYY-MM-DD sem erros de fuso horário
+const getTodayDateString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -45,15 +53,18 @@ const formatCurrency = (value) => {
   }).format(value || 0);
 };
 
+// Formatação segura DD/MM/YYYY sem shift de fuso horário
 const formatDate = (date) => {
   if (!date) return '';
-  const dateParts = date.split('-');
-  const dateObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-  return dateObj.toLocaleDateString('pt-BR');
+  const dateStr = String(date).split('T')[0];
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
 };
 
 export default function FinanceApp() {
-  // Padrão: Modo Escuro (true) se ainda não houver escolha salva
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
     return saved !== null ? saved === 'dark' : true;
@@ -81,7 +92,7 @@ export default function FinanceApp() {
   const [goalInput, setGoalInput] = useState('');
   const [filterPaid, setFilterPaid] = useState('all');
 
-  // Gerenciamento do tema Dark/Light com persistência e cor de fundo integrada
+  // Gerenciamento do tema Dark/Light com persistência
   useEffect(() => {
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
     if (darkMode) {
@@ -489,7 +500,7 @@ export default function FinanceApp() {
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [categoryId, setCategoryId] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(getTodayDateString());
     const [isRecurring, setIsRecurring] = useState(false);
     const [recurringMonths, setRecurringMonths] = useState('1');
 
@@ -624,7 +635,7 @@ export default function FinanceApp() {
       setAmount('');
       setDescription('');
       setCategoryId('');
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(getTodayDateString());
       setIsRecurring(false);
       setRecurringMonths('1');
     };
@@ -810,7 +821,7 @@ export default function FinanceApp() {
                     darkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
                 <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   Deixe 1 para criar apenas um agendamento único
@@ -982,15 +993,13 @@ export default function FinanceApp() {
     if (!currentUser) return [];
     
     const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const targetPrefix = `${year}-${month}`;
     
     return transactions.filter(t => {
       if (t.user_id !== currentUser.id) return false;
-      
-      const dateParts = t.date.split('-');
-      const tDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-      
-      return tDate.getFullYear() === year && tDate.getMonth() === month;
+      const tDate = (t.date || '').split('T')[0];
+      return tDate.startsWith(targetPrefix);
     });
   }, [transactions, currentUser, currentDate]);
 
@@ -1030,29 +1039,36 @@ export default function FinanceApp() {
         categoryMap.set(t.category_id, current + (Number(t.amount) || 0));
       });
 
-    return Array.from(categoryMap.entries()).map(([categoryId, amount]) => {
-      const category = categories.find(c => c.id === categoryId);
-      return {
-        name: category?.name || 'Sem categoria',
-        value: amount,
-        color: category?.color || '#666'
-      };
-    });
-  }, [currentMonthTransactions, categories]);
+    const total = expenses;
+
+    return Array.from(categoryMap.entries())
+      .map(([categoryId, amount]) => {
+        const category = categories.find(c => c.id === categoryId);
+        const percent = total > 0 ? ((amount / total) * 100).toFixed(1) : '0';
+        return {
+          name: `${category?.name || 'Sem categoria'} (${percent}%)`,
+          value: amount,
+          color: category?.color || '#666'
+        };
+      })
+      .filter(item => item.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [currentMonthTransactions, categories, expenses]);
 
   const upcomingDueDates = useMemo(() => {
     if (!currentUser) return [];
     
+    const todayStr = getTodayDateString();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const fiveDaysFromNow = new Date(today);
     fiveDaysFromNow.setDate(today.getDate() + 5);
+    const maxDateStr = getTodayDateString(fiveDaysFromNow);
 
     return scheduled.filter(s => {
       if (s.user_id !== currentUser.id || s.is_paid) return false;
-      const dateParts = s.due_date.split('-');
-      const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-      return dueDate >= today && dueDate <= fiveDaysFromNow;
+      const sDateStr = (s.due_date || '').split('T')[0];
+      return sDateStr >= todayStr && sDateStr <= maxDateStr;
     });
   }, [scheduled, currentUser]);
 
@@ -1230,7 +1246,7 @@ export default function FinanceApp() {
         amount: scheduledItem.amount,
         description: scheduledItem.description,
         category_id: scheduledItem.category_id,
-        date: new Date().toISOString().split('T')[0],
+        date: getTodayDateString(),
         is_recurring: false,
         recurring_months: null,
         parent_id: null
@@ -1250,10 +1266,11 @@ export default function FinanceApp() {
       
       if (schedError) throw schedError;
 
-      setTransactions([...transactions, ...transData]);
-      setScheduled(scheduled.map(s =>
+      setTransactions(prev => [...prev, ...transData]);
+      setScheduled(prev => prev.map(s =>
         s.id === scheduledItem.id ? { ...s, is_paid: true } : s
       ));
+      alert('✅ Conta marcada como paga e registrada nas suas transações de hoje!');
     } catch (error) {
       console.error('Erro ao marcar como pago:', error);
       alert('Erro ao marcar como pago: ' + error.message);
@@ -1685,17 +1702,17 @@ export default function FinanceApp() {
                       filtered = [...filtered].sort((a, b) => {
                         switch (sortBy) {
                           case 'date-desc':
-                            return new Date(b.date).getTime() - new Date(a.date).getTime();
+                            return (b.date || '').localeCompare(a.date || '');
                           case 'date-asc':
-                            return new Date(a.date).getTime() - new Date(b.date).getTime();
+                            return (a.date || '').localeCompare(b.date || '');
                           case 'description-asc':
-                            return a.description.localeCompare(b.description);
+                            return (a.description || '').localeCompare(b.description || '');
                           case 'description-desc':
-                            return b.description.localeCompare(a.description);
+                            return (b.description || '').localeCompare(a.description || '');
                           case 'amount-desc':
-                            return b.amount - a.amount;
+                            return (Number(b.amount) || 0) - (Number(a.amount) || 0);
                           case 'amount-asc':
-                            return a.amount - b.amount;
+                            return (Number(a.amount) || 0) - (Number(b.amount) || 0);
                           default:
                             return 0;
                         }
@@ -1828,24 +1845,17 @@ export default function FinanceApp() {
             <div className="grid gap-4">
               {(() => {
                 const year = currentDate.getFullYear();
-                const month = currentDate.getMonth();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const targetPrefix = `${year}-${month}`;
+                const todayStr = getTodayDateString();
                 
                 let currentMonthScheduled = scheduled
                   .filter(s => {
                     if (s.user_id !== currentUser.id) return false;
-                    
-                    const dateParts = s.due_date.split('-');
-                    const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-                    
-                    return dueDate.getFullYear() === year && dueDate.getMonth() === month;
+                    const sDate = (s.due_date || '').split('T')[0];
+                    return sDate.startsWith(targetPrefix);
                   })
-                  .sort((a, b) => {
-                    const dateA = a.due_date.split('-').map(n => parseInt(n));
-                    const dateB = b.due_date.split('-').map(n => parseInt(n));
-                    const dA = new Date(dateA[0], dateA[1] - 1, dateA[2]);
-                    const dB = new Date(dateB[0], dateB[1] - 1, dateB[2]);
-                    return dA.getTime() - dB.getTime();
-                  });
+                  .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''));
 
                 if (filterPaid === 'paid') {
                   currentMonthScheduled = currentMonthScheduled.filter(s => s.is_paid);
@@ -1868,12 +1878,8 @@ export default function FinanceApp() {
                 
                 return currentMonthScheduled.map(scheduledItem => {
                   const category = categories.find(c => c.id === scheduledItem.category_id);
-                  const dateParts = scheduledItem.due_date.split('-');
-                  const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  
-                  const isPastDue = dueDate < today && !scheduledItem.is_paid;
+                  const sDateStr = (scheduledItem.due_date || '').split('T')[0];
+                  const isPastDue = sDateStr < todayStr && !scheduledItem.is_paid;
                   
                   return (
                     <div
