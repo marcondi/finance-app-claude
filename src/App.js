@@ -3,22 +3,22 @@ import {
   Wallet, 
   TrendingUp, 
   TrendingDown, 
-  DollarSign,
-  Moon,
-  Sun,
-  LogOut,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Upload,
-  Edit2,
-  Trash2,
-  Search,
-  AlertCircle,
-  Check,
-  X,
-  Calendar
+  DollarSign, 
+  Moon, 
+  Sun, 
+  LogOut, 
+  Plus, 
+  ChevronLeft, 
+  ChevronRight, 
+  Download, 
+  Upload, 
+  Edit2, 
+  Trash2, 
+  Search, 
+  AlertCircle, 
+  Check, 
+  X, 
+  Calendar 
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
@@ -42,18 +42,22 @@ const formatCurrency = (value) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL'
-  }).format(value);
+  }).format(value || 0);
 };
 
 const formatDate = (date) => {
+  if (!date) return '';
   const dateParts = date.split('-');
   const dateObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
   return dateObj.toLocaleDateString('pt-BR');
 };
 
 export default function FinanceApp() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
   const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [scheduled, setScheduled] = useState([]);
@@ -67,12 +71,51 @@ export default function FinanceApp() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [sortBy, setSortBy] = useState('date-desc');
-  const [savingsGoal, setSavingsGoal] = useState(0);
+  const [savingsGoal, setSavingsGoal] = useState(() => {
+    const saved = localStorage.getItem('savings_goal');
+    return saved ? parseFloat(saved) : 0;
+  });
   const [showTips, setShowTips] = useState(false);
   const [aiTips, setAiTips] = useState([]);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
-  const [filterPaid, setFilterPaid] = useState('all'); // all, paid, unpaid
+  const [filterPaid, setFilterPaid] = useState('all');
+
+  // Gerenciamento do tema Dark/Light com persistência
+  useEffect(() => {
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  // Persistência e verificação de Sessão do Supabase Auth
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        setCurrentUser(session?.user || null);
+      } catch (err) {
+        console.error('Erro ao verificar sessão:', err);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user || null);
+      setAuthLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
@@ -81,9 +124,10 @@ export default function FinanceApp() {
   }, [currentUser]);
 
   const loadUserData = async () => {
+    if (!currentUser) return;
     setLoading(true);
     try {
-      // Carregar categorias
+      // Carregar categorias do usuário ou padrão (null)
       const { data: cats, error: catsError } = await supabase
         .from('finance_categories')
         .select('*')
@@ -91,7 +135,6 @@ export default function FinanceApp() {
       
       if (catsError) throw catsError;
       
-      // Se não houver categorias, criar as padrões
       if (!cats || cats.length === 0) {
         const categoriesToInsert = defaultCategories.map(cat => ({
           ...cat,
@@ -104,7 +147,7 @@ export default function FinanceApp() {
           .select();
         
         if (insertError) throw insertError;
-        setCategories(newCats);
+        setCategories(newCats || []);
       } else {
         setCategories(cats);
       }
@@ -134,125 +177,100 @@ export default function FinanceApp() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      setTransactions([]);
+      setScheduled([]);
+      setCategories([]);
+    } catch (error) {
+      console.error('Erro ao sair:', error);
+      alert('Erro ao sair: ' + error.message);
+    }
+  };
+
   const AuthScreen = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+    const [loadingAuth, setLoadingAuth] = useState(false);
 
-    const handleAuth = async () => {
-      if (isLogin) {
-        try {
-          const { data: users, error } = await supabase
-            .from('finance_users')
-            .select('*')
-            .eq('email', email)
-            .eq('password', password);
+    const handleAuth = async (e) => {
+      if (e) e.preventDefault();
+      if (!email || !password) {
+        alert('Preencha e-mail e senha!');
+        return;
+      }
+
+      setLoadingAuth(true);
+      try {
+        if (isLogin) {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password
+          });
 
           if (error) throw error;
-
-          if (users && users.length > 0) {
-            setCurrentUser(users[0]);
-          } else {
-            alert('Credenciais inválidas!');
-          }
-        } catch (error) {
-          console.error('Erro no login:', error);
-          alert('Erro ao fazer login: ' + error.message);
-        }
-      } else {
-        if (!name || !email || !password) {
-          alert('Preencha todos os campos!');
-          return;
-        }
-
-        try {
-          const { data: existingUser, error: checkError } = await supabase
-            .from('finance_users')
-            .select('*')
-            .eq('email', email);
-
-          if (checkError) throw checkError;
-
-          if (existingUser && existingUser.length > 0) {
-            alert('Este e-mail já está cadastrado!');
+          setCurrentUser(data.user);
+        } else {
+          if (!name.trim()) {
+            alert('Por favor, informe seu nome!');
+            setLoadingAuth(false);
             return;
           }
 
-          const newUser = {
-            id: generateId(),
-            name,
-            email,
-            password
-          };
-
-          const { data, error } = await supabase
-            .from('finance_users')
-            .insert([newUser])
-            .select();
+          const { data, error } = await supabase.auth.signUp({
+            email: email.trim(),
+            password,
+            options: {
+              data: {
+                name: name.trim()
+              }
+            }
+          });
 
           if (error) throw error;
 
-          setCurrentUser(data[0]);
-        } catch (error) {
-          console.error('Erro ao cadastrar:', error);
-          alert('Erro ao criar conta: ' + error.message);
+          if (data.user && !data.session) {
+            alert('✅ Cadastro realizado! Verifique seu e-mail para confirmar a conta antes de entrar.');
+            setIsLogin(true);
+          } else if (data.user) {
+            setCurrentUser(data.user);
+          }
         }
+      } catch (error) {
+        console.error('Erro na autenticação:', error);
+        alert('Erro: ' + (error.message || 'Falha ao autenticar'));
+      } finally {
+        setLoadingAuth(false);
       }
     };
 
-    const handleForgotPassword = async () => {
-      if (!email) {
-        alert('Digite seu e-mail para recuperar a senha!');
+    const handleForgotPassword = async (e) => {
+      if (e) e.preventDefault();
+      if (!email.trim()) {
+        alert('Digite seu e-mail cadastrado!');
         return;
       }
 
-      if (!newPassword || !confirmPassword) {
-        alert('Preencha os campos de nova senha!');
-        return;
-      }
-
-      if (newPassword !== confirmPassword) {
-        alert('As senhas não coincidem!');
-        return;
-      }
-
-      if (newPassword.length < 6) {
-        alert('A senha deve ter no mínimo 6 caracteres!');
-        return;
-      }
-
+      setLoadingAuth(true);
       try {
-        const { data: users, error: findError } = await supabase
-          .from('finance_users')
-          .select('*')
-          .eq('email', email);
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: window.location.origin
+        });
 
-        if (findError) throw findError;
+        if (error) throw error;
 
-        if (!users || users.length === 0) {
-          alert('E-mail não encontrado!');
-          return;
-        }
-
-        const { error: updateError } = await supabase
-          .from('finance_users')
-          .update({ password: newPassword })
-          .eq('email', email);
-
-        if (updateError) throw updateError;
-
-        alert('✅ Senha redefinida com sucesso!');
+        alert('✅ Link de redefinição de senha enviado para seu e-mail!');
         setIsForgotPassword(false);
-        setEmail('');
-        setNewPassword('');
-        setConfirmPassword('');
       } catch (error) {
-        console.error('Erro ao redefinir senha:', error);
-        alert('Erro ao redefinir senha: ' + error.message);
+        console.error('Erro ao recuperar senha:', error);
+        alert('Erro ao recuperar senha: ' + error.message);
+      } finally {
+        setLoadingAuth(false);
       }
     };
 
@@ -265,68 +283,45 @@ export default function FinanceApp() {
           </div>
 
           {isForgotPassword ? (
-            <>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
               <h2 className={`text-xl font-semibold mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                 Recuperar Senha
               </h2>
-              <div className="space-y-4">
-                <input
-                  type="email"
-                  placeholder="E-mail cadastrado"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
-                <input
-                  type="password"
-                  placeholder="Nova senha (mín. 6 caracteres)"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
-                <input
-                  type="password"
-                  placeholder="Confirmar nova senha"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
-                <button
-                  onClick={handleForgotPassword}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
-                >
-                  Redefinir Senha
-                </button>
-                <button
-                  onClick={() => {
-                    setIsForgotPassword(false);
-                    setEmail('');
-                    setNewPassword('');
-                    setConfirmPassword('');
-                  }}
-                  className={`w-full ${
-                    darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'
-                  } font-medium py-2 transition-colors`}
-                >
-                  ← Voltar ao login
-                </button>
-              </div>
-            </>
+              <p className={`text-sm text-center mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Enviaremos um link de acesso seguro para o seu e-mail.
+              </p>
+              <input
+                type="email"
+                placeholder="E-mail cadastrado"
+                value={email}
+                required
+                onChange={(e) => setEmail(e.target.value)}
+                className={`w-full px-4 py-3 rounded-lg border ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              <button
+                type="submit"
+                disabled={loadingAuth}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
+              >
+                {loadingAuth ? 'Enviando...' : 'Enviar Link por E-mail'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsForgotPassword(false)}
+                className={`w-full ${
+                  darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'
+                } font-medium py-2 transition-colors`}
+              >
+                ← Voltar ao login
+              </button>
+            </form>
           ) : (
             <>
-              <div className="flex mb-6 border-b border-gray-300">
+              <div className="flex mb-6 border-b border-gray-300 dark:border-gray-700">
                 <button
                   onClick={() => setIsLogin(true)}
                   className={`flex-1 py-2 text-center font-medium transition-colors ${
@@ -349,12 +344,13 @@ export default function FinanceApp() {
                 </button>
               </div>
 
-              <div className="space-y-4">
+              <form onSubmit={handleAuth} className="space-y-4">
                 {!isLogin && (
                   <input
                     type="text"
-                    placeholder="Nome"
+                    placeholder="Seu Nome"
                     value={name}
+                    required
                     onChange={(e) => setName(e.target.value)}
                     className={`w-full px-4 py-3 rounded-lg border ${
                       darkMode 
@@ -367,6 +363,7 @@ export default function FinanceApp() {
                   type="email"
                   placeholder="E-mail"
                   value={email}
+                  required
                   onChange={(e) => setEmail(e.target.value)}
                   className={`w-full px-4 py-3 rounded-lg border ${
                     darkMode 
@@ -376,8 +373,10 @@ export default function FinanceApp() {
                 />
                 <input
                   type="password"
-                  placeholder="Senha"
+                  placeholder="Senha (mínimo 6 caracteres)"
                   value={password}
+                  required
+                  minLength={6}
                   onChange={(e) => setPassword(e.target.value)}
                   className={`w-full px-4 py-3 rounded-lg border ${
                     darkMode 
@@ -386,14 +385,16 @@ export default function FinanceApp() {
                   } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
                 <button
-                  onClick={handleAuth}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
+                  type="submit"
+                  disabled={loadingAuth}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
                 >
-                  {isLogin ? 'Entrar' : 'Criar Conta'}
+                  {loadingAuth ? 'Carregando...' : (isLogin ? 'Entrar' : 'Criar Conta')}
                 </button>
                 
                 {isLogin && (
                   <button
+                    type="button"
                     onClick={() => setIsForgotPassword(true)}
                     className={`w-full ${
                       darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
@@ -402,7 +403,7 @@ export default function FinanceApp() {
                     Esqueci minha senha
                   </button>
                 )}
-              </div>
+              </form>
             </>
           )}
         </div>
@@ -437,10 +438,16 @@ export default function FinanceApp() {
         return;
       }
 
+      const numAmount = parseFloat(amount.toString().replace(',', '.'));
+      if (isNaN(numAmount) || numAmount <= 0) {
+        alert('Digite um valor numérico válido!');
+        return;
+      }
+
       const baseTransaction = {
         user_id: currentUser.id,
         type: type === 'scheduled' ? 'expense' : type,
-        amount: parseFloat(amount),
+        amount: numAmount,
         description,
         category_id: categoryId,
         date,
@@ -453,7 +460,7 @@ export default function FinanceApp() {
         if (type === 'scheduled') {
           const baseScheduled = {
             user_id: currentUser.id,
-            amount: parseFloat(amount),
+            amount: numAmount,
             description,
             category_id: categoryId,
             is_paid: false
@@ -463,7 +470,7 @@ export default function FinanceApp() {
           const months = parseInt(recurringMonths) || 1;
           
           for (let i = 0; i < months; i++) {
-            const scheduledDate = new Date(date);
+            const scheduledDate = new Date(date + 'T00:00:00');
             scheduledDate.setMonth(scheduledDate.getMonth() + i);
             
             scheduledList.push({
@@ -504,7 +511,7 @@ export default function FinanceApp() {
             if (isRecurring && recurringMonths) {
               const months = parseInt(recurringMonths);
               for (let i = 1; i < months; i++) {
-                const futureDate = new Date(date);
+                const futureDate = new Date(date + 'T00:00:00');
                 futureDate.setMonth(futureDate.getMonth() + i);
                 transactionsToInsert.push({
                   ...baseTransaction,
@@ -610,7 +617,7 @@ export default function FinanceApp() {
           <div className="p-6 space-y-4">
             <div>
               <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Valor
+                Valor (R$)
               </label>
               <input
                 type="number"
@@ -764,7 +771,7 @@ export default function FinanceApp() {
     }, [editingCategory]);
 
     const handleSubmit = async () => {
-      if (!name) {
+      if (!name.trim()) {
         alert('Digite um nome para a categoria!');
         return;
       }
@@ -773,18 +780,18 @@ export default function FinanceApp() {
         if (editingCategory) {
           const { error } = await supabase
             .from('finance_categories')
-            .update({ name, color, type })
+            .update({ name: name.trim(), color, type })
             .eq('id', editingCategory.id);
           
           if (error) throw error;
           
           setCategories(categories.map(c =>
-            c.id === editingCategory.id ? { ...c, name, color, type } : c
+            c.id === editingCategory.id ? { ...c, name: name.trim(), color, type } : c
           ));
         } else {
           const newCategory = {
             id: generateId(),
-            name,
+            name: name.trim(),
             color,
             type,
             user_id: currentUser.id
@@ -917,13 +924,13 @@ export default function FinanceApp() {
   const income = useMemo(() => 
     currentMonthTransactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0)
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
   , [currentMonthTransactions]);
 
   const expenses = useMemo(() => 
     currentMonthTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0)
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
   , [currentMonthTransactions]);
 
   const balance = income - expenses;
@@ -937,7 +944,7 @@ export default function FinanceApp() {
     
     return currentMonthTransactions
       .filter(t => t.category_id === savingsCategory.id)
-      .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+      .reduce((sum, t) => sum + (t.type === 'income' ? (Number(t.amount) || 0) : -(Number(t.amount) || 0)), 0);
   }, [currentMonthTransactions, categories]);
 
   const expensesByCategory = useMemo(() => {
@@ -947,7 +954,7 @@ export default function FinanceApp() {
       .filter(t => t.type === 'expense')
       .forEach(t => {
         const current = categoryMap.get(t.category_id) || 0;
-        categoryMap.set(t.category_id, current + t.amount);
+        categoryMap.set(t.category_id, current + (Number(t.amount) || 0));
       });
 
     return Array.from(categoryMap.entries()).map(([categoryId, amount]) => {
@@ -964,12 +971,14 @@ export default function FinanceApp() {
     if (!currentUser) return [];
     
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const fiveDaysFromNow = new Date(today);
     fiveDaysFromNow.setDate(today.getDate() + 5);
 
     return scheduled.filter(s => {
       if (s.user_id !== currentUser.id || s.is_paid) return false;
-      const dueDate = new Date(s.due_date);
+      const dateParts = s.due_date.split('-');
+      const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
       return dueDate >= today && dueDate <= fiveDaysFromNow;
     });
   }, [scheduled, currentUser]);
@@ -982,7 +991,11 @@ export default function FinanceApp() {
       }
 
       const userRelatedData = {
-        user: currentUser,
+        user: {
+          id: currentUser.id,
+          email: currentUser.email,
+          name: currentUser.user_metadata?.name || 'Usuário'
+        },
         categories: categories.filter(c => c.user_id === currentUser.id || !c.user_id),
         transactions: transactions.filter(t => t.user_id === currentUser.id),
         scheduled: scheduled.filter(s => s.user_id === currentUser.id),
@@ -994,7 +1007,7 @@ export default function FinanceApp() {
       const url = URL.createObjectURL(dataBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `finance-backup-${new Date().toISOString().split('T')[0]}_${new Date().getHours()}${new Date().getMinutes()}${new Date().getSeconds()}.json`;
+      link.download = `finance-backup-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1022,7 +1035,7 @@ export default function FinanceApp() {
         ];
         
         const processedCategories = (imported.categories || []).map((cat, index) => ({
-          id: cat.id,
+          id: cat.id || generateId(),
           name: cat.name,
           color: cat.color || defaultColors[index % defaultColors.length],
           type: cat.type,
@@ -1033,7 +1046,7 @@ export default function FinanceApp() {
           id: generateId(),
           user_id: currentUser.id,
           type: t.type,
-          amount: t.amount,
+          amount: parseFloat(t.amount),
           description: t.description,
           category_id: t.category || t.categoryId || t.category_id,
           date: t.date.split('T')[0],
@@ -1042,7 +1055,6 @@ export default function FinanceApp() {
           parent_id: t.parentId || t.parent_id || null
         }));
         
-        // Inserir categorias
         const existingCategoryNames = categories.map(c => c.name.toLowerCase());
         const newCategories = processedCategories.filter(
           cat => !existingCategoryNames.includes(cat.name.toLowerCase())
@@ -1058,7 +1070,6 @@ export default function FinanceApp() {
           setCategories([...categories, ...insertedCats]);
         }
         
-        // Inserir transações
         if (processedTransactions.length > 0) {
           const { data: insertedTrans, error: transError } = await supabase
             .from('finance_transactions')
@@ -1069,11 +1080,10 @@ export default function FinanceApp() {
           setTransactions([...transactions, ...insertedTrans]);
         }
         
-        // Inserir agendamentos
         if (imported.scheduled && imported.scheduled.length > 0) {
           const processedScheduled = imported.scheduled.map(s => ({
             user_id: currentUser.id,
-            amount: s.amount,
+            amount: parseFloat(s.amount),
             description: s.description,
             category_id: s.category || s.categoryId || s.category_id,
             due_date: s.dueDate || s.due_date,
@@ -1089,8 +1099,7 @@ export default function FinanceApp() {
           setScheduled([...scheduled, ...insertedSched]);
         }
 
-        alert(`✅ Dados importados com sucesso!\n\n📊 ${processedTransactions.length} transações\n🏷️ ${newCategories.length} novas categorias`);
-        
+        alert(`✅ Dados importados com sucesso!\n\n📊 ${processedTransactions.length} transações importadas`);
         await loadUserData();
       } catch (error) {
         console.error('Erro na importação:', error);
@@ -1108,7 +1117,6 @@ export default function FinanceApp() {
         .eq('id', id);
       
       if (error) throw error;
-      
       setTransactions(transactions.filter(t => t.id !== id));
     } catch (error) {
       console.error('Erro ao excluir transação:', error);
@@ -1130,7 +1138,6 @@ export default function FinanceApp() {
         .eq('id', id);
       
       if (error) throw error;
-      
       setCategories(categories.filter(c => c.id !== id));
     } catch (error) {
       console.error('Erro ao excluir categoria:', error);
@@ -1140,10 +1147,13 @@ export default function FinanceApp() {
 
   const payScheduled = async (scheduledItem) => {
     try {
+      const category = categories.find(c => c.id === scheduledItem.category_id);
+      const transactionType = category?.type || 'expense';
+
       const newTransaction = {
         id: generateId(),
         user_id: currentUser.id,
-        type: 'expense',
+        type: transactionType,
         amount: scheduledItem.amount,
         description: scheduledItem.description,
         category_id: scheduledItem.category_id,
@@ -1177,10 +1187,13 @@ export default function FinanceApp() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-xl">Carregando...</div>
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800'}`}>
+        <div className="text-xl font-semibold flex items-center gap-3">
+          <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          Carregando FinanceApp...
+        </div>
       </div>
     );
   }
@@ -1220,14 +1233,18 @@ export default function FinanceApp() {
             </div>
 
             <div className="flex items-center gap-3">
+              <span className={`text-sm hidden sm:inline ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                Olá, <strong>{currentUser.user_metadata?.name || currentUser.email?.split('@')[0]}</strong>
+              </span>
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
+                title={darkMode ? 'Modo Claro' : 'Modo Escuro'}
               >
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <button
-                onClick={() => setCurrentUser(null)}
+                onClick={handleLogout}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                   darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 } transition-colors`}
@@ -1430,75 +1447,6 @@ export default function FinanceApp() {
                   <p className={`text-sm mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     Defina uma meta mensal de poupança para acompanhar seu progresso! 🎯
                   </p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                    💡 Crie lançamentos na categoria "Poupança" e veja sua evolução aqui
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
-              <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                💡 Dicas Financeiras Personalizadas
-              </h3>
-              
-              {!showTips ? (
-                <button
-                  onClick={async () => {
-                    setShowTips(true);
-                    setAiTips(['Analisando suas finanças...']);
-                    
-                    try {
-                      const resumo = `
-                        Entradas: ${formatCurrency(income)}
-                        Saídas: ${formatCurrency(expenses)}
-                        Saldo: ${formatCurrency(balance)}
-                        Principais gastos: ${expensesByCategory.slice(0, 3).map(c => `${c.name} ${formatCurrency(c.value)}`).join(', ')}
-                      `;
-                      
-                      const response = await fetch('https://api.anthropic.com/v1/messages', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          model: 'claude-sonnet-4-6',
-                          max_tokens: 1000,
-                          messages: [{
-                            role: 'user',
-                            content: `Baseado nestas finanças mensais, dê 3 dicas práticas e objetivas de economia:\n${resumo}\n\nRetorne apenas as 3 dicas numeradas, sem introdução.`
-                          }]
-                        })
-                      });
-                      
-                      const data = await response.json();
-                      const tips = data.content[0].text.split('\n').filter(t => t.trim());
-                      setAiTips(tips);
-                    } catch (error) {
-                      setAiTips([
-                        '💡 Revise seus gastos com alimentação - pequenas economias diárias fazem diferença!',
-                        '📊 Considere criar uma reserva de emergência equivalente a 3-6 meses de despesas.',
-                        '🎯 Defina metas específicas para seus gastos em cada categoria.'
-                      ]);
-                    }
-                  }}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all"
-                >
-                  ✨ Gerar Dicas com IA
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  {aiTips.map((tip, index) => (
-                    <div key={index} className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
-                      <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{tip}</p>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => setShowTips(false)}
-                    className={`text-sm ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} underline`}
-                  >
-                    Ocultar dicas
-                  </button>
                 </div>
               )}
             </div>
@@ -1542,7 +1490,7 @@ export default function FinanceApp() {
           <>
             <div className="space-y-4 mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className={`relative flex-1 max-w-md`}>
+                <div className="relative flex-1 max-w-md">
                   <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                   <input
                     type="text"
@@ -1744,23 +1692,6 @@ export default function FinanceApp() {
                     })()}
                   </tbody>
                 </table>
-
-                {currentMonthTransactions.length > 0 && (
-                  <div className={`px-6 py-3 border-t ${darkMode ? 'border-gray-700 bg-gray-750' : 'border-gray-200 bg-gray-50'}`}>
-                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Mostrando {(() => {
-                        let count = currentMonthTransactions;
-                        if (searchTerm) count = count.filter(t => {
-                          const category = categories.find(c => c.id === t.category_id);
-                          return t.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                 category?.name.toLowerCase().includes(searchTerm.toLowerCase());
-                        });
-                        if (filterType !== 'all') count = count.filter(t => t.type === filterType);
-                        return count.length;
-                      })()} de {currentMonthTransactions.length} transações
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           </>
@@ -1781,7 +1712,6 @@ export default function FinanceApp() {
               </button>
             </div>
 
-            {/* Filtro por status de pagamento */}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4 mb-6`}>
               <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Status de Pagamento
@@ -1844,7 +1774,6 @@ export default function FinanceApp() {
                     return dA.getTime() - dB.getTime();
                   });
 
-                // Aplicar filtro de status de pagamento
                 if (filterPaid === 'paid') {
                   currentMonthScheduled = currentMonthScheduled.filter(s => s.is_paid);
                 } else if (filterPaid === 'unpaid') {
@@ -1866,7 +1795,6 @@ export default function FinanceApp() {
                 
                 return currentMonthScheduled.map(scheduledItem => {
                   const category = categories.find(c => c.id === scheduledItem.category_id);
-                  
                   const dateParts = scheduledItem.due_date.split('-');
                   const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
                   const today = new Date();
@@ -2086,15 +2014,14 @@ export default function FinanceApp() {
                   } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   autoFocus
                 />
-                <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  💡 Lance valores na categoria "Poupança" (entrada ou saída) para alimentar o poupômetro
-                </p>
               </div>
 
               <button
                 onClick={() => {
-                  if (goalInput && !isNaN(parseFloat(goalInput)) && parseFloat(goalInput) > 0) {
-                    setSavingsGoal(parseFloat(goalInput));
+                  const val = parseFloat(goalInput.replace(',', '.'));
+                  if (!isNaN(val) && val > 0) {
+                    setSavingsGoal(val);
+                    localStorage.setItem('savings_goal', val.toString());
                     setShowGoalModal(false);
                     setGoalInput('');
                   } else {
