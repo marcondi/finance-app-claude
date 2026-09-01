@@ -48,7 +48,7 @@ import {
   Line 
 } from 'recharts';
 import * as XLSX from 'xlsx';
-import { supabase } from './supabaseClient';
+import { supabase, supabaseUrl, supabaseAnonKey } from './supabaseClient';
 import AgendaView from './AgendaView';
 
 const defaultCategories = [
@@ -635,14 +635,12 @@ export default function FinanceApp() {
         };
       });
 
-      const supabaseUrl = 'https://oooegbbvrwifilavlvgt.supabase.co';
-
       const res = await fetch(`${supabaseUrl}/functions/v1/send-monthly-report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token || ''}`,
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vb2VnYmJ2cndpZmlsYXZsdmd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyMTk5NTAsImV4cCI6MjA4NTc5NTk1MH0.x6wDd7c8V3eb1gYgQcEILEBEJKkPfJuF4o2_UuAV7Gk',
+          'apikey': supabaseAnonKey,
         },
         body: JSON.stringify({
           to: currentUser.email,
