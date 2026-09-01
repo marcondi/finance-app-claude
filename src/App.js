@@ -27,7 +27,9 @@ import {
   ArrowLeftRight,
   CalendarDays,
   BarChart2,
-  Sparkles
+  Sparkles,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -98,6 +100,21 @@ const formatDate = (date) => {
 };
 
 export default function FinanceApp() {
+  const [hideValues, setHideValues] = useState(() => {
+    const saved = localStorage.getItem('hide_values');
+    return saved === 'true';
+  });
+
+  const toggleHideValues = () => {
+    setHideValues(prev => {
+      const next = !prev;
+      localStorage.setItem('hide_values', String(next));
+      return next;
+    });
+  };
+
+  const showVal = (value) => hideValues ? 'R$ •••••' : formatCurrency(value);
+
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
     return saved !== null ? saved === 'dark' : true;
@@ -1826,6 +1843,18 @@ export default function FinanceApp() {
 
             {/* Menu Lateral / Usuário */}
             <div className="flex items-center gap-3">
+              {/* Botão de Modo Privacidade (Olhinho) */}
+              <button
+                onClick={toggleHideValues}
+                className={`p-2 rounded-lg transition-colors ${
+                  darkMode ? 'bg-gray-700 text-gray-300 hover:text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                }`}
+                title={hideValues ? 'Mostrar Valores' : 'Ocultar Valores (Modo Privacidade)'}
+              >
+                {hideValues ? <EyeOff className="w-5 h-5 text-blue-500" /> : <Eye className="w-5 h-5" />}
+              </button>
+
+              {/* Botão Dark / Light */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
@@ -1981,7 +2010,7 @@ export default function FinanceApp() {
                   </div>
                 </div>
                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  {formatCurrency(income)}
+                  {showVal(income)}
                 </p>
                 <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-green-500 transition-colors`}>
                   Ver entradas →
@@ -2008,7 +2037,7 @@ export default function FinanceApp() {
                   </div>
                 </div>
                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  {formatCurrency(expenses)}
+                  {showVal(expenses)}
                 </p>
                 <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-red-500 transition-colors`}>
                   Ver saídas →
@@ -2035,7 +2064,7 @@ export default function FinanceApp() {
                   </div>
                 </div>
                 <p className={`text-3xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(balance)}
+                  {showVal(balance)}
                 </p>
                 <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-blue-500 transition-colors`}>
                   Ver todas as transações →
@@ -2113,10 +2142,10 @@ export default function FinanceApp() {
                   <div className="mb-4">
                     <div className="flex justify-between mb-2">
                       <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Poupado: {formatCurrency(savingsAmount)}
+                        Poupado: {showVal(savingsAmount)}
                       </span>
                       <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Meta: {formatCurrency(savingsGoal)}
+                        Meta: {showVal(savingsGoal)}
                       </span>
                     </div>
                     <div className={`w-full h-4 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
@@ -2130,7 +2159,7 @@ export default function FinanceApp() {
                     <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       {savingsAmount >= savingsGoal 
                         ? '🎉 Parabéns! Você atingiu sua meta de poupança!' 
-                        : `Faltam ${formatCurrency(savingsGoal - savingsAmount)} para atingir a meta`}
+                        : `Faltam ${showVal(savingsGoal - savingsAmount)} para atingir a meta`}
                     </p>
                   </div>
                   <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -2430,7 +2459,7 @@ export default function FinanceApp() {
                                   <td className={`px-6 py-4 text-right font-semibold ${
                                     transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                                   }`}>
-                                    {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                                    {transaction.type === 'income' ? '+' : '-'} {showVal(transaction.amount)}
                                   </td>
                                   <td className="px-6 py-4 text-center">
                                     {transaction.type === 'expense' ? (
@@ -2537,6 +2566,7 @@ export default function FinanceApp() {
             formatCurrency={formatCurrency}
             formatDate={formatDate}
             getTodayDateString={getTodayDateString}
+            hideValues={hideValues}
           />
         )}
 
@@ -2674,7 +2704,7 @@ export default function FinanceApp() {
                           </div>
                           <div className="text-right flex-shrink-0">
                             <div className={`text-sm font-semibold ${reportFilter === 'expenses-category' ? 'text-red-500' : 'text-green-500'}`}>
-                              {formatCurrency(cat.value)}
+                              {showVal(cat.value)}
                             </div>
                             <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                               {totalPie > 0 ? ((cat.value / totalPie) * 100).toFixed(1) : 0}%
