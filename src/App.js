@@ -29,7 +29,8 @@ import {
   BarChart2,
   Sparkles,
   Eye,
-  EyeOff
+  EyeOff,
+  Target
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -114,6 +115,29 @@ export default function FinanceApp() {
   };
 
   const showVal = (value) => hideValues ? 'R$ •••••' : formatCurrency(value);
+
+  // Tetos de Gastos por Categoria (Orçamento Mensal)
+  const [categoryBudgets, setCategoryBudgets] = useState(() => {
+    try {
+      const saved = localStorage.getItem('category_budgets');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+
+  const updateCategoryBudget = (catId, limit) => {
+    setCategoryBudgets(prev => {
+      const next = { ...prev };
+      if (!limit || limit <= 0) {
+        delete next[catId];
+      } else {
+        next[catId] = limit;
+      }
+      localStorage.setItem('category_budgets', JSON.stringify(next));
+      return next;
+    });
+  };
 
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -555,9 +579,22 @@ export default function FinanceApp() {
       `🚀 Com saldo positivo de ${formatCurrency(Math.max(saldo, 0))}, avalie aplicações de renda fixa com liquidez diária como Tesouro Selic ou CDBs a 100% do CDI.`
     ];
 
-    const prev = shownTipIndexesRef.current;
-    const available = pool.map((_, i) => i).filter(i => !prev.includes(i));
-    const source = available.length >= 3 ? available : pool.map((_, i) => i);
+    // Alertas de Tetos de Gastos no pool da IA
+    categories.filter(c => c.type === 'expense').forEach(cat => {
+      const limit = categoryBudgets[cat.id];
+      if (limit && limit > 0) {
+        const spent = currentMonthTransactions
+          .filter(t => t.category_id === cat.id && t.type === 'expense')
+          .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+        const pctBudget = ((spent / limit) * 100).toFixed(0);
+
+        if (spent > limit) {
+          pool.unshift(`🚨 Alerta de Orçamento: A categoria "${cat.name}" ultrapassou o teto mensal em ${formatCurrency(spent - limit)} (${pctBudget}% do limite de ${formatCurrency(limit)}).`);
+        } else if (spent >= limit * 0.8) {
+          pool.unshift(`⚠️ Atenção ao Teto: Você já consumiu ${pctBudget}% do orçamento mensal de "${cat.name}" (${formatCurrency(spent)} de ${formatCurrency(limit)}).`);
+        }
+      }
+    });
 
     const chosen = [];
     const temp = [...source];
@@ -777,6 +814,7 @@ export default function FinanceApp() {
         categories: categories.filter(c => c.user_id === currentUser.id || !c.user_id),
         transactions: transactions.filter(t => t.user_id === currentUser.id),
         scheduled: scheduled.filter(s => s.user_id === currentUser.id),
+        categoryBudgets,
         exportDate: new Date().toISOString()
       };
 
@@ -877,6 +915,11 @@ export default function FinanceApp() {
           
           if (schedError) throw schedError;
           setScheduled(prev => [...prev, ...insertedSched]);
+        }
+
+        if (imported.categoryBudgets) {
+          setCategoryBudgets(imported.categoryBudgets);
+          localStorage.setItem('category_budgets', JSON.stringify(imported.categoryBudgets));
         }
 
         showToast(`✅ Importação concluída com sucesso!`, 'success');
@@ -1620,12 +1663,15 @@ export default function FinanceApp() {
     const [name, setName] = useState('');
     const [color, setColor] = useState('#3b82f6');
     const [type, setType] = useState('expense');
+    const [monthlyLimit, setMonthlyLimit] = useState('');
 
     useEffect(() => {
       if (editingCategory) {
         setName(editingCategory.name);
         setColor(editingCategory.color);
         setType(editingCategory.type);
+        const lim = categoryBudgets[editingCategory.id];
+        setMonthlyLimit(lim ? lim.toString() : '');
       }
     }, [editingCategory]);
 
@@ -1647,6 +1693,8 @@ export default function FinanceApp() {
           setCategories(prev => prev.map(c =>
             c.id === editingCategory.id ? { ...c, name: name.trim(), color, type } : c
           ));
+          const limVal = parseFloat(monthlyLimit.replace(',', '.'));
+          updateCategoryBudget(editingCategory.id, !isNaN(limVal) && limVal > 0 ? limVal : null);
           showToast('Categoria atualizada!', 'success');
         } else {
           const newCategory = {
@@ -1665,6 +1713,10 @@ export default function FinanceApp() {
           if (error) throw error;
           
           setCategories(prev => [...prev, ...data]);
+          if (data && data[0]) {
+            const limVal = parseFloat(monthlyLimit.replace(',', '.'));
+            updateCategoryBudget(data[0].id, !isNaN(limVal) && limVal > 0 ? limVal : null);
+          }
           showToast('Categoria criada!', 'success');
         }
 
@@ -1673,6 +1725,7 @@ export default function FinanceApp() {
         setName('');
         setColor('#3b82f6');
         setType('expense');
+        setMonthlyLimit('');
       } catch (error) {
         console.error('Erro ao salvar categoria:', error);
         showToast('Erro ao salvar categoria: ' + error.message, 'error');
@@ -1713,6 +1766,29 @@ export default function FinanceApp() {
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               />
             </div>
+
+            {type === 'expense' && (
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  🎯 Teto Mensal de Gasto (Opcional - R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={monthlyLimit}
+                  onChange={(e) => setMonthlyLimit(e.target.value)}
+                  placeholder="Ex: 1500.00 (deixe em branco se não houver teto)"
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  O FinanceApp avisará no Dashboard quando você atingir 80% ou estourar este limite.
+                </p>
+              </div>
+            )}
 
             <div>
               <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -2173,6 +2249,125 @@ export default function FinanceApp() {
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Tetos e Orçamentos de Gastos por Categoria */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Target className="w-5 h-5 text-blue-500" />
+                  <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                    🎯 Tetos de Gastos por Categoria
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setView('categories')}
+                  className="text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg transition-colors font-medium"
+                >
+                  Gerenciar Tetos
+                </button>
+              </div>
+
+              {(() => {
+                const expenseCatsWithBudget = categories
+                  .filter(c => c.type === 'expense')
+                  .map(c => {
+                    const limit = categoryBudgets[c.id] || 0;
+                    const spent = currentMonthTransactions
+                      .filter(t => t.category_id === c.id && t.type === 'expense')
+                      .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+                    const percent = limit > 0 ? (spent / limit) * 100 : 0;
+                    return { ...c, limit, spent, percent };
+                  })
+                  .filter(c => c.limit > 0);
+
+                if (expenseCatsWithBudget.length === 0) {
+                  return (
+                    <div className={`text-center py-6 px-4 rounded-xl border border-dashed ${
+                      darkMode ? 'border-gray-700 bg-gray-750 text-gray-400' : 'border-gray-200 bg-gray-50 text-gray-500'
+                    }`}>
+                      <p className="text-sm mb-2">
+                        Você ainda não definiu tetos mensais para suas categorias de despesa.
+                      </p>
+                      <p className="text-xs text-gray-400 mb-4">
+                        Definir um teto (ex: R$ 1.200 para Alimentação) ajuda a evitar surpresas no final do mês!
+                      </p>
+                      <button
+                        onClick={() => setView('categories')}
+                        className="text-xs font-semibold text-blue-500 hover:underline"
+                      >
+                        + Clique aqui para definir seu primeiro teto
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {expenseCatsWithBudget.map(cat => {
+                      const isOver = cat.spent > cat.limit;
+                      const isWarning = !isOver && cat.spent >= cat.limit * 0.8;
+                      const percentClamped = Math.min(cat.percent, 100);
+
+                      return (
+                        <div key={cat.id} className={`p-4 rounded-xl border ${
+                          darkMode ? 'bg-gray-750/50 border-gray-700' : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                              <span className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                                {cat.name}
+                              </span>
+                              {isOver ? (
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300">
+                                  🚨 Estourou (+{showVal(cat.spent - cat.limit)})
+                                </span>
+                              ) : isWarning ? (
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300">
+                                  ⚠️ Atenção ({cat.percent.toFixed(0)}%)
+                                </span>
+                              ) : (
+                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-950/80 dark:text-green-300">
+                                  ✅ {cat.percent.toFixed(0)}%
+                                </span>
+                              )}
+                            </div>
+
+                            <div className={`text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                              Gasto: <strong className={isOver ? 'text-red-500' : darkMode ? 'text-white' : 'text-gray-800'}>{showVal(cat.spent)}</strong> de <span className="opacity-75">{showVal(cat.limit)}</span>
+                            </div>
+                          </div>
+
+                          {/* Barra de Progresso */}
+                          <div className={`w-full h-3 rounded-full overflow-hidden ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                            <div
+                              className={`h-full transition-all duration-300 rounded-full ${
+                                isOver
+                                  ? 'bg-red-500 animate-pulse'
+                                  : isWarning
+                                  ? 'bg-amber-500'
+                                  : 'bg-emerald-500'
+                              }`}
+                              style={{ width: `${percentClamped}%` }}
+                            />
+                          </div>
+
+                          <div className="flex justify-between items-center mt-1 text-[11px] text-gray-400">
+                            <span>0%</span>
+                            <span>
+                              {isOver
+                                ? `Ultrapassado em ${((cat.spent / cat.limit - 1) * 100).toFixed(0)}%`
+                                : `Resta: ${showVal(cat.limit - cat.spent)}`}
+                            </span>
+                            <span>Teto: {showVal(cat.limit)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Dicas Financeiras com IA */}
@@ -2792,12 +2987,19 @@ export default function FinanceApp() {
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-4 h-4 rounded-full"
+                            className="w-4 h-4 rounded-full flex-shrink-0"
                             style={{ backgroundColor: category.color }}
                           />
-                          <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                            {category.name}
-                          </span>
+                          <div>
+                            <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                              {category.name}
+                            </span>
+                            {categoryBudgets[category.id] > 0 && (
+                              <p className={`text-xs ${darkMode ? 'text-blue-400' : 'text-blue-600'} font-semibold mt-0.5 flex items-center gap-1`}>
+                                🎯 Teto: {showVal(categoryBudgets[category.id])}/mês
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <button
@@ -2806,6 +3008,7 @@ export default function FinanceApp() {
                               setShowCategoryModal(true);
                             }}
                             className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                            title="Editar Categoria e Teto"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
@@ -2837,7 +3040,7 @@ export default function FinanceApp() {
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-4 h-4 rounded-full"
+                            className="w-4 h-4 rounded-full flex-shrink-0"
                             style={{ backgroundColor: category.color }}
                           />
                           <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
