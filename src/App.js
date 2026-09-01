@@ -589,12 +589,16 @@ export default function FinanceApp() {
         const pctBudget = ((spent / limit) * 100).toFixed(0);
 
         if (spent > limit) {
-          pool.unshift(`🚨 Alerta de Orçamento: A categoria "${cat.name}" ultrapassou o teto mensal em ${formatCurrency(spent - limit)} (${pctBudget}% do limite de ${formatCurrency(limit)}).`);
+          pool.push(`🚨 Alerta de Orçamento: A categoria "${cat.name}" ultrapassou o teto mensal em ${formatCurrency(spent - limit)} (${pctBudget}% do limite de ${formatCurrency(limit)}).`);
         } else if (spent >= limit * 0.8) {
-          pool.unshift(`⚠️ Atenção ao Teto: Você já consumiu ${pctBudget}% do orçamento mensal de "${cat.name}" (${formatCurrency(spent)} de ${formatCurrency(limit)}).`);
+          pool.push(`⚠️ Atenção ao Teto: Você já consumiu ${pctBudget}% do orçamento mensal de "${cat.name}" (${formatCurrency(spent)} de ${formatCurrency(limit)}).`);
         }
       }
     });
+
+    const prev = shownTipIndexesRef.current;
+    const available = pool.map((_, i) => i).filter(i => !prev.includes(i));
+    const source = available.length >= 3 ? available : pool.map((_, i) => i);
 
     const chosen = [];
     const temp = [...source];
@@ -1761,7 +1765,7 @@ export default function FinanceApp() {
                 placeholder="Ex: Restaurantes"
                 className={`w-full px-4 py-3 rounded-lg border ${
                   darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
                     : 'bg-white border-gray-300 text-gray-900'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               />
