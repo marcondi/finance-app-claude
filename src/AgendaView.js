@@ -30,9 +30,12 @@ export default function AgendaView({
   setShowTransactionModal,
   formatCurrency,
   formatDate,
-  getTodayDateString
+  getTodayDateString,
+  hideValues
 }) {
   const [filterPaid, setFilterPaid] = useState('all');
+
+  const showAmount = (val) => hideValues ? 'R$ •••••' : formatCurrency(val);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -131,15 +134,15 @@ export default function AgendaView({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow p-4 text-center`}>
               <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>TOTAL AGENDADO</p>
-              <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(totalMes)}</p>
+              <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{showAmount(totalMes)}</p>
             </div>
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow p-4 text-center`}>
               <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>JÁ PAGO</p>
-              <p className="text-xl font-bold text-green-500">{formatCurrency(totalPago)}</p>
+              <p className="text-xl font-bold text-green-500">{showAmount(totalPago)}</p>
             </div>
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow p-4 text-center`}>
               <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>A PAGAR</p>
-              <p className="text-xl font-bold text-orange-500">{formatCurrency(totalPendente)}</p>
+              <p className="text-xl font-bold text-orange-500">{showAmount(totalPendente)}</p>
             </div>
           </div>
 
@@ -248,7 +251,7 @@ export default function AgendaView({
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className="text-base font-bold text-red-500">{formatCurrency(c.amount)}</span>
+                          <span className="text-base font-bold text-red-500">{showAmount(c.amount)}</span>
                           {!c.is_paid && (
                             <button
                               onClick={() => payScheduled(c)}
@@ -378,7 +381,7 @@ export default function AgendaView({
                             Vencimento: {formatDate(scheduledItem.due_date)}
                           </span>
                           <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                            {formatCurrency(scheduledItem.amount)}
+                            {showAmount(scheduledItem.amount)}
                           </span>
                         </div>
                       </div>
