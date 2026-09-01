@@ -1964,45 +1964,84 @@ export default function FinanceApp() {
         {view === 'dashboard' && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+              {/* Card Entradas - Clicável */}
+              <div 
+                onClick={() => {
+                  setFilterType('income');
+                  setHighlightedCategory(null);
+                  setSearchTerm('');
+                  setView('transactions');
+                }}
+                className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750 border-gray-700' : 'bg-white hover:bg-gray-50 border-gray-100'} rounded-xl shadow-lg p-6 cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border group`}
+                title="Clique para ver as transações de Entradas"
+              >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <h3 className={`font-semibold group-hover:text-green-500 transition-colors ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                     Entradas
                   </h3>
-                  <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg">
+                  <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg group-hover:scale-110 transition-transform">
                     <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
                 </div>
                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                   {formatCurrency(income)}
                 </p>
+                <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-green-500 transition-colors`}>
+                  Ver entradas →
+                </p>
               </div>
 
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+              {/* Card Saídas - Clicável */}
+              <div 
+                onClick={() => {
+                  setFilterType('expense');
+                  setHighlightedCategory(null);
+                  setSearchTerm('');
+                  setView('transactions');
+                }}
+                className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750 border-gray-700' : 'bg-white hover:bg-gray-50 border-gray-100'} rounded-xl shadow-lg p-6 cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border group`}
+                title="Clique para ver as transações de Saídas"
+              >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <h3 className={`font-semibold group-hover:text-red-500 transition-colors ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                     Saídas
                   </h3>
-                  <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg">
+                  <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg group-hover:scale-110 transition-transform">
                     <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
                   </div>
                 </div>
                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                   {formatCurrency(expenses)}
                 </p>
+                <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-red-500 transition-colors`}>
+                  Ver saídas →
+                </p>
               </div>
 
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+              {/* Card Saldo - Clicável */}
+              <div 
+                onClick={() => {
+                  setFilterType('all');
+                  setHighlightedCategory(null);
+                  setSearchTerm('');
+                  setView('transactions');
+                }}
+                className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750 border-gray-700' : 'bg-white hover:bg-gray-50 border-gray-100'} rounded-xl shadow-lg p-6 cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border group`}
+                title="Clique para ver todas as Transações"
+              >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <h3 className={`font-semibold group-hover:text-blue-500 transition-colors ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                     Saldo
                   </h3>
-                  <div className={`${balance >= 0 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-red-100 dark:bg-red-900/30'} p-2 rounded-lg`}>
+                  <div className={`${balance >= 0 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-red-100 dark:bg-red-900/30'} p-2 rounded-lg group-hover:scale-110 transition-transform`}>
                     <DollarSign className={`w-5 h-5 ${balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`} />
                   </div>
                 </div>
                 <p className={`text-3xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(balance)}
+                </p>
+                <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-blue-500 transition-colors`}>
+                  Ver todas as transações →
                 </p>
               </div>
             </div>
