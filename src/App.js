@@ -2692,4 +2692,351 @@ export default function FinanceApp() {
                     <BarChart data={reportFilter === 'balance' ? last6MonthsData : pieData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
                       <XAxis dataKey={reportFilter === 'balance' ? 'label' : 'name'} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
-                      <YAxis tickFormatter={(v) =>
+                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} />
+                      {reportFilter === 'balance' ? (
+                        <>
+                          <Legend />
+                          <Bar dataKey="Entradas" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="Saídas" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                        </>
+                      ) : (
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                          {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        </Bar>
+                      )}
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+
+                {/* Gráfico de Linha */}
+                {reportChart === 'line' && (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart data={last6MonthsData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                      <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} />
+                      <Legend />
+                      <Line type="monotone" dataKey="Entradas" stroke="#16a34a" strokeWidth={3} />
+                      <Line type="monotone" dataKey="Saídas" stroke="#dc2626" strokeWidth={3} />
+                      <Line type="monotone" dataKey="Saldo" stroke="#3b82f6" strokeWidth={3} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ABA: CATEGORIAS */}
+        {view === 'categories' && (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                Gerenciar Categorias
+              </h2>
+              <button
+                onClick={() => setShowCategoryModal(true)}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Nova Categoria
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+                <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Categorias de Despesa
+                </h3>
+                <div className="space-y-3">
+                  {categories
+                    .filter(c => c.type === 'expense')
+                    .map(category => (
+                      <div
+                        key={category.id}
+                        className={`flex items-center justify-between p-4 rounded-lg ${
+                          darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingCategory(category);
+                              setShowCategoryModal(true);
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteCategory(category.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+                <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Categorias de Receita
+                </h3>
+                <div className="space-y-3">
+                  {categories
+                    .filter(c => c.type === 'income')
+                    .map(category => (
+                      <div
+                        key={category.id}
+                        className={`flex items-center justify-between p-4 rounded-lg ${
+                          darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingCategory(category);
+                              setShowCategoryModal(true);
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteCategory(category.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </main>
+
+      {/* Modal de Nova / Editar Transação */}
+      {showTransactionModal && <TransactionModal />}
+
+      {/* Modal de Categoria */}
+      {showCategoryModal && <CategoryModal />}
+
+      {/* Modal de Configurações */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-lg rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} max-h-[90vh] overflow-y-auto`}>
+            <div className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 flex items-center justify-between`}>
+              <div className="flex items-center gap-3">
+                <Settings className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Configurações
+                </h2>
+              </div>
+              <button onClick={() => setShowSettings(false)}>
+                <X className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Relatório Mensal por E-mail */}
+              <div>
+                <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  RELATÓRIO MENSAL POR E-MAIL
+                </p>
+                <button
+                  onClick={handleSendMonthlyReport}
+                  disabled={sendingReport}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-colors ${
+                    sendingReport
+                      ? 'bg-blue-400 cursor-not-allowed text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  <Mail className="w-4 h-4" />
+                  {sendingReport ? 'Enviando Relatório...' : 'Enviar Resumo do Mês por E-mail'}
+                </button>
+                <p className={`text-xs mt-2 text-center ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  Será enviado para <strong>{currentUser?.email}</strong>
+                </p>
+              </div>
+
+              {/* Conexão com Google Calendar */}
+              <div className={`pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  GOOGLE CALENDAR
+                </p>
+                <button
+                  onClick={handleGoogleLogin}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold border transition-colors ${
+                    darkMode
+                      ? 'bg-gray-700 hover:bg-gray-600 text-white border-gray-600'
+                      : 'bg-white hover:bg-gray-50 text-gray-800 border-gray-300'
+                  }`}
+                >
+                  <CalendarDays className="w-4 h-4 text-red-500" />
+                  {hasGoogleToken ? 'Sincronizar Google Calendar novamente' : 'Conectar Google Calendar'}
+                </button>
+              </div>
+
+              {/* Exportar / Importar */}
+              <div className={`pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  EXPORTAÇÃO E BACKUP
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => { handleExportPDF(); setShowSettings(false); }}
+                    className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Exportar PDF
+                  </button>
+
+                  <button
+                    onClick={() => { handleExportExcel(); setShowSettings(false); }}
+                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Exportar Excel
+                  </button>
+
+                  <button
+                    onClick={() => { handleExport(); setShowSettings(false); }}
+                    className={`flex items-center justify-center gap-2 ${
+                      darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                    } font-semibold py-3 rounded-xl transition-colors text-sm`}
+                  >
+                    <Download className="w-4 h-4" />
+                    Backup JSON
+                  </button>
+
+                  <label className={`flex items-center justify-center gap-2 ${
+                    darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                  } font-semibold py-3 rounded-xl transition-colors cursor-pointer text-sm`}>
+                    <Upload className="w-4 h-4" />
+                    Importar Backup
+                    <input type="file" accept=".json" onChange={(e) => { handleImport(e); setShowSettings(false); }} className="hidden" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Meta de Poupança */}
+      {showGoalModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6`}>
+              <div className="flex justify-between items-center">
+                <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  💰 Definir Meta de Economia
+                </h2>
+                <button onClick={() => {
+                  setShowGoalModal(false);
+                  setGoalInput('');
+                }}>
+                  <X className={darkMode ? 'text-gray-400' : 'text-gray-500'} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Quanto você quer poupar por mês?
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={goalInput}
+                  onChange={(e) => setGoalInput(e.target.value)}
+                  placeholder="Ex: 1000.00"
+                  className={`w-full px-4 py-3 rounded-lg border text-lg ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  autoFocus
+                />
+              </div>
+
+              <button
+                onClick={() => {
+                  const val = parseFloat(goalInput.replace(',', '.'));
+                  if (!isNaN(val) && val > 0) {
+                    setSavingsGoal(val);
+                    localStorage.setItem('savings_goal', val.toString());
+                    setShowGoalModal(false);
+                    setGoalInput('');
+                    showToast('Meta de poupança atualizada!', 'success');
+                  } else {
+                    showToast('Por favor, digite um valor válido!', 'warning');
+                  }
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
+              >
+                Salvar Meta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação */}
+      {confirmModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className={`w-full max-w-sm rounded-2xl shadow-2xl p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Confirmar exclusão</h3>
+            </div>
+            <p className={`text-sm mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{confirmModal.message}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal({ open: false, message: '', onConfirm: null })}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-600 hover:bg-red-700 text-white transition-colors"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
