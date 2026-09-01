@@ -220,26 +220,20 @@ export default function FinanceApp() {
 
   // Persistência e verificação de Sessão do Supabase Auth
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (session?.user) {
-          setCurrentUser(session.user);
-          if (session.provider_token) {
-            setHasGoogleToken(true);
-          }
-        }
-      } catch (err) {
-        console.error('Erro ao verificar sessão:', err);
-      } finally {
-        setAuthLoading(false);
-      }
-    };
+    let mounted = true;
 
-    checkSession();
+    // Verificar se há erro na URL retornado pelo OAuth
+    if (window.location.hash.includes('error=')) {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const errorDesc = params.get('error_description') || params.get('error');
+      if (errorDesc) {
+        showToast('Erro no login: ' + decodeURIComponent(errorDesc.replace(/\+/g, ' ')), 'error');
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
       if (session?.user) {
         setCurrentUser(session.user);
         if (session.provider_token) {
@@ -252,7 +246,22 @@ export default function FinanceApp() {
       setAuthLoading(false);
     });
 
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!mounted) return;
+      if (error) {
+        console.error('Erro ao verificar sessão:', error);
+      }
+      if (session?.user) {
+        setCurrentUser(session.user);
+        if (session.provider_token) {
+          setHasGoogleToken(true);
+        }
+      }
+      setAuthLoading(false);
+    });
+
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -335,14 +344,13 @@ export default function FinanceApp() {
     }
   };
 
-  // Login com Google incluindo escopos do Google Calendar
+  // Login com Google Padrão e Estável
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
-          scopes: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly'
+          redirectTo: window.location.origin
         }
       });
       if (error) throw error;
