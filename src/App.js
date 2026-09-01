@@ -220,48 +220,26 @@ export default function FinanceApp() {
 
   // Persistência e verificação de Sessão do Supabase Auth
   useEffect(() => {
-    let mounted = true;
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        setCurrentUser(session?.user || null);
+      } catch (err) {
+        console.error('Erro ao verificar sessão:', err);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
 
-    // Verificar se há erro na URL retornado pelo OAuth
-    if (window.location.hash.includes('error=')) {
-      const params = new URLSearchParams(window.location.hash.substring(1));
-      const errorDesc = params.get('error_description') || params.get('error');
-      if (errorDesc) {
-        showToast('Erro no login: ' + decodeURIComponent(errorDesc.replace(/\+/g, ' ')), 'error');
-        window.history.replaceState(null, '', window.location.pathname);
-      }
-    }
+    checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-      if (session?.user) {
-        setCurrentUser(session.user);
-        if (session.provider_token) {
-          setHasGoogleToken(true);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setCurrentUser(null);
-        setHasGoogleToken(false);
-      }
-      setAuthLoading(false);
-    });
-
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (!mounted) return;
-      if (error) {
-        console.error('Erro ao verificar sessão:', error);
-      }
-      if (session?.user) {
-        setCurrentUser(session.user);
-        if (session.provider_token) {
-          setHasGoogleToken(true);
-        }
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user || null);
       setAuthLoading(false);
     });
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -1017,7 +995,7 @@ export default function FinanceApp() {
         .insert([newTransaction])
         .select();
       
-      if (transError) throw transError;
+      if (transError) throw error;
 
       const { error: schedError } = await supabase
         .from('finance_scheduled')
@@ -1792,8 +1770,8 @@ export default function FinanceApp() {
                     darkMode 
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
                       : 'bg-white border-gray-300 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
+                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
                 <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   O FinanceApp avisará no Dashboard quando você atingir 80% ou estourar este limite.
                 </p>
