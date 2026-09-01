@@ -995,7 +995,7 @@ export default function FinanceApp() {
         .insert([newTransaction])
         .select();
       
-      if (transError) throw error;
+      if (transError) throw transError;
 
       const { error: schedError } = await supabase
         .from('finance_scheduled')
@@ -1770,8 +1770,8 @@ export default function FinanceApp() {
                     darkMode 
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
                       : 'bg-white border-gray-300 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              />
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
                 <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   O FinanceApp avisará no Dashboard quando você atingir 80% ou estourar este limite.
                 </p>
