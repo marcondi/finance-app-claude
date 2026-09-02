@@ -69,22 +69,28 @@ export default function DashboardView({
   const monthComparisonData = [
     {
       name: 'Entradas',
+      prev: prevIncome,
+      current: income,
       'Mês Anterior': prevIncome,
       'Mês Atual': income
     },
     {
       name: 'Saídas',
+      prev: prevExpenses,
+      current: expenses,
       'Mês Anterior': prevExpenses,
       'Mês Atual': expenses
     },
     {
       name: 'Saldo',
+      prev: prevBalance,
+      current: balance,
       'Mês Anterior': prevBalance,
       'Mês Atual': balance
     }
   ];
 
-  // Dados dos Últimos 6 Meses calculados de forma garantida
+  // Dados dos 6 Meses com fallback garantido
   const sixMonthsChartData = useMemo(() => {
     if (last6MonthsData && last6MonthsData.length > 0) {
       return last6MonthsData;
@@ -103,13 +109,21 @@ export default function DashboardView({
         return tDate.startsWith(prefix);
       });
 
-      const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + (Number(t.amount) || 0), 0);
-      const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+      const inc = monthTx
+        .filter(t => t.type === 'income')
+        .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+      const exp = monthTx
+        .filter(t => t.type === 'expense')
+        .reduce((s, t) => s + (Number(t.amount) || 0), 0);
 
       return {
         label,
+        income: inc,
+        expenses: exp,
+        balance: inc - exp,
         Entradas: inc,
-        Saídas: exp,
+        Saidas: exp,
+        'Saídas': exp,
         Saldo: inc - exp
       };
     });
@@ -367,7 +381,7 @@ export default function DashboardView({
               <BarChart data={monthComparisonData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
                 <XAxis dataKey="name" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
-                <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} />
+                <YAxis tickFormatter={(v) => v === 0 ? 'R$ 0' : `R$ ${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} />
                 <Tooltip
                   formatter={(value) => formatCurrency(value)}
                   contentStyle={{
@@ -378,8 +392,8 @@ export default function DashboardView({
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Bar dataKey="Mês Anterior" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Mês Atual" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="prev" name="Mês Anterior" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="current" name="Mês Atual" fill="#3b82f6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -387,7 +401,7 @@ export default function DashboardView({
               <BarChart data={sixMonthsChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
                 <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
-                <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} />
+                <YAxis tickFormatter={(v) => v === 0 ? 'R$ 0' : `R$ ${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} />
                 <Tooltip
                   formatter={(value) => formatCurrency(value)}
                   contentStyle={{
@@ -398,8 +412,8 @@ export default function DashboardView({
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Bar dataKey="Entradas" fill="#16a34a" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Saídas" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="income" name="Entradas" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expenses" name="Saídas" fill="#dc2626" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
