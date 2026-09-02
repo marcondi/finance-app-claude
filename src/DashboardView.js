@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -39,6 +39,8 @@ export default function DashboardView({
   expensesChange,
   balanceChange,
   last6MonthsData = [],
+  transactions = [],
+  currentDate = new Date(),
   showVal,
   formatCurrency,
   setView,
@@ -61,7 +63,7 @@ export default function DashboardView({
   handleExportPDF,
   handleExportExcel
 }) {
-  const [comparisonMode, setComparisonMode] = useState('mom'); // 'mom' (Mês Anterior vs Atual) ou '6months'
+  const [comparisonMode, setComparisonMode] = useState('mom'); // 'mom' ou '6months'
 
   // Dados para o Gráfico Comparativo Mês Anterior vs Mês Atual
   const monthComparisonData = [
@@ -81,6 +83,37 @@ export default function DashboardView({
       'Mês Atual': balance
     }
   ];
+
+  // Dados dos Últimos 6 Meses calculados de forma garantida
+  const sixMonthsChartData = useMemo(() => {
+    if (last6MonthsData && last6MonthsData.length > 0) {
+      return last6MonthsData;
+    }
+    const base = currentDate ? new Date(currentDate) : new Date();
+    const monthsPt = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(base.getFullYear(), base.getMonth() - (5 - i), 1);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const prefix = `${year}-${month}`;
+      const label = `${monthsPt[d.getMonth()]}/${String(year).slice(2)}`;
+
+      const monthTx = (transactions || []).filter(t => {
+        const tDate = String(t.date || '').split('T')[0];
+        return tDate.startsWith(prefix);
+      });
+
+      const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+      const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+
+      return {
+        label,
+        Entradas: inc,
+        Saídas: exp,
+        Saldo: inc - exp
+      };
+    });
+  }, [last6MonthsData, transactions, currentDate]);
 
   return (
     <>
@@ -351,7 +384,7 @@ export default function DashboardView({
             </ResponsiveContainer>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={last6MonthsData}>
+              <BarChart data={sixMonthsChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
                 <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
                 <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} />
