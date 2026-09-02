@@ -105,15 +105,15 @@ export default function DashboardView({
       let exp = 0;
 
       if (i === 5) {
-        // Mês Atual selecionado
+        // Mês Atual selecionado (Valores reais garantidos)
         inc = Number(income) || 0;
         exp = Number(expenses) || 0;
       } else if (i === 4) {
-        // Mês Anterior
+        // Mês Anterior (Valores reais garantidos)
         inc = Number(prevIncome) || 0;
         exp = Number(prevExpenses) || 0;
       } else {
-        // Meses anteriores
+        // Meses anteriores calculados da base de transações
         const monthTx = (transactions || []).filter(t => {
           const tDate = String(t.date || '').split('T')[0];
           return tDate.startsWith(prefix) || tDate.includes(`-${month}-`) || tDate.includes(`/${month}/`);
