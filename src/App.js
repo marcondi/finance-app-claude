@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Wallet, 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
   Moon, 
   Sun, 
   LogOut, 
@@ -12,11 +9,7 @@ import {
   ChevronRight, 
   Download, 
   Upload, 
-  Edit2, 
-  Trash2, 
-  Search, 
   AlertCircle, 
-  Check, 
   X, 
   FileText,
   FileSpreadsheet,
@@ -27,29 +20,17 @@ import {
   ArrowLeftRight,
   CalendarDays,
   BarChart2,
-  Sparkles,
   Eye,
   EyeOff,
-  Target
+  Trash2
 } from 'lucide-react';
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  Legend, 
-  Tooltip, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  LineChart, 
-  Line 
-} from 'recharts';
 import * as XLSX from 'xlsx';
 import { supabase, supabaseUrl, supabaseAnonKey } from './supabaseClient';
 import AgendaView from './AgendaView';
+import DashboardView from './DashboardView';
+import TransactionsView from './TransactionsView';
+import ReportsView from './ReportsView';
+import CategoriesView from './CategoriesView';
 
 const defaultCategories = [
   // RECEITAS
@@ -169,7 +150,7 @@ export default function FinanceApp() {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Agenda: Sub-aba (Contas vs Google Calendar) e Dia Selecionado
+  // Agenda: Sub-aba e Dia Selecionado
   const [agendaSubTab, setAgendaSubTab] = useState('bills');
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
 
@@ -206,7 +187,7 @@ export default function FinanceApp() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   };
 
-  // Gerenciamento do tema Dark/Light com persistência
+  // Tema Dark/Light com persistência
   useEffect(() => {
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
     if (darkMode) {
@@ -218,7 +199,7 @@ export default function FinanceApp() {
     }
   }, [darkMode]);
 
-  // Persistência e verificação de Sessão do Supabase Auth
+  // Sessão Supabase Auth
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -322,7 +303,6 @@ export default function FinanceApp() {
     }
   };
 
-  // Login com Google Padrão e Estável
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -338,7 +318,6 @@ export default function FinanceApp() {
     }
   };
 
-  // Buscar Eventos do Google Calendar
   const fetchCalendarEvents = async (filter = calendarFilter) => {
     setLoadingCalendar(true);
     try {
@@ -403,7 +382,7 @@ export default function FinanceApp() {
     }
   }, [agendaSubTab, calendarFilter, currentUser]);
 
-  // Cálculos do Mês Selecionado
+  // Cálculos do Mês
   const currentMonthTransactions = useMemo(() => {
     if (!currentUser) return [];
     
@@ -489,7 +468,6 @@ export default function FinanceApp() {
     });
   }, [scheduled, currentUser]);
 
-  // Histórico dos últimos 6 meses para os Gráficos
   const last6MonthsData = useMemo(() => {
     if (!currentUser) return [];
     return Array.from({ length: 6 }, (_, i) => {
@@ -517,7 +495,6 @@ export default function FinanceApp() {
     });
   }, [transactions, currentUser]);
 
-  // Gerador de Dicas Financeiras com IA
   const gerarDicasIA = async () => {
     setIsGeneratingTips(true);
     setAiTips([]);
@@ -565,7 +542,6 @@ export default function FinanceApp() {
       `🚀 Com saldo positivo de ${formatCurrency(Math.max(saldo, 0))}, avalie aplicações de renda fixa com liquidez diária como Tesouro Selic ou CDBs a 100% do CDI.`
     ];
 
-    // Alertas de Tetos de Gastos no pool da IA
     categories.filter(c => c.type === 'expense').forEach(cat => {
       const limit = categoryBudgets[cat.id];
       if (limit && limit > 0) {
@@ -598,7 +574,6 @@ export default function FinanceApp() {
     setIsGeneratingTips(false);
   };
 
-  // Envio de Relatório Mensal por E-mail
   const handleSendMonthlyReport = async () => {
     if (sendingReport) return;
     setSendingReport(true);
@@ -653,7 +628,6 @@ export default function FinanceApp() {
     }
   };
 
-  // Exportar Relatório em PDF
   const handleExportPDF = () => {
     try {
       const periodo = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -739,7 +713,6 @@ export default function FinanceApp() {
     }
   };
 
-  // Exportar Relatório em Excel (.xlsx)
   const handleExportExcel = () => {
     try {
       const periodo = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -788,7 +761,6 @@ export default function FinanceApp() {
     }
   };
 
-  // Exportar Backup Completo JSON
   const handleExport = async () => {
     try {
       if (!currentUser) return;
@@ -824,7 +796,6 @@ export default function FinanceApp() {
     }
   };
 
-  // Importar Backup JSON
   const handleImport = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1847,7 +1818,7 @@ export default function FinanceApp() {
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Sistema de Toasts */}
+      {/* Toasts */}
       <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-full pointer-events-none">
         {toasts.map(t => (
           <div
@@ -1907,7 +1878,6 @@ export default function FinanceApp() {
 
             {/* Menu Lateral / Usuário */}
             <div className="flex items-center gap-3">
-              {/* Botão de Modo Privacidade (Olhinho) */}
               <button
                 onClick={toggleHideValues}
                 className={`p-2 rounded-lg transition-colors ${
@@ -1918,7 +1888,6 @@ export default function FinanceApp() {
                 {hideValues ? <EyeOff className="w-5 h-5 text-blue-500" /> : <Eye className="w-5 h-5" />}
               </button>
 
-              {/* Botão Dark / Light */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
@@ -2050,682 +2019,63 @@ export default function FinanceApp() {
           </div>
         )}
 
-        {/* ABA: DASHBOARD */}
+        {/* Views Modulares */}
         {view === 'dashboard' && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {/* Card Entradas - Clicável */}
-              <div 
-                onClick={() => {
-                  setFilterType('income');
-                  setHighlightedCategory(null);
-                  setSearchTerm('');
-                  setView('transactions');
-                }}
-                className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750 border-gray-700' : 'bg-white hover:bg-gray-50 border-gray-100'} rounded-xl shadow-lg p-6 cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border group`}
-                title="Clique para ver as transações de Entradas"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className={`font-semibold group-hover:text-green-500 transition-colors ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    Entradas
-                  </h3>
-                  <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                    <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                </div>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  {showVal(income)}
-                </p>
-                <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-green-500 transition-colors`}>
-                  Ver entradas →
-                </p>
-              </div>
-
-              {/* Card Saídas - Clicável */}
-              <div 
-                onClick={() => {
-                  setFilterType('expense');
-                  setHighlightedCategory(null);
-                  setSearchTerm('');
-                  setView('transactions');
-                }}
-                className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750 border-gray-700' : 'bg-white hover:bg-gray-50 border-gray-100'} rounded-xl shadow-lg p-6 cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border group`}
-                title="Clique para ver as transações de Saídas"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className={`font-semibold group-hover:text-red-500 transition-colors ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    Saídas
-                  </h3>
-                  <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                    <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
-                  </div>
-                </div>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  {showVal(expenses)}
-                </p>
-                <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-red-500 transition-colors`}>
-                  Ver saídas →
-                </p>
-              </div>
-
-              {/* Card Saldo - Clicável */}
-              <div 
-                onClick={() => {
-                  setFilterType('all');
-                  setHighlightedCategory(null);
-                  setSearchTerm('');
-                  setView('transactions');
-                }}
-                className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750 border-gray-700' : 'bg-white hover:bg-gray-50 border-gray-100'} rounded-xl shadow-lg p-6 cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border group`}
-                title="Clique para ver todas as Transações"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className={`font-semibold group-hover:text-blue-500 transition-colors ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    Saldo
-                  </h3>
-                  <div className={`${balance >= 0 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-red-100 dark:bg-red-900/30'} p-2 rounded-lg group-hover:scale-110 transition-transform`}>
-                    <DollarSign className={`w-5 h-5 ${balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`} />
-                  </div>
-                </div>
-                <p className={`text-3xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {showVal(balance)}
-                </p>
-                <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-blue-500 transition-colors`}>
-                  Ver todas as transações →
-                </p>
-              </div>
-            </div>
-
-            {/* Gráfico de Gastos por Categoria no Dashboard */}
-            {expensesByCategory.length > 0 && (
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                    Gastos por Categoria
-                  </h3>
-                  <button
-                    onClick={() => setView('reports')}
-                    className={`text-sm font-semibold ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
-                  >
-                    Ver Relatórios Completos →
-                  </button>
-                </div>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={expensesByCategory}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                      cursor="pointer"
-                      onClick={(data) => {
-                        if (!data) return;
-                        setHighlightedCategory(data.name);
-                        setFilterType('expense');
-                        setView('transactions');
-                      }}
-                    >
-                      {expensesByCategory.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value) => formatCurrency(value)}
-                      contentStyle={{
-                        backgroundColor: darkMode ? '#1f2937' : '#ffffff',
-                        border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        color: darkMode ? '#ffffff' : '#000000'
-                      }}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* Poupômetro */}
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  💰 Poupômetro
-                </h3>
-                <button
-                  onClick={() => setShowGoalModal(true)}
-                  className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  {savingsGoal > 0 ? 'Editar Meta' : 'Definir Meta'}
-                </button>
-              </div>
-
-              {savingsGoal > 0 ? (
-                <>
-                  <div className="mb-4">
-                    <div className="flex justify-between mb-2">
-                      <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Poupado: {showVal(savingsAmount)}
-                      </span>
-                      <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Meta: {showVal(savingsGoal)}
-                      </span>
-                    </div>
-                    <div className={`w-full h-4 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                      <div
-                        className={`h-4 rounded-full transition-all ${
-                          savingsAmount >= savingsGoal ? 'bg-green-500' : savingsAmount >= savingsGoal * 0.7 ? 'bg-yellow-500' : 'bg-red-500'
-                        }`}
-                        style={{ width: `${Math.min((savingsAmount / savingsGoal) * 100, 100)}%` }}
-                      />
-                    </div>
-                    <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {savingsAmount >= savingsGoal 
-                        ? '🎉 Parabéns! Você atingiu sua meta de poupança!' 
-                        : `Faltam ${showVal(savingsGoal - savingsAmount)} para atingir a meta`}
-                    </p>
-                  </div>
-                  <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                    💡 Dica: Lance valores na categoria "Poupança" para alimentar o poupômetro
-                  </p>
-                </>
-              ) : (
-                <div>
-                  <p className={`text-sm mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Defina uma meta mensal de poupança para acompanhar seu progresso! 🎯
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Tetos e Orçamentos de Gastos por Categoria */}
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Target className="w-5 h-5 text-blue-500" />
-                  <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                    🎯 Tetos de Gastos por Categoria
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setView('categories')}
-                  className="text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg transition-colors font-medium"
-                >
-                  Gerenciar Tetos
-                </button>
-              </div>
-
-              {(() => {
-                const expenseCatsWithBudget = categories
-                  .filter(c => c.type === 'expense')
-                  .map(c => {
-                    const limit = categoryBudgets[c.id] || 0;
-                    const spent = currentMonthTransactions
-                      .filter(t => t.category_id === c.id && t.type === 'expense')
-                      .reduce((s, t) => s + (Number(t.amount) || 0), 0);
-                    const percent = limit > 0 ? (spent / limit) * 100 : 0;
-                    return { ...c, limit, spent, percent };
-                  })
-                  .filter(c => c.limit > 0);
-
-                if (expenseCatsWithBudget.length === 0) {
-                  return (
-                    <div className={`text-center py-6 px-4 rounded-xl border border-dashed ${
-                      darkMode ? 'border-gray-700 bg-gray-750 text-gray-400' : 'border-gray-200 bg-gray-50 text-gray-500'
-                    }`}>
-                      <p className="text-sm mb-2">
-                        Você ainda não definiu tetos mensais para suas categorias de despesa.
-                      </p>
-                      <p className="text-xs text-gray-400 mb-4">
-                        Definir um teto (ex: R$ 1.200 para Alimentação) ajuda a evitar surpresas no final do mês!
-                      </p>
-                      <button
-                        onClick={() => setView('categories')}
-                        className="text-xs font-semibold text-blue-500 hover:underline"
-                      >
-                        + Clique aqui para definir seu primeiro teto
-                      </button>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="space-y-4">
-                    {expenseCatsWithBudget.map(cat => {
-                      const isOver = cat.spent > cat.limit;
-                      const isWarning = !isOver && cat.spent >= cat.limit * 0.8;
-                      const percentClamped = Math.min(cat.percent, 100);
-
-                      return (
-                        <div key={cat.id} className={`p-4 rounded-xl border ${
-                          darkMode ? 'bg-gray-750/50 border-gray-700' : 'bg-gray-50 border-gray-200'
-                        }`}>
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                              <span className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                                {cat.name}
-                              </span>
-                              {isOver ? (
-                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300">
-                                  🚨 Estourou (+{showVal(cat.spent - cat.limit)})
-                                </span>
-                              ) : isWarning ? (
-                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300">
-                                  ⚠️ Atenção ({cat.percent.toFixed(0)}%)
-                                </span>
-                              ) : (
-                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-950/80 dark:text-green-300">
-                                  ✅ {cat.percent.toFixed(0)}%
-                                </span>
-                              )}
-                            </div>
-
-                            <div className={`text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                              Gasto: <strong className={isOver ? 'text-red-500' : darkMode ? 'text-white' : 'text-gray-800'}>{showVal(cat.spent)}</strong> de <span className="opacity-75">{showVal(cat.limit)}</span>
-                            </div>
-                          </div>
-
-                          {/* Barra de Progresso */}
-                          <div className={`w-full h-3 rounded-full overflow-hidden ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                            <div
-                              className={`h-full transition-all duration-300 rounded-full ${
-                                isOver
-                                  ? 'bg-red-500 animate-pulse'
-                                  : isWarning
-                                  ? 'bg-amber-500'
-                                  : 'bg-emerald-500'
-                              }`}
-                              style={{ width: `${percentClamped}%` }}
-                            />
-                          </div>
-
-                          <div className="flex justify-between items-center mt-1 text-[11px] text-gray-400">
-                            <span>0%</span>
-                            <span>
-                              {isOver
-                                ? `Ultrapassado em ${((cat.spent / cat.limit - 1) * 100).toFixed(0)}%`
-                                : `Resta: ${showVal(cat.limit - cat.spent)}`}
-                            </span>
-                            <span>Teto: {showVal(cat.limit)}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Dicas Financeiras com IA */}
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-purple-500" />
-                  <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                    Dicas Financeiras com IA
-                  </h3>
-                </div>
-              </div>
-              
-              {!showTips ? (
-                <button
-                  onClick={async () => { setShowTips(true); await gerarDicasIA(); }}
-                  disabled={isGeneratingTips}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {isGeneratingTips ? 'Analisando suas finanças...' : 'Gerar Dicas com IA'}
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  {isGeneratingTips ? (
-                    <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-blue-50'} flex items-center gap-3`}>
-                      <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                      <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Analisando suas entradas, saídas e categorias...</p>
-                    </div>
-                  ) : (
-                    aiTips.map((tip, index) => (
-                      <div key={index} className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700/70 border border-gray-600' : 'bg-purple-50/70 border border-purple-100'}`}>
-                        <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{tip}</p>
-                      </div>
-                    ))
-                  )}
-                  <div className="flex gap-4 pt-2">
-                    <button
-                      onClick={gerarDicasIA}
-                      disabled={isGeneratingTips}
-                      className={`text-sm font-semibold transition-opacity ${darkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700'}`}
-                    >
-                      🔄 Regerar novas dicas
-                    </button>
-                    <button
-                      onClick={() => setShowTips(false)}
-                      disabled={isGeneratingTips}
-                      className={`text-sm underline ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                      Ocultar dicas
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Ações Rápidas */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button
-                onClick={() => setShowTransactionModal(true)}
-                className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                Adicionar Lançamento
-              </button>
-
-              <button
-                onClick={handleExportPDF}
-                className={`flex items-center justify-center gap-3 ${
-                  darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                } font-semibold py-4 rounded-xl shadow-lg transition-colors`}
-              >
-                <FileText className="w-5 h-5 text-red-500" />
-                Exportar PDF
-              </button>
-
-              <button
-                onClick={handleExportExcel}
-                className={`flex items-center justify-center gap-3 ${
-                  darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                } font-semibold py-4 rounded-xl shadow-lg transition-colors`}
-              >
-                <FileSpreadsheet className="w-5 h-5 text-green-500" />
-                Exportar Excel
-              </button>
-            </div>
-          </>
+          <DashboardView
+            darkMode={darkMode}
+            income={income}
+            expenses={expenses}
+            balance={balance}
+            showVal={showVal}
+            formatCurrency={formatCurrency}
+            setView={setView}
+            setFilterType={setFilterType}
+            setHighlightedCategory={setHighlightedCategory}
+            setSearchTerm={setSearchTerm}
+            expensesByCategory={expensesByCategory}
+            savingsGoal={savingsGoal}
+            savingsAmount={savingsAmount}
+            setShowGoalModal={setShowGoalModal}
+            categories={categories}
+            categoryBudgets={categoryBudgets}
+            currentMonthTransactions={currentMonthTransactions}
+            showTips={showTips}
+            setShowTips={setShowTips}
+            aiTips={aiTips}
+            isGeneratingTips={isGeneratingTips}
+            gerarDicasIA={gerarDicasIA}
+            setShowTransactionModal={setShowTransactionModal}
+            handleExportPDF={handleExportPDF}
+            handleExportExcel={handleExportExcel}
+          />
         )}
 
-        {/* ABA: TRANSAÇÕES */}
         {view === 'transactions' && (
-          <>
-            {highlightedCategory && (
-              <div className={`flex items-center justify-between gap-3 mb-4 px-4 py-3 rounded-xl border ${
-                darkMode ? 'bg-blue-900/30 border-blue-700 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-700'
-              }`}>
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  Filtrando por categoria: <strong>{highlightedCategory}</strong>
-                </div>
-                <button
-                  onClick={() => setHighlightedCategory(null)}
-                  className={`text-xs px-3 py-1 rounded-lg font-medium transition-colors ${
-                    darkMode ? 'bg-blue-800 hover:bg-blue-700 text-blue-200' : 'bg-blue-100 hover:bg-blue-200 text-blue-600'
-                  }`}
-                >
-                  ✕ Limpar filtro
-                </button>
-              </div>
-            )}
-
-            <div className="space-y-4 mb-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="relative flex-1 max-w-md">
-                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                  <input
-                    type="text"
-                    placeholder="Buscar por descrição ou categoria..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                      darkMode 
-                        ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
-                        : 'bg-white border-gray-300 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
-                </div>
-
-                <button
-                  onClick={() => setShowTransactionModal(true)}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
-                >
-                  <Plus className="w-5 h-5" />
-                  Nova Transação
-                </button>
-              </div>
-
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4`}>
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Tipo de Transação
-                    </label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setFilterType('all')}
-                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                          filterType === 'all'
-                            ? 'bg-blue-600 text-white'
-                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        Todas
-                      </button>
-                      <button
-                        onClick={() => setFilterType('income')}
-                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                          filterType === 'income'
-                            ? 'bg-green-600 text-white'
-                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        💚 Entradas
-                      </button>
-                      <button
-                        onClick={() => setFilterType('expense')}
-                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                          filterType === 'expense'
-                            ? 'bg-red-600 text-white'
-                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        🔴 Saídas
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex-1">
-                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Ordenar por
-                    </label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className={`w-full px-4 py-2 rounded-lg border ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white' 
-                          : 'bg-white border-gray-300 text-gray-900'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    >
-                      <option value="date-desc">📅 Data (mais recente)</option>
-                      <option value="date-asc">📅 Data (mais antiga)</option>
-                      <option value="description-asc">🔤 Descrição (A-Z)</option>
-                      <option value="description-desc">🔤 Descrição (Z-A)</option>
-                      <option value="amount-desc">💰 Valor (maior)</option>
-                      <option value="amount-asc">💰 Valor (menor)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg overflow-hidden`}>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
-                    <tr>
-                      <th className={`px-6 py-4 text-left text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Data</th>
-                      <th className={`px-6 py-4 text-left text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Descrição</th>
-                      <th className={`px-6 py-4 text-left text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Categoria</th>
-                      <th className={`px-6 py-4 text-right text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Valor</th>
-                      <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Status</th>
-                      <th className={`px-6 py-4 text-center text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {(() => {
-                      let filtered = currentMonthTransactions;
-
-                      if (searchTerm) {
-                        filtered = filtered.filter(t => {
-                          const category = categories.find(c => c.id === t.category_id);
-                          return (
-                            t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            category?.name.toLowerCase().includes(searchTerm.toLowerCase())
-                          );
-                        });
-                      }
-
-                      if (filterType !== 'all') {
-                        filtered = filtered.filter(t => t.type === filterType);
-                      }
-
-                      if (highlightedCategory) {
-                        filtered = filtered.filter(t => {
-                          const category = categories.find(c => c.id === t.category_id);
-                          return category?.name === highlightedCategory;
-                        });
-                      }
-
-                      filtered = [...filtered].sort((a, b) => {
-                        switch (sortBy) {
-                          case 'date-desc':
-                            return (b.date || '').localeCompare(a.date || '');
-                          case 'date-asc':
-                            return (a.date || '').localeCompare(b.date || '');
-                          case 'description-asc':
-                            return (a.description || '').localeCompare(b.description || '');
-                          case 'description-desc':
-                            return (b.description || '').localeCompare(a.description || '');
-                          case 'amount-desc':
-                            return (Number(b.amount) || 0) - (Number(a.amount) || 0);
-                          case 'amount-asc':
-                            return (Number(a.amount) || 0) - (Number(b.amount) || 0);
-                          default:
-                            return 0;
-                        }
-                      });
-
-                      const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-                      const safePage = Math.min(currentPage, totalPages);
-                      const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
-
-                      return (
-                        <>
-                          {paginated.length > 0 ? (
-                            paginated.map(transaction => {
-                              const category = categories.find(c => c.id === transaction.category_id);
-                              return (
-                                <tr key={transaction.id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
-                                  <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    {formatDate(transaction.date)}
-                                  </td>
-                                  <td className={`px-6 py-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {transaction.description}
-                                  </td>
-                                  <td className="px-6 py-4">
-                                    <span
-                                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white"
-                                      style={{ backgroundColor: category?.color || '#6b7280' }}
-                                    >
-                                      {category?.name || 'Geral'}
-                                    </span>
-                                  </td>
-                                  <td className={`px-6 py-4 text-right font-semibold ${
-                                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                                  }`}>
-                                    {transaction.type === 'income' ? '+' : '-'} {showVal(transaction.amount)}
-                                  </td>
-                                  <td className="px-6 py-4 text-center">
-                                    {transaction.type === 'expense' ? (
-                                      <button
-                                        onClick={() => toggleTransactionPaid(transaction)}
-                                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
-                                          transaction.is_paid
-                                            ? 'bg-green-500 border-green-500 text-white'
-                                            : darkMode ? 'border-gray-500 text-gray-400 hover:border-green-400' : 'border-gray-300 text-gray-500 hover:border-green-500'
-                                        }`}
-                                      >
-                                        {transaction.is_paid ? <Check className="w-3 h-3" /> : null}
-                                        {transaction.is_paid ? 'Pago' : 'Pagar'}
-                                      </button>
-                                    ) : (
-                                      <span className="text-xs text-green-600 font-medium">Recebido</span>
-                                    )}
-                                  </td>
-                                  <td className="px-6 py-4">
-                                    <div className="flex items-center justify-center gap-2">
-                                      <button
-                                        onClick={() => {
-                                          setEditingTransaction(transaction);
-                                          setShowTransactionModal(true);
-                                        }}
-                                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                      >
-                                        <Edit2 className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => deleteTransaction(transaction.id)}
-                                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          ) : (
-                            <tr>
-                              <td colSpan={6} className="text-center py-12">
-                                <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                  {searchTerm || filterType !== 'all'
-                                    ? 'Nenhuma transação encontrada com os filtros aplicados.'
-                                    : 'Nenhuma transação encontrada neste mês.'}
-                                </p>
-                              </td>
-                            </tr>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Paginação */}
-              {currentMonthTransactions.length > 0 && (
-                <div className={`px-6 py-3 border-t flex flex-wrap items-center justify-between gap-4 ${darkMode ? 'border-gray-700' : 'border-gray-200 bg-gray-50'}`}>
-                  <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Total: {currentMonthTransactions.length} transações
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Linhas por página:</span>
-                    <select
-                      value={pageSize}
-                      onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                      className={`text-sm px-2 py-1 rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
-                    >
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
+          <TransactionsView
+            darkMode={darkMode}
+            currentMonthTransactions={currentMonthTransactions}
+            categories={categories}
+            showVal={showVal}
+            formatDate={formatDate}
+            toggleTransactionPaid={toggleTransactionPaid}
+            setEditingTransaction={setEditingTransaction}
+            setShowTransactionModal={setShowTransactionModal}
+            deleteTransaction={deleteTransaction}
+            highlightedCategory={highlightedCategory}
+            setHighlightedCategory={setHighlightedCategory}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            filterType={filterType}
+            setFilterType={setFilterType}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+          />
         )}
 
-        {/* ABA: AGENDA & CALENDÁRIO / GOOGLE CALENDAR (Componente Modular) */}
         {view === 'scheduled' && (
           <AgendaView
             darkMode={darkMode}
@@ -2753,318 +2103,42 @@ export default function FinanceApp() {
           />
         )}
 
-        {/* ABA: RELATÓRIOS E GRÁFICOS */}
-        {view === 'reports' && (() => {
-          const pieExpenses = categories
-            .filter(c => c.type === 'expense')
-            .map(c => ({
-              name: c.name,
-              color: c.color,
-              value: currentMonthTransactions.filter(t => t.category_id === c.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0)
-            })).filter(c => c.value > 0);
+        {view === 'reports' && (
+          <ReportsView
+            darkMode={darkMode}
+            currentDate={currentDate}
+            currentMonthTransactions={currentMonthTransactions}
+            categories={categories}
+            last6MonthsData={last6MonthsData}
+            reportFilter={reportFilter}
+            setReportFilter={setReportFilter}
+            reportChart={reportChart}
+            setReportChart={setReportChart}
+            formatCurrency={formatCurrency}
+            showVal={showVal}
+            handleExportPDF={handleExportPDF}
+            handleExportExcel={handleExportExcel}
+            setHighlightedCategory={setHighlightedCategory}
+            setFilterType={setFilterType}
+            setView={setView}
+          />
+        )}
 
-          const pieIncomes = categories
-            .filter(c => c.type === 'income')
-            .map(c => ({
-              name: c.name,
-              color: c.color,
-              value: currentMonthTransactions.filter(t => t.category_id === c.id && t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0)
-            })).filter(c => c.value > 0);
-
-          const pieData = reportFilter === 'expenses-category' ? pieExpenses : pieIncomes;
-          const totalPie = pieData.reduce((s, c) => s + c.value, 0);
-
-          return (
-            <div>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  Relatórios e Análise Financeira
-                </h2>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleExportPDF}
-                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
-                  >
-                    <FileText className="w-4 h-4" />
-                    PDF
-                  </button>
-                  <button
-                    onClick={handleExportExcel}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
-                  >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    Excel
-                  </button>
-                </div>
-              </div>
-
-              {/* Seletores de Tipo de Gráfico e Filtro */}
-              <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                <div className={`flex gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                  {[
-                    { key: 'pie', label: 'Pizza' },
-                    { key: 'line', label: 'Linha' },
-                    { key: 'bar', label: 'Barras' },
-                  ].map(({ key, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => setReportChart(key)}
-                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                        reportChart === key
-                          ? 'bg-blue-600 text-white shadow'
-                          : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className={`flex gap-2 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                  {[
-                    { key: 'expenses-category', label: 'Despesas por Categoria' },
-                    { key: 'income-category', label: 'Receitas por Categoria' },
-                    { key: 'balance', label: 'Evolução do Saldo' },
-                  ].map(({ key, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => setReportFilter(key)}
-                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                        reportFilter === key
-                          ? 'bg-blue-600 text-white shadow'
-                          : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Card do Gráfico */}
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
-                <h3 className={`text-lg font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  {reportFilter === 'expenses-category' ? 'Despesas por Categoria' :
-                   reportFilter === 'income-category' ? 'Receitas por Categoria' :
-                   'Evolução Mensal (Últimos 6 meses)'}
-                </h3>
-
-                {/* Gráfico de Pizza */}
-                {reportChart === 'pie' && reportFilter !== 'balance' && (
-                  <div className="flex flex-col md:flex-row gap-6 items-center">
-                    <div className="w-full md:w-1/2">
-                      <ResponsiveContainer width="100%" height={320}>
-                        <PieChart>
-                          <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={75}
-                            outerRadius={120}
-                            paddingAngle={3}
-                            dataKey="value"
-                            cursor="pointer"
-                            onClick={(data) => {
-                              if (!data) return;
-                              setHighlightedCategory(data.name);
-                              setFilterType(reportFilter === 'expenses-category' ? 'expense' : 'income');
-                              setView('transactions');
-                            }}
-                          >
-                            {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                          </Pie>
-                          <Tooltip formatter={(v) => formatCurrency(v)} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="w-full md:w-1/2 space-y-2 max-h-80 overflow-y-auto pr-2">
-                      {pieData.map((cat, i) => (
-                        <div key={i} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: cat.color }} />
-                            <span className={`text-sm truncate ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{cat.name}</span>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <div className={`text-sm font-semibold ${reportFilter === 'expenses-category' ? 'text-red-500' : 'text-green-500'}`}>
-                              {showVal(cat.value)}
-                            </div>
-                            <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                              {totalPie > 0 ? ((cat.value / totalPie) * 100).toFixed(1) : 0}%
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Gráfico de Barras */}
-                {(reportChart === 'bar' || (reportChart === 'pie' && reportFilter === 'balance')) && (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={reportFilter === 'balance' ? last6MonthsData : pieData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
-                      <XAxis dataKey={reportFilter === 'balance' ? 'label' : 'name'} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
-                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
-                      <Tooltip formatter={(v) => formatCurrency(v)} />
-                      {reportFilter === 'balance' ? (
-                        <>
-                          <Legend />
-                          <Bar dataKey="Entradas" fill="#16a34a" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="Saídas" fill="#dc2626" radius={[4, 4, 0, 0]} />
-                        </>
-                      ) : (
-                        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                          {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                        </Bar>
-                      )}
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-
-                {/* Gráfico de Linha */}
-                {reportChart === 'line' && (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <LineChart data={last6MonthsData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
-                      <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
-                      <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
-                      <Tooltip formatter={(v) => formatCurrency(v)} />
-                      <Legend />
-                      <Line type="monotone" dataKey="Entradas" stroke="#16a34a" strokeWidth={3} />
-                      <Line type="monotone" dataKey="Saídas" stroke="#dc2626" strokeWidth={3} />
-                      <Line type="monotone" dataKey="Saldo" stroke="#3b82f6" strokeWidth={3} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* ABA: CATEGORIAS */}
         {view === 'categories' && (
-          <>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                Gerenciar Categorias
-              </h2>
-              <button
-                onClick={() => setShowCategoryModal(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                Nova Categoria
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
-                <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  Categorias de Despesa
-                </h3>
-                <div className="space-y-3">
-                  {categories
-                    .filter(c => c.type === 'expense')
-                    .map(category => (
-                      <div
-                        key={category.id}
-                        className={`flex items-center justify-between p-4 rounded-lg ${
-                          darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-4 h-4 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: category.color }}
-                          />
-                          <div>
-                            <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                              {category.name}
-                            </span>
-                            {categoryBudgets[category.id] > 0 && (
-                              <p className={`text-xs ${darkMode ? 'text-blue-400' : 'text-blue-600'} font-semibold mt-0.5 flex items-center gap-1`}>
-                                🎯 Teto: {showVal(categoryBudgets[category.id])}/mês
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setEditingCategory(category);
-                              setShowCategoryModal(true);
-                            }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                            title="Editar Categoria e Teto"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteCategory(category.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
-                <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  Categorias de Receita
-                </h3>
-                <div className="space-y-3">
-                  {categories
-                    .filter(c => c.type === 'income')
-                    .map(category => (
-                      <div
-                        key={category.id}
-                        className={`flex items-center justify-between p-4 rounded-lg ${
-                          darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-4 h-4 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: category.color }}
-                          />
-                          <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                            {category.name}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setEditingCategory(category);
-                              setShowCategoryModal(true);
-                            }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteCategory(category.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-          </>
+          <CategoriesView
+            darkMode={darkMode}
+            categories={categories}
+            categoryBudgets={categoryBudgets}
+            showVal={showVal}
+            setEditingCategory={setEditingCategory}
+            setShowCategoryModal={setShowCategoryModal}
+            deleteCategory={deleteCategory}
+          />
         )}
       </main>
 
-      {/* Modal de Nova / Editar Transação */}
+      {/* Modais */}
       {showTransactionModal && <TransactionModal />}
-
-      {/* Modal de Categoria */}
       {showCategoryModal && <CategoryModal />}
 
       {/* Modal de Configurações */}
@@ -3084,7 +2158,6 @@ export default function FinanceApp() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Relatório Mensal por E-mail */}
               <div>
                 <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   RELATÓRIO MENSAL POR E-MAIL
@@ -3106,7 +2179,6 @@ export default function FinanceApp() {
                 </p>
               </div>
 
-              {/* Conexão com Google Calendar */}
               <div className={`pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   GOOGLE CALENDAR
@@ -3124,7 +2196,6 @@ export default function FinanceApp() {
                 </button>
               </div>
 
-              {/* Exportar / Importar */}
               <div className={`pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   EXPORTAÇÃO E BACKUP
