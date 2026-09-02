@@ -22,7 +22,9 @@ import {
   BarChart2,
   Eye,
   EyeOff,
-  Trash2
+  Trash2,
+  CreditCard,
+  Layers
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase, supabaseUrl, supabaseAnonKey } from './supabaseClient';
@@ -140,7 +142,7 @@ export default function FinanceApp() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [confirmModal, setConfirmModal] = useState({ open: false, message: '', onConfirm: null });
+  const [confirmModal, setConfirmModal] = useState({ open: false, message: '', onConfirm: null, isInstallmentChoice: false, onDeleteSingle: null, onDeleteAll: null });
 
   // Filtros de transações
   const [filterType, setFilterType] = useState('all');
@@ -963,27 +965,81 @@ export default function FinanceApp() {
     reader.readAsText(file);
   };
 
-  const deleteTransaction = (id) => {
-    setConfirmModal({
-      open: true,
-      message: 'Deseja realmente excluir este lançamento? Esta ação não pode ser desfeita.',
-      onConfirm: async () => {
-        setConfirmModal({ open: false, message: '', onConfirm: null });
-        try {
-          const { error } = await supabase
-            .from('finance_transactions')
-            .delete()
-            .eq('id', id);
-          
-          if (error) throw error;
-          setTransactions(prev => prev.filter(t => t.id !== id));
-          showToast('Lançamento excluído com sucesso.', 'success');
-        } catch (error) {
-          console.error('Erro ao excluir:', error);
-          showToast('Erro ao excluir: ' + error.message, 'error');
+  const deleteTransaction = (itemOrId) => {
+    const item = typeof itemOrId === 'object' ? itemOrId : transactions.find(t => t.id === itemOrId);
+    if (!item) return;
+
+    // Verificar se faz parte de um grupo de parcelas
+    const siblings = transactions.filter(t => 
+      t.id !== item.id && (
+        (item.parent_id && t.parent_id === item.parent_id) ||
+        (t.parent_id === item.id) ||
+        (item.parent_id && t.id === item.parent_id)
+      )
+    );
+
+    if (siblings.length > 0) {
+      setConfirmModal({
+        open: true,
+        isInstallmentChoice: true,
+        message: `Este lançamento faz parte de uma compra em ${siblings.length + 1} parcelas. Como deseja proceder?`,
+        onDeleteSingle: async () => {
+          setConfirmModal({ open: false, message: '', onConfirm: null, isInstallmentChoice: false, onDeleteSingle: null, onDeleteAll: null });
+          try {
+            const { error } = await supabase
+              .from('finance_transactions')
+              .delete()
+              .eq('id', item.id);
+            
+            if (error) throw error;
+            setTransactions(prev => prev.filter(t => t.id !== item.id));
+            showToast('Parcela excluída com sucesso.', 'success');
+          } catch (error) {
+            console.error('Erro ao excluir parcela:', error);
+            showToast('Erro ao excluir: ' + error.message, 'error');
+          }
+        },
+        onDeleteAll: async () => {
+          setConfirmModal({ open: false, message: '', onConfirm: null, isInstallmentChoice: false, onDeleteSingle: null, onDeleteAll: null });
+          try {
+            const allIds = [item.id, ...siblings.map(s => s.id)];
+            const { error } = await supabase
+              .from('finance_transactions')
+              .delete()
+              .in('id', allIds);
+            
+            if (error) throw error;
+            setTransactions(prev => prev.filter(t => !allIds.includes(t.id)));
+            showToast(`Todas as ${allIds.length} parcelas foram excluídas com sucesso!`, 'success');
+          } catch (error) {
+            console.error('Erro ao excluir parcelas:', error);
+            showToast('Erro ao excluir: ' + error.message, 'error');
+          }
         }
-      }
-    });
+      });
+    } else {
+      setConfirmModal({
+        open: true,
+        isInstallmentChoice: false,
+        message: 'Deseja realmente excluir este lançamento? Esta ação não pode ser desfeita.',
+        onConfirm: async () => {
+          setConfirmModal({ open: false, message: '', onConfirm: null, isInstallmentChoice: false, onDeleteSingle: null, onDeleteAll: null });
+          try {
+            const { error } = await supabase
+              .from('finance_transactions')
+              .delete()
+              .eq('id', item.id);
+            
+            if (error) throw error;
+            setTransactions(prev => prev.filter(t => t.id !== item.id));
+            showToast('Lançamento excluído com sucesso.', 'success');
+          } catch (error) {
+            console.error('Erro ao excluir:', error);
+            showToast('Erro ao excluir: ' + error.message, 'error');
+          }
+        }
+      });
+    }
   };
 
   const deleteCategory = (id) => {
@@ -995,9 +1051,10 @@ export default function FinanceApp() {
 
     setConfirmModal({
       open: true,
+      isInstallmentChoice: false,
       message: 'Deseja realmente excluir esta categoria?',
       onConfirm: async () => {
-        setConfirmModal({ open: false, message: '', onConfirm: null });
+        setConfirmModal({ open: false, message: '', onConfirm: null, isInstallmentChoice: false, onDeleteSingle: null, onDeleteAll: null });
         try {
           const { error } = await supabase
             .from('finance_categories')
@@ -1339,13 +1396,19 @@ export default function FinanceApp() {
     );
   };
 
-  // Modal de Transação
+  // Modal de Transação com 4 Botões Diretos no Topo (Despesa, 💳 Parcelado, Receita, Agendamento)
   const TransactionModal = () => {
-    const [type, setType] = useState('expense');
+    const [type, setType] = useState('expense'); // 'expense' | 'installment' | 'income' | 'scheduled'
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [categoryId, setCategoryId] = useState('');
     const [date, setDate] = useState(getTodayDateString());
+    
+    // Configurações de Parcelamento
+    const [installmentMode, setInstallmentMode] = useState('total'); // 'total' | 'per_installment'
+    const [installmentCount, setInstallmentCount] = useState(3);
+    
+    // Repetição simples
     const [isRecurring, setIsRecurring] = useState(false);
     const [recurringMonths, setRecurringMonths] = useState('1');
 
@@ -1361,9 +1424,19 @@ export default function FinanceApp() {
       }
     }, [editingTransaction]);
 
+    // Cálculos de resumo do parcelamento em tempo real
+    const parsedAmount = parseFloat(amount.toString().replace(',', '.')) || 0;
+    const installmentsNum = parseInt(installmentCount) || 1;
+    const amountPerInstallment = installmentMode === 'total' 
+      ? (installmentsNum > 0 ? parsedAmount / installmentsNum : 0)
+      : parsedAmount;
+    const totalInstallmentAmount = installmentMode === 'total' 
+      ? parsedAmount 
+      : parsedAmount * installmentsNum;
+
     const handleSubmit = async () => {
-      if (!amount || !description || !categoryId) {
-        showToast('Preencha todos os campos!', 'warning');
+      if (!amount || !description.trim() || !categoryId) {
+        showToast('Preencha todos os campos obrigatórios!', 'warning');
         return;
       }
 
@@ -1373,24 +1446,12 @@ export default function FinanceApp() {
         return;
       }
 
-      const baseTransaction = {
-        user_id: currentUser.id,
-        type: type === 'scheduled' ? 'expense' : type,
-        amount: numAmount,
-        description,
-        category_id: categoryId,
-        date,
-        is_recurring: isRecurring,
-        recurring_months: isRecurring ? parseInt(recurringMonths) : null,
-        parent_id: null
-      };
-
       try {
         if (type === 'scheduled') {
           const baseScheduled = {
             user_id: currentUser.id,
             amount: numAmount,
-            description,
+            description: description.trim(),
             category_id: categoryId,
             is_paid: false
           };
@@ -1418,57 +1479,122 @@ export default function FinanceApp() {
           
           setScheduled(prev => [...prev, ...data]);
           showToast('Agendamento criado com sucesso!', 'success');
-        } else {
-          if (editingTransaction) {
-            const { error } = await supabase
-              .from('finance_transactions')
-              .update(baseTransaction)
-              .eq('id', editingTransaction.id);
-            
-            if (error) throw error;
-            
-            setTransactions(prev => prev.map(t =>
-              t.id === editingTransaction.id ? { ...t, ...baseTransaction } : t
-            ));
-            showToast('Lançamento atualizado com sucesso!', 'success');
-          } else {
-            const transactionsToInsert = [];
-            const firstTransaction = {
-              ...baseTransaction,
-              id: generateId()
-            };
-            
-            transactionsToInsert.push(firstTransaction);
+        } else if (editingTransaction) {
+          const updatedTx = {
+            user_id: currentUser.id,
+            type: type === 'installment' ? 'expense' : type,
+            amount: numAmount,
+            description: description.trim(),
+            category_id: categoryId,
+            date,
+            is_recurring: isRecurring,
+            recurring_months: isRecurring ? parseInt(recurringMonths) : null,
+            parent_id: editingTransaction.parent_id || null
+          };
 
-            if (isRecurring && recurringMonths) {
-              const months = parseInt(recurringMonths);
-              for (let i = 1; i < months; i++) {
-                const futureDate = new Date(date + 'T00:00:00');
-                futureDate.setMonth(futureDate.getMonth() + i);
-                transactionsToInsert.push({
-                  ...baseTransaction,
-                  id: generateId(),
-                  date: futureDate.toISOString().split('T')[0],
-                  parent_id: firstTransaction.id
-                });
-              }
-            }
+          const { error } = await supabase
+            .from('finance_transactions')
+            .update(updatedTx)
+            .eq('id', editingTransaction.id);
+          
+          if (error) throw error;
+          
+          setTransactions(prev => prev.map(t =>
+            t.id === editingTransaction.id ? { ...t, ...updatedTx } : t
+          ));
+          showToast('Lançamento atualizado com sucesso!', 'success');
+        } else if (type === 'installment' && installmentsNum > 1) {
+          // Geração Automática das Parcelas da Compra
+          const groupId = generateId();
+          const dateParts = date.split('-');
+          const startYear = parseInt(dateParts[0]);
+          const startMonth = parseInt(dateParts[1]) - 1;
+          const startDay = parseInt(dateParts[2]);
 
-            const { data, error } = await supabase
-              .from('finance_transactions')
-              .insert(transactionsToInsert)
-              .select();
-            
-            if (error) throw error;
-            
-            setTransactions(prev => [...prev, ...data]);
-            showToast('Lançamento adicionado com sucesso!', 'success');
-            
-            const dateParts = date.split('-');
-            const transactionDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-            setCurrentDate(transactionDate);
-            setView('dashboard');
+          const transactionsToInsert = [];
+          for (let i = 0; i < installmentsNum; i++) {
+            const targetMonthDate = new Date(startYear, startMonth + i, 1);
+            const maxDays = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth() + 1, 0).getDate();
+            const clampedDay = Math.min(startDay, maxDays);
+            const finalDate = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), clampedDay);
+            const finalDateStr = `${finalDate.getFullYear()}-${String(finalDate.getMonth() + 1).padStart(2, '0')}-${String(finalDate.getDate()).padStart(2, '0')}`;
+
+            transactionsToInsert.push({
+              id: generateId(),
+              user_id: currentUser.id,
+              type: 'expense',
+              amount: parseFloat(amountPerInstallment.toFixed(2)),
+              description: `${description.trim()} (${i + 1}/${installmentsNum})`,
+              category_id: categoryId,
+              date: finalDateStr,
+              is_recurring: false,
+              recurring_months: installmentsNum,
+              parent_id: groupId
+            });
           }
+
+          const { data, error } = await supabase
+            .from('finance_transactions')
+            .insert(transactionsToInsert)
+            .select();
+          
+          if (error) throw error;
+          
+          setTransactions(prev => [...prev, ...data]);
+          showToast(`💳 Compra em ${installmentsNum}x criada com sucesso!`, 'success');
+
+          const transactionDate = new Date(startYear, startMonth, startDay);
+          setCurrentDate(transactionDate);
+          setView('transactions');
+        } else {
+          // Lançamento normal à vista (ou recorrente)
+          const baseTransaction = {
+            user_id: currentUser.id,
+            type: type === 'installment' ? 'expense' : type,
+            amount: numAmount,
+            description: description.trim(),
+            category_id: categoryId,
+            date,
+            is_recurring: isRecurring,
+            recurring_months: isRecurring ? parseInt(recurringMonths) : null,
+            parent_id: null
+          };
+
+          const transactionsToInsert = [];
+          const firstTransaction = {
+            ...baseTransaction,
+            id: generateId()
+          };
+          transactionsToInsert.push(firstTransaction);
+
+          if (isRecurring && recurringMonths) {
+            const months = parseInt(recurringMonths);
+            for (let i = 1; i < months; i++) {
+              const futureDate = new Date(date + 'T00:00:00');
+              futureDate.setMonth(futureDate.getMonth() + i);
+              transactionsToInsert.push({
+                ...baseTransaction,
+                id: generateId(),
+                date: futureDate.toISOString().split('T')[0],
+                parent_id: firstTransaction.id
+              });
+            }
+          }
+
+          const { data, error } = await supabase
+            .from('finance_transactions')
+            .insert(transactionsToInsert)
+            .select();
+          
+          if (error) throw error;
+          
+          setTransactions(prev => [...prev, ...data]);
+          showToast('Lançamento adicionado com sucesso!', 'success');
+          
+          const dateParts = date.split('-');
+          const transactionDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+          setCurrentDate(transactionDate);
+          setView('dashboard');
         }
 
         setShowTransactionModal(false);
@@ -1485,18 +1611,22 @@ export default function FinanceApp() {
       setDescription('');
       setCategoryId('');
       setDate(getTodayDateString());
+      setInstallmentMode('total');
+      setInstallmentCount(3);
       setIsRecurring(false);
       setRecurringMonths('1');
     };
 
     const availableCategories = categories.filter(c => {
-      return type === 'scheduled' ? c.type === 'expense' : c.type === type;
+      return (type === 'scheduled' || type === 'installment' || type === 'expense')
+        ? c.type === 'expense'
+        : c.type === 'income';
     });
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className={`w-full max-w-lg rounded-xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} max-h-[90vh] overflow-y-auto`}>
-          <div className={`sticky top-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6`}>
+        <div className={`w-full max-w-lg rounded-2xl shadow-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} max-h-[90vh] overflow-y-auto`}>
+          <div className={`sticky top-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 z-10`}>
             <div className="flex justify-between items-center">
               <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                 {editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
@@ -1511,45 +1641,143 @@ export default function FinanceApp() {
             </div>
 
             {!editingTransaction && (
-              <div className="flex gap-2 mt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
                 <button
+                  type="button"
                   onClick={() => setType('expense')}
-                  className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
+                  className={`py-2 px-2 rounded-xl font-bold transition-all text-xs text-center ${
                     type === 'expense'
-                      ? 'bg-red-600 text-white'
-                      : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                      ? 'bg-red-600 text-white shadow-md'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-650' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   Despesa
                 </button>
                 <button
+                  type="button"
+                  onClick={() => setType('installment')}
+                  className={`py-2 px-2 rounded-xl font-bold transition-all text-xs text-center flex items-center justify-center gap-1 ${
+                    type === 'installment'
+                      ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-400'
+                      : darkMode ? 'bg-gray-700 text-purple-300 hover:bg-gray-650' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                  }`}
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  💳 Parcelado
+                </button>
+                <button
+                  type="button"
                   onClick={() => setType('income')}
-                  className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
+                  className={`py-2 px-2 rounded-xl font-bold transition-all text-xs text-center ${
                     type === 'income'
-                      ? 'bg-green-600 text-white'
-                      : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                      ? 'bg-green-600 text-white shadow-md'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-650' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   Receita
                 </button>
                 <button
+                  type="button"
                   onClick={() => setType('scheduled')}
-                  className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
+                  className={`py-2 px-2 rounded-xl font-bold transition-all text-xs text-center ${
                     type === 'scheduled'
-                      ? 'bg-blue-600 text-white'
-                      : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-650' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  Agendamento
+                  Agenda
                 </button>
               </div>
             )}
           </div>
 
           <div className="p-6 space-y-4">
+            {/* Opções Avançadas quando a aba '💳 Parcelado' estiver ativa */}
+            {type === 'installment' && !editingTransaction && (
+              <div className={`p-4 rounded-xl border space-y-3 ${
+                darkMode ? 'bg-purple-950/20 border-purple-800/60' : 'bg-purple-50/70 border-purple-200'
+              }`}>
+                <div>
+                  <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-purple-300' : 'text-purple-800'}`}>
+                    1. Modo do Valor
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setInstallmentMode('total')}
+                      className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                        installmentMode === 'total'
+                          ? 'bg-purple-600 text-white shadow'
+                          : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-white text-gray-700 border border-gray-200'
+                      }`}
+                    >
+                      Valor Total da Compra
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInstallmentMode('per_installment')}
+                      className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                        installmentMode === 'per_installment'
+                          ? 'bg-purple-600 text-white shadow'
+                          : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-white text-gray-700 border border-gray-200'
+                      }`}
+                    >
+                      Valor de Cada Parcela
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-purple-300' : 'text-purple-800'}`}>
+                    2. Número de Parcelas
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {[2, 3, 4, 5, 6, 10, 12, 18, 24].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setInstallmentCount(n)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          installmentCount === n
+                            ? 'bg-purple-600 text-white scale-105 shadow'
+                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        {n}x
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="number"
+                    min="2"
+                    max="48"
+                    value={installmentCount}
+                    onChange={(e) => setInstallmentCount(Math.max(2, parseInt(e.target.value) || 2))}
+                    className={`w-full px-3 py-2 rounded-lg text-xs border ${
+                      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    }`}
+                    placeholder="Ou digite outra quantidade (ex: 8)..."
+                  />
+                </div>
+
+                {parsedAmount > 0 && (
+                  <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900/60 text-purple-900 dark:text-purple-100 text-xs flex items-center gap-2 font-medium">
+                    <Layers className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                    <div>
+                      Serão criadas <strong>{installmentsNum} parcelas</strong> de <strong>{formatCurrency(amountPerInstallment)}</strong> (Total: {formatCurrency(totalInstallmentAmount)}).
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Valor (R$)
+                {type === 'installment' && installmentMode === 'per_installment'
+                  ? 'Valor de Cada Parcela (R$)'
+                  : type === 'installment' && installmentMode === 'total'
+                  ? 'Valor Total da Compra (R$)'
+                  : 'Valor (R$)'}
               </label>
               <input
                 type="number"
@@ -1557,11 +1785,12 @@ export default function FinanceApp() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className={`w-full px-4 py-3 rounded-lg border ${
+                className={`w-full px-4 py-3 rounded-xl border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                } focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold`}
+                autoFocus
               />
             </div>
 
@@ -1573,8 +1802,8 @@ export default function FinanceApp() {
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ex: Compras no mercado"
-                className={`w-full px-4 py-3 rounded-lg border ${
+                placeholder={type === 'installment' ? "Ex: Notebook, Celular, Smart TV..." : "Ex: Compras no mercado"}
+                className={`w-full px-4 py-3 rounded-xl border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
@@ -1589,7 +1818,7 @@ export default function FinanceApp() {
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border ${
+                className={`w-full px-4 py-3 rounded-xl border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
@@ -1604,13 +1833,13 @@ export default function FinanceApp() {
 
             <div>
               <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Data
+                {type === 'installment' ? 'Data da 1ª Parcela' : 'Data'}
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border ${
+                className={`w-full px-4 py-3 rounded-xl border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
@@ -1618,7 +1847,7 @@ export default function FinanceApp() {
               />
             </div>
 
-            {type !== 'scheduled' && !editingTransaction && (
+            {type === 'expense' && !editingTransaction && (
               <>
                 <div className="flex items-center gap-3">
                   <input
@@ -1626,10 +1855,10 @@ export default function FinanceApp() {
                     id="recurring"
                     checked={isRecurring}
                     onChange={(e) => setIsRecurring(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   />
                   <label htmlFor="recurring" className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Repetir lançamento?
+                    Repetir lançamento mensal fixo?
                   </label>
                 </div>
 
@@ -1643,7 +1872,7 @@ export default function FinanceApp() {
                       min="1"
                       value={recurringMonths}
                       onChange={(e) => setRecurringMonths(e.target.value)}
-                      className={`w-full px-4 py-3 rounded-lg border ${
+                      className={`w-full px-4 py-3 rounded-xl border ${
                         darkMode 
                           ? 'bg-gray-700 border-gray-600 text-white' 
                           : 'bg-white border-gray-300 text-gray-900'
@@ -1665,23 +1894,28 @@ export default function FinanceApp() {
                   value={recurringMonths}
                   onChange={(e) => setRecurringMonths(e.target.value)}
                   placeholder="Ex: 12 para repetir por 1 ano"
-                  className={`w-full px-4 py-3 rounded-lg border ${
+                  className={`w-full px-4 py-3 rounded-xl border ${
                     darkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-900'
                   } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
-                <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Deixe 1 para criar apenas um agendamento único
-                </p>
               </div>
             )}
 
             <button
               onClick={handleSubmit}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
+              className={`w-full text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-base ${
+                type === 'installment'
+                  ? 'bg-purple-600 hover:bg-purple-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
-              {editingTransaction ? 'Salvar Alterações' : 'Adicionar'}
+              {editingTransaction
+                ? 'Salvar Alterações'
+                : type === 'installment'
+                ? `Confirmar Compra em ${installmentsNum}x`
+                : 'Adicionar Lançamento'}
             </button>
           </div>
         </div>
@@ -2382,31 +2616,63 @@ export default function FinanceApp() {
         </div>
       )}
 
-      {/* Modal de Confirmação */}
+      {/* Modal de Confirmação Inteligente (Simples ou Parcelas) */}
       {confirmModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className={`w-full max-w-sm rounded-2xl shadow-2xl p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <Trash2 className="w-5 h-5 text-red-600" />
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/60 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
               </div>
-              <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Confirmar exclusão</h3>
+              <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                {confirmModal.isInstallmentChoice ? 'Excluir Compra Parcelada' : 'Confirmar exclusão'}
+              </h3>
             </div>
-            <p className={`text-sm mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{confirmModal.message}</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmModal({ open: false, message: '', onConfirm: null })}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmModal.onConfirm}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-600 hover:bg-red-700 text-white transition-colors"
-              >
-                Excluir
-              </button>
-            </div>
+            <p className={`text-sm mb-6 leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              {confirmModal.message}
+            </p>
+
+            {confirmModal.isInstallmentChoice ? (
+              <div className="space-y-2.5">
+                <button
+                  onClick={confirmModal.onDeleteSingle}
+                  className={`w-full py-2.5 px-4 rounded-xl text-sm font-semibold border transition-colors ${
+                    darkMode
+                      ? 'border-gray-600 bg-gray-700 text-white hover:bg-gray-650'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Excluir apenas esta parcela
+                </button>
+                <button
+                  onClick={confirmModal.onDeleteAll}
+                  className="w-full py-2.5 px-4 rounded-xl text-sm font-bold bg-red-600 hover:bg-red-700 text-white transition-colors shadow"
+                >
+                  Excluir todas as parcelas da compra
+                </button>
+                <button
+                  onClick={() => setConfirmModal({ open: false, message: '', onConfirm: null, isInstallmentChoice: false, onDeleteSingle: null, onDeleteAll: null })}
+                  className={`w-full py-2 text-xs font-medium text-center ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmModal({ open: false, message: '', onConfirm: null, isInstallmentChoice: false, onDeleteSingle: null, onDeleteAll: null })}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmModal.onConfirm}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-600 hover:bg-red-700 text-white transition-colors"
+                >
+                  Excluir
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
