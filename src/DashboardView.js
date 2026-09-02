@@ -7,7 +7,10 @@ import {
   FileText, 
   FileSpreadsheet, 
   Sparkles, 
-  Target 
+  Target,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -23,6 +26,12 @@ export default function DashboardView({
   income,
   expenses,
   balance,
+  prevIncome = 0,
+  prevExpenses = 0,
+  prevBalance = 0,
+  incomeChange,
+  expensesChange,
+  balanceChange,
   showVal,
   formatCurrency,
   setView,
@@ -47,7 +56,7 @@ export default function DashboardView({
 }) {
   return (
     <>
-      {/* Cards de Resumo */}
+      {/* Cards de Resumo com Comparativo Mês a Mês */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* Card Entradas - Clicável */}
         <div 
@@ -60,7 +69,7 @@ export default function DashboardView({
           className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750 border-gray-700' : 'bg-white hover:bg-gray-50 border-gray-100'} rounded-xl shadow-lg p-6 cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border group`}
           title="Clique para ver as transações de Entradas"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <h3 className={`font-semibold group-hover:text-green-500 transition-colors ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Entradas
             </h3>
@@ -68,10 +77,33 @@ export default function DashboardView({
               <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
           </div>
+          
           <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
             {showVal(income)}
           </p>
-          <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-green-500 transition-colors`}>
+
+          {/* Comparativo Mês Anterior */}
+          <div className="mt-3 flex items-center justify-between">
+            {incomeChange && (
+              <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                incomeChange.direction === 'up'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-950/80 dark:text-green-300'
+                  : incomeChange.direction === 'down'
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+              }`}>
+                {incomeChange.direction === 'up' ? <ArrowUpRight className="w-3 h-3" /> :
+                 incomeChange.direction === 'down' ? <ArrowDownRight className="w-3 h-3" /> :
+                 <Minus className="w-3 h-3" />}
+                {incomeChange.text} vs mês anterior
+              </span>
+            )}
+            <span className={`text-[11px] ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Mês ant: {showVal(prevIncome)}
+            </span>
+          </div>
+
+          <p className={`text-xs mt-3 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-green-500 transition-colors`}>
             Ver entradas →
           </p>
         </div>
@@ -87,7 +119,7 @@ export default function DashboardView({
           className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750 border-gray-700' : 'bg-white hover:bg-gray-50 border-gray-100'} rounded-xl shadow-lg p-6 cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border group`}
           title="Clique para ver as transações de Saídas"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <h3 className={`font-semibold group-hover:text-red-500 transition-colors ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Saídas
             </h3>
@@ -95,10 +127,33 @@ export default function DashboardView({
               <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
           </div>
+
           <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
             {showVal(expenses)}
           </p>
-          <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-red-500 transition-colors`}>
+
+          {/* Comparativo Mês Anterior */}
+          <div className="mt-3 flex items-center justify-between">
+            {expensesChange && (
+              <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                expensesChange.direction === 'down'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-950/80 dark:text-green-300' // Economizar é positivo
+                  : expensesChange.direction === 'up'
+                  ? 'bg-red-100 text-red-800 dark:bg-red-950/80 dark:text-red-300' // Gastar mais é alerta
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+              }`}>
+                {expensesChange.direction === 'down' ? <ArrowDownRight className="w-3 h-3" /> :
+                 expensesChange.direction === 'up' ? <ArrowUpRight className="w-3 h-3" /> :
+                 <Minus className="w-3 h-3" />}
+                {expensesChange.text} vs mês anterior
+              </span>
+            )}
+            <span className={`text-[11px] ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Mês ant: {showVal(prevExpenses)}
+            </span>
+          </div>
+
+          <p className={`text-xs mt-3 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-red-500 transition-colors`}>
             Ver saídas →
           </p>
         </div>
@@ -114,7 +169,7 @@ export default function DashboardView({
           className={`${darkMode ? 'bg-gray-800 hover:bg-gray-750 border-gray-700' : 'bg-white hover:bg-gray-50 border-gray-100'} rounded-xl shadow-lg p-6 cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border group`}
           title="Clique para ver todas as Transações"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <h3 className={`font-semibold group-hover:text-blue-500 transition-colors ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Saldo
             </h3>
@@ -122,10 +177,33 @@ export default function DashboardView({
               <DollarSign className={`w-5 h-5 ${balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`} />
             </div>
           </div>
+
           <p className={`text-3xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {showVal(balance)}
           </p>
-          <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-blue-500 transition-colors`}>
+
+          {/* Comparativo Mês Anterior */}
+          <div className="mt-3 flex items-center justify-between">
+            {balanceChange && (
+              <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                balanceChange.direction === 'up'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
+                  : balanceChange.direction === 'down'
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+              }`}>
+                {balanceChange.direction === 'up' ? <ArrowUpRight className="w-3 h-3" /> :
+                 balanceChange.direction === 'down' ? <ArrowDownRight className="w-3 h-3" /> :
+                 <Minus className="w-3 h-3" />}
+                {balanceChange.text} vs mês anterior
+              </span>
+            )}
+            <span className={`text-[11px] ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Mês ant: {showVal(prevBalance)}
+            </span>
+          </div>
+
+          <p className={`text-xs mt-3 flex items-center gap-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} group-hover:text-blue-500 transition-colors`}>
             Ver todas as transações →
           </p>
         </div>
