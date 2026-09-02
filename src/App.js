@@ -308,7 +308,12 @@ export default function FinanceApp() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: window.location.origin,
+          scopes: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
         }
       });
       if (error) throw error;
@@ -358,19 +363,27 @@ export default function FinanceApp() {
       }
 
       const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&orderBy=startTime&singleEvents=true`,
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      if (response.status === 401 || response.status === 403) {
+        setHasGoogleToken(false);
+        setCalendarEvents([]);
+        showToast('Permissão do Google Calendar necessária. Clique em "Conectar Google Calendar" para autorizar o acesso.', 'warning');
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error('Não foi possível obter eventos do Google Calendar.');
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || 'Não foi possível obter eventos do Google Calendar.');
       }
 
       const data = await response.json();
       setCalendarEvents(data.items || []);
     } catch (error) {
       console.error('Erro ao carregar eventos:', error);
-      showToast('Erro ao carregar eventos do Google: ' + error.message, 'warning');
+      showToast('Google Calendar: ' + error.message, 'warning');
     } finally {
       setLoadingCalendar(false);
     }
@@ -519,30 +532,40 @@ export default function FinanceApp() {
 
   const last6MonthsData = useMemo(() => {
     if (!currentUser) return [];
+    const base = currentDate ? new Date(currentDate) : new Date();
+    const monthsPt = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    
     return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date();
-      d.setDate(1);
-      d.setMonth(d.getMonth() - (5 - i));
+      const d = new Date(base.getFullYear(), base.getMonth() - (5 - i), 1);
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const prefix = `${year}-${month}`;
-      const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+      const label = `${monthsPt[d.getMonth()]}/${String(year).slice(2)}`;
 
       const monthTx = transactions.filter(t => {
-        return t.user_id === currentUser.id && (t.date || '').startsWith(prefix);
+        const tDate = String(t.date || '').split('T')[0];
+        return t.user_id === currentUser.id && tDate.startsWith(prefix);
       });
 
-      const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + (Number(t.amount) || 0), 0);
-      const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+      const inc = monthTx
+        .filter(t => t.type === 'income')
+        .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+      const exp = monthTx
+        .filter(t => t.type === 'expense')
+        .reduce((s, t) => s + (Number(t.amount) || 0), 0);
 
       return {
         label,
+        income: inc,
+        expenses: exp,
+        balance: inc - exp,
         Entradas: inc,
-        Saídas: exp,
+        Saidas: exp,
+        'Saídas': exp,
         Saldo: inc - exp
       };
     });
-  }, [transactions, currentUser]);
+  }, [transactions, currentUser, currentDate]);
 
   const gerarDicasIA = async () => {
     setIsGeneratingTips(true);
@@ -2081,6 +2104,9 @@ export default function FinanceApp() {
             incomeChange={incomeChange}
             expensesChange={expensesChange}
             balanceChange={balanceChange}
+            last6MonthsData={last6MonthsData}
+            transactions={transactions}
+            currentDate={currentDate}
             showVal={showVal}
             formatCurrency={formatCurrency}
             setView={setView}
