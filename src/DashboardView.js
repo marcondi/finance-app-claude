@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -10,7 +10,8 @@ import {
   Target,
   ArrowUpRight,
   ArrowDownRight,
-  Minus
+  Minus,
+  BarChart3
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -18,7 +19,12 @@ import {
   Cell, 
   ResponsiveContainer, 
   Legend, 
-  Tooltip 
+  Tooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid
 } from 'recharts';
 
 export default function DashboardView({
@@ -32,6 +38,7 @@ export default function DashboardView({
   incomeChange,
   expensesChange,
   balanceChange,
+  last6MonthsData = [],
   showVal,
   formatCurrency,
   setView,
@@ -54,6 +61,27 @@ export default function DashboardView({
   handleExportPDF,
   handleExportExcel
 }) {
+  const [comparisonMode, setComparisonMode] = useState('mom'); // 'mom' (Mês Anterior vs Atual) ou '6months'
+
+  // Dados para o Gráfico Comparativo Mês Anterior vs Mês Atual
+  const monthComparisonData = [
+    {
+      name: 'Entradas',
+      'Mês Anterior': prevIncome,
+      'Mês Atual': income
+    },
+    {
+      name: 'Saídas',
+      'Mês Anterior': prevExpenses,
+      'Mês Atual': expenses
+    },
+    {
+      name: 'Saldo',
+      'Mês Anterior': prevBalance,
+      'Mês Atual': balance
+    }
+  ];
+
   return (
     <>
       {/* Cards de Resumo com Comparativo Mês a Mês */}
@@ -137,9 +165,9 @@ export default function DashboardView({
             {expensesChange && (
               <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
                 expensesChange.direction === 'down'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-950/80 dark:text-green-300' // Economizar é positivo
+                  ? 'bg-green-100 text-green-800 dark:bg-green-950/80 dark:text-green-300'
                   : expensesChange.direction === 'up'
-                  ? 'bg-red-100 text-red-800 dark:bg-red-950/80 dark:text-red-300' // Gastar mais é alerta
+                  ? 'bg-red-100 text-red-800 dark:bg-red-950/80 dark:text-red-300'
                   : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
               }`}>
                 {expensesChange.direction === 'down' ? <ArrowDownRight className="w-3 h-3" /> :
@@ -209,56 +237,141 @@ export default function DashboardView({
         </div>
       </div>
 
-      {/* Gráfico de Gastos por Categoria */}
-      {expensesByCategory.length > 0 && (
-        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
-          <div className="flex items-center justify-between mb-6">
+      {/* Grid de Gráficos: Gastos por Categoria + Gráfico Comparativo Mês a Mês */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Gráfico 1: Gastos por Categoria (Donut) */}
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 flex flex-col justify-between`}>
+          <div className="flex items-center justify-between mb-4">
             <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
               Gastos por Categoria
             </h3>
             <button
               onClick={() => setView('reports')}
-              className={`text-sm font-semibold ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+              className={`text-xs font-semibold ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
             >
-              Ver Relatórios Completos →
+              Relatórios →
             </button>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={expensesByCategory}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={5}
-                dataKey="value"
-                cursor="pointer"
-                onClick={(data) => {
-                  if (!data) return;
-                  setHighlightedCategory(data.name);
-                  setFilterType('expense');
-                  setView('transactions');
-                }}
-              >
-                {expensesByCategory.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value) => formatCurrency(value)}
-                contentStyle={{
-                  backgroundColor: darkMode ? '#1f2937' : '#ffffff',
-                  border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  color: darkMode ? '#ffffff' : '#000000'
-                }}
-              />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+
+          {expensesByCategory.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={expensesByCategory}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={95}
+                  paddingAngle={4}
+                  dataKey="value"
+                  cursor="pointer"
+                  onClick={(data) => {
+                    if (!data) return;
+                    setHighlightedCategory(data.name);
+                    setFilterType('expense');
+                    setView('transactions');
+                  }}
+                >
+                  {expensesByCategory.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value) => formatCurrency(value)}
+                  contentStyle={{
+                    backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                    border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    color: darkMode ? '#ffffff' : '#000000'
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className={`h-[280px] flex items-center justify-center text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Nenhuma despesa registrada neste mês.
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Gráfico 2: Comparativo Mês a Mês (Barras) */}
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 flex flex-col justify-between`}>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-500" />
+              <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                Comparativo Financeiro
+              </h3>
+            </div>
+
+            <div className={`flex p-0.5 rounded-lg text-xs font-medium ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+              <button
+                onClick={() => setComparisonMode('mom')}
+                className={`px-3 py-1 rounded-md transition-colors ${
+                  comparisonMode === 'mom'
+                    ? 'bg-blue-600 text-white shadow'
+                    : darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Mês Ant. vs Atual
+              </button>
+              <button
+                onClick={() => setComparisonMode('6months')}
+                className={`px-3 py-1 rounded-md transition-colors ${
+                  comparisonMode === '6months'
+                    ? 'bg-blue-600 text-white shadow'
+                    : darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Últimos 6 Meses
+              </button>
+            </div>
+          </div>
+
+          {comparisonMode === 'mom' ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={monthComparisonData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                <XAxis dataKey="name" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
+                <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} />
+                <Tooltip
+                  formatter={(value) => formatCurrency(value)}
+                  contentStyle={{
+                    backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                    border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    color: darkMode ? '#ffffff' : '#000000'
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Bar dataKey="Mês Anterior" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Mês Atual" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={last6MonthsData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#f0f0f0'} />
+                <XAxis dataKey="label" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
+                <YAxis tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fill: darkMode ? '#9ca3af' : '#6b7280', fontSize: 11 }} />
+                <Tooltip
+                  formatter={(value) => formatCurrency(value)}
+                  contentStyle={{
+                    backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                    border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    color: darkMode ? '#ffffff' : '#000000'
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Bar dataKey="Entradas" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Saídas" fill="#dc2626" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
 
       {/* Poupômetro */}
       <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
