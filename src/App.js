@@ -411,6 +411,55 @@ export default function FinanceApp() {
 
   const balance = income - expenses;
 
+  // Cálculos do Mês Anterior para Comparativo
+  const previousMonthTransactions = useMemo(() => {
+    if (!currentUser) return [];
+    
+    const prevDate = new Date(currentDate);
+    prevDate.setMonth(prevDate.getMonth() - 1);
+    const year = prevDate.getFullYear();
+    const month = String(prevDate.getMonth() + 1).padStart(2, '0');
+    const targetPrefix = `${year}-${month}`;
+    
+    return transactions.filter(t => {
+      if (t.user_id !== currentUser.id) return false;
+      const tDate = (t.date || '').split('T')[0];
+      return tDate.startsWith(targetPrefix);
+    });
+  }, [transactions, currentUser, currentDate]);
+
+  const prevIncome = useMemo(() => 
+    previousMonthTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
+  , [previousMonthTransactions]);
+
+  const prevExpenses = useMemo(() => 
+    previousMonthTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
+  , [previousMonthTransactions]);
+
+  const prevBalance = prevIncome - prevExpenses;
+
+  const calculateChange = (current, previous) => {
+    if (previous === 0) {
+      if (current === 0) return { percent: 0, text: '0%', direction: 'neutral' };
+      return { percent: 100, text: '+100%', direction: 'up' };
+    }
+    const diff = ((current - previous) / previous) * 100;
+    const sign = diff > 0 ? '+' : '';
+    return {
+      percent: diff,
+      text: `${sign}${diff.toFixed(1)}%`,
+      direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'neutral'
+    };
+  };
+
+  const incomeChange = useMemo(() => calculateChange(income, prevIncome), [income, prevIncome]);
+  const expensesChange = useMemo(() => calculateChange(expenses, prevExpenses), [expenses, prevExpenses]);
+  const balanceChange = useMemo(() => calculateChange(balance, prevBalance), [balance, prevBalance]);
+
   const savingsAmount = useMemo(() => {
     const savingsCategory = categories.find(c => 
       c.name.toLowerCase() === 'poupança' || c.name.toLowerCase() === 'poupanca'
@@ -2026,6 +2075,12 @@ export default function FinanceApp() {
             income={income}
             expenses={expenses}
             balance={balance}
+            prevIncome={prevIncome}
+            prevExpenses={prevExpenses}
+            prevBalance={prevBalance}
+            incomeChange={incomeChange}
+            expensesChange={expensesChange}
+            balanceChange={balanceChange}
             showVal={showVal}
             formatCurrency={formatCurrency}
             setView={setView}
