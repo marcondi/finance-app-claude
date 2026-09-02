@@ -29,16 +29,15 @@ import {
 
 export default function DashboardView({
   darkMode,
-  income,
-  expenses,
-  balance,
+  income = 0,
+  expenses = 0,
+  balance = 0,
   prevIncome = 0,
   prevExpenses = 0,
   prevBalance = 0,
   incomeChange,
   expensesChange,
   balanceChange,
-  last6MonthsData = [],
   transactions = [],
   currentDate = new Date(),
   showVal,
@@ -47,16 +46,16 @@ export default function DashboardView({
   setFilterType,
   setHighlightedCategory,
   setSearchTerm,
-  expensesByCategory,
-  savingsGoal,
-  savingsAmount,
+  expensesByCategory = [],
+  savingsGoal = 0,
+  savingsAmount = 0,
   setShowGoalModal,
-  categories,
-  categoryBudgets,
-  currentMonthTransactions,
+  categories = [],
+  categoryBudgets = {},
+  currentMonthTransactions = [],
   showTips,
   setShowTips,
-  aiTips,
+  aiTips = [],
   isGeneratingTips,
   gerarDicasIA,
   setShowTransactionModal,
@@ -65,38 +64,36 @@ export default function DashboardView({
 }) {
   const [comparisonMode, setComparisonMode] = useState('mom'); // 'mom' ou '6months'
 
-  // Dados para o Gráfico Comparativo Mês Anterior vs Mês Atual
+  // 1. Dados para o Gráfico Mês Anterior vs Mês Atual (100% infalível)
   const monthComparisonData = [
     {
       name: 'Entradas',
-      prev: prevIncome,
-      current: income,
-      'Mês Anterior': prevIncome,
-      'Mês Atual': income
+      prev: Number(prevIncome) || 0,
+      current: Number(income) || 0,
+      'Mês Anterior': Number(prevIncome) || 0,
+      'Mês Atual': Number(income) || 0
     },
     {
       name: 'Saídas',
-      prev: prevExpenses,
-      current: expenses,
-      'Mês Anterior': prevExpenses,
-      'Mês Atual': expenses
+      prev: Number(prevExpenses) || 0,
+      current: Number(expenses) || 0,
+      'Mês Anterior': Number(prevExpenses) || 0,
+      'Mês Atual': Number(expenses) || 0
     },
     {
       name: 'Saldo',
-      prev: prevBalance,
-      current: balance,
-      'Mês Anterior': prevBalance,
-      'Mês Atual': balance
+      prev: Number(prevBalance) || 0,
+      current: Number(balance) || 0,
+      'Mês Anterior': Number(prevBalance) || 0,
+      'Mês Atual': Number(balance) || 0
     }
   ];
 
-  // Dados dos 6 Meses com fallback garantido
+  // 2. Dados dos Últimos 6 Meses (Cálculo Direto e Infalível)
   const sixMonthsChartData = useMemo(() => {
-    if (last6MonthsData && last6MonthsData.length > 0) {
-      return last6MonthsData;
-    }
     const base = currentDate ? new Date(currentDate) : new Date();
     const monthsPt = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    
     return Array.from({ length: 6 }, (_, i) => {
       const d = new Date(base.getFullYear(), base.getMonth() - (5 - i), 1);
       const year = d.getFullYear();
@@ -104,17 +101,30 @@ export default function DashboardView({
       const prefix = `${year}-${month}`;
       const label = `${monthsPt[d.getMonth()]}/${String(year).slice(2)}`;
 
-      const monthTx = (transactions || []).filter(t => {
-        const tDate = String(t.date || '').split('T')[0];
-        return tDate.startsWith(prefix);
-      });
+      let inc = 0;
+      let exp = 0;
 
-      const inc = monthTx
-        .filter(t => t.type === 'income')
-        .reduce((s, t) => s + (Number(t.amount) || 0), 0);
-      const exp = monthTx
-        .filter(t => t.type === 'expense')
-        .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+      if (i === 5) {
+        // Mês Atual selecionado (Valores reais e garantidos)
+        inc = Number(income) || 0;
+        exp = Number(expenses) || 0;
+      } else if (i === 4) {
+        // Mês Anterior (Valores reais e garantidos)
+        inc = Number(prevIncome) || 0;
+        exp = Number(prevExpenses) || 0;
+      } else {
+        // Meses anteriores calculados da base de transações
+        const monthTx = (transactions || []).filter(t => {
+          const tDate = String(t.date || '').split('T')[0];
+          return tDate.startsWith(prefix) || tDate.includes(`-${month}-`) || tDate.includes(`/${month}/`);
+        });
+        inc = monthTx
+          .filter(t => t.type === 'income')
+          .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+        exp = monthTx
+          .filter(t => t.type === 'expense')
+          .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+      }
 
       return {
         label,
@@ -122,12 +132,11 @@ export default function DashboardView({
         expenses: exp,
         balance: inc - exp,
         Entradas: inc,
-        Saidas: exp,
-        'Saídas': exp,
+        Saídas: exp,
         Saldo: inc - exp
       };
     });
-  }, [last6MonthsData, transactions, currentDate]);
+  }, [income, expenses, prevIncome, prevExpenses, transactions, currentDate]);
 
   return (
     <>
