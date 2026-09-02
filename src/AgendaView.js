@@ -4,7 +4,6 @@ import {
   CalendarDays, 
   Plus, 
   Check, 
-  AlertCircle, 
   Clock, 
   ExternalLink 
 } from 'lucide-react';
@@ -463,7 +462,6 @@ export default function AgendaView({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {calendarEvents.map(event => {
                 const start = event.start?.dateTime || event.start?.date;
-                const end = event.end?.dateTime || event.end?.date;
                 const isAllDay = !event.start?.dateTime;
 
                 return (
