@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Check, CreditCard, Tag, CheckCircle2, Clock, DollarSign, X } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Check, CreditCard, Tag, CheckCircle2, Clock, DollarSign } from 'lucide-react';
 
 export default function TransactionsView({
   darkMode,
@@ -161,25 +161,12 @@ export default function TransactionsView({
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className={`w-full pl-9 pr-8 py-2 rounded-xl text-xs border ${
+                className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs border ${
                   darkMode
                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                     : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setCurrentPage(1);
-                  }}
-                  className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-0.5"
-                  title="Limpar busca"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
             </div>
 
             <select
@@ -351,187 +338,187 @@ export default function TransactionsView({
                         </span>
                       </td>
 
-                    <td className={`py-3 px-4 text-right font-bold ${
-                      isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {isIncome ? '+' : '-'} {showVal(t.amount)}
-                    </td>
+                      <td className={`py-3 px-4 text-right font-bold ${
+                        isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {isIncome ? '+' : '-'} {showVal(t.amount)}
+                      </td>
 
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => {
-                            setEditingTransaction(t);
-                            setShowTransactionModal(true);
-                          }}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            darkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
-                          }`}
-                          title="Editar"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteTransaction(t)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 hover:text-red-600 transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Paginação */}
-      {filtered.length > pageSize && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs">
-          <div className="flex items-center gap-2">
-            <span className={darkMode ? 'text-gray-300' : 'text-gray-500'}>Itens por página:</span>
-            <select
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className={`px-2 py-1 rounded-lg border font-semibold ${
-                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-800'
-              } focus:outline-none`}
-            >
-              <option value={5} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>5</option>
-              <option value={10} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>10</option>
-              <option value={20} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>20</option>
-              <option value={50} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>50</option>
-            </select>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingTransaction(t);
+                              setShowTransactionModal(true);
+                            }}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              darkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
+                            }`}
+                            title="Editar"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteTransaction(t)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 hover:text-red-600 transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
+        )}
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium ${
-                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
-              }`}
-            >
-              Anterior
-            </button>
-            <span className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium ${
-                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
-              }`}
-            >
-              Próxima
-            </button>
+        {/* Paginação */}
+        {filtered.length > pageSize && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs">
+            <div className="flex items-center gap-2">
+              <span className={darkMode ? 'text-gray-300' : 'text-gray-500'}>Itens por página:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className={`px-2 py-1 rounded-lg border font-semibold ${
+                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-800'
+                } focus:outline-none`}
+              >
+                <option value={5} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>5</option>
+                <option value={10} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>10</option>
+                <option value={20} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>20</option>
+                <option value={50} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>50</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium ${
+                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
+                }`}
+              >
+                Anterior
+              </button>
+              <span className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium ${
+                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
+                }`}
+              >
+                Próxima
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-
-    {/* Card de Resumo Financeiro do Mês (Pagos vs A Pagar) */}
-    <div className={`p-6 rounded-2xl shadow-lg border ${
-      darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
-    }`}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className={`text-base font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-          <DollarSign className="w-5 h-5 text-blue-500" />
-          Resumo Financeiro do Mês (Pagos vs A Pagar)
-        </h3>
-        <span className="text-xs text-gray-400">
-          Total de {currentMonthTransactions.length} lançamentos no período
-        </span>
+        )}
       </div>
 
-      {/* 4 Cards de Métricas Rápidas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        <div className={`p-4 rounded-xl border ${
-          darkMode ? 'bg-green-950/20 border-green-900/60' : 'bg-green-50 border-green-200'
-        }`}>
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-green-700 dark:text-green-300 uppercase tracking-wider">
-              Despesas Pagas
-            </span>
-            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-          </div>
-          <div className="text-lg font-extrabold text-green-600 dark:text-green-400 mt-1">
-            {showVal(paidExpensesTotal)}
-          </div>
-          <span className="text-[11px] text-gray-400">
-            {paidExpensesList.length} conta{paidExpensesList.length !== 1 ? 's' : ''} quitada{paidExpensesList.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-
-        <div className={`p-4 rounded-xl border ${
-          darkMode ? 'bg-yellow-950/20 border-yellow-900/60' : 'bg-yellow-50 border-yellow-200'
-        }`}>
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-yellow-700 dark:text-yellow-300 uppercase tracking-wider">
-              Despesas a Pagar
-            </span>
-            <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-          </div>
-          <div className="text-lg font-extrabold text-yellow-600 dark:text-yellow-400 mt-1">
-            {showVal(unpaidExpensesTotal)}
-          </div>
-          <span className="text-[11px] text-gray-400">
-            {unpaidExpensesList.length} conta{unpaidExpensesList.length !== 1 ? 's' : ''} pendente{unpaidExpensesList.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-
-        <div className={`p-4 rounded-xl border ${
-          darkMode ? 'bg-blue-950/20 border-blue-900/60' : 'bg-blue-50 border-blue-200'
-        }`}>
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
-              Receitas Recebidas
-            </span>
-            <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div className="text-lg font-extrabold text-blue-600 dark:text-blue-400 mt-1">
-            {showVal(paidIncomesTotal)}
-          </div>
-          <span className="text-[11px] text-gray-400">
-            {paidIncomesList.length} entrada{paidIncomesList.length !== 1 ? 's' : ''} confirmada{paidIncomesList.length !== 1 ? 's' : ''}
-            {unpaidIncomesList.length > 0 && ` (${unpaidIncomesList.length} a receber)`}
-          </span>
-        </div>
-
-        <div className={`p-4 rounded-xl border ${
-          darkMode ? 'bg-purple-950/20 border-purple-900/60' : 'bg-purple-50 border-purple-200'
-        }`}>
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
-              Saldo Realizado
-            </span>
-            <CreditCard className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div className={`text-lg font-extrabold mt-1 ${
-            currentPaidBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-          }`}>
-            {showVal(currentPaidBalance)}
-          </div>
-          <span className="text-[11px] text-gray-400">
-            Entradas pagas - Saídas pagas
-          </span>
-        </div>
-      </div>
-
-      {/* Resumo em Texto Amigável */}
-      <div className={`p-4 rounded-xl text-xs leading-relaxed ${
-        darkMode ? 'bg-gray-700/60 text-gray-300' : 'bg-gray-50 text-gray-700'
+      {/* Card de Resumo Financeiro do Mês (Pagos vs A Pagar) */}
+      <div className={`p-6 rounded-2xl shadow-lg border ${
+        darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
       }`}>
-        💡 <strong>Resumo do mês:</strong> Você já quitou <strong>{showVal(paidExpensesTotal)}</strong> ({paidExpensesList.length} contas pagas) e ainda possui <strong>{showVal(unpaidExpensesTotal)}</strong> ({unpaidExpensesList.length} contas a pagar). Com <strong>{showVal(paidIncomesTotal)}</strong> de receitas recebidas, seu saldo financeiro efetivamente realizado no momento é de <strong className={currentPaidBalance >= 0 ? 'text-green-500 font-bold' : 'text-red-500 font-bold'}>{showVal(currentPaidBalance)}</strong>.
+        <div className="flex items-center justify-between mb-4">
+          <h3 className={`text-base font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+            <DollarSign className="w-5 h-5 text-blue-500" />
+            Resumo Financeiro do Mês (Pagos vs A Pagar)
+          </h3>
+          <span className="text-xs text-gray-400">
+            Total de {currentMonthTransactions.length} lançamentos no período
+          </span>
+        </div>
+
+        {/* 4 Cards de Métricas Rápidas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className={`p-4 rounded-xl border ${
+            darkMode ? 'bg-green-950/20 border-green-900/60' : 'bg-green-50 border-green-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-green-700 dark:text-green-300 uppercase tracking-wider">
+                Despesas Pagas
+              </span>
+              <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="text-lg font-extrabold text-green-600 dark:text-green-400 mt-1">
+              {showVal(paidExpensesTotal)}
+            </div>
+            <span className="text-[11px] text-gray-400">
+              {paidExpensesList.length} conta{paidExpensesList.length !== 1 ? 's' : ''} quitada{paidExpensesList.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className={`p-4 rounded-xl border ${
+            darkMode ? 'bg-yellow-950/20 border-yellow-900/60' : 'bg-yellow-50 border-yellow-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-yellow-700 dark:text-yellow-300 uppercase tracking-wider">
+                Despesas a Pagar
+              </span>
+              <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <div className="text-lg font-extrabold text-yellow-600 dark:text-yellow-400 mt-1">
+              {showVal(unpaidExpensesTotal)}
+            </div>
+            <span className="text-[11px] text-gray-400">
+              {unpaidExpensesList.length} conta{unpaidExpensesList.length !== 1 ? 's' : ''} pendente{unpaidExpensesList.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className={`p-4 rounded-xl border ${
+            darkMode ? 'bg-blue-950/20 border-blue-900/60' : 'bg-blue-50 border-blue-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
+                Receitas Recebidas
+              </span>
+              <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="text-lg font-extrabold text-blue-600 dark:text-blue-400 mt-1">
+              {showVal(paidIncomesTotal)}
+            </div>
+            <span className="text-[11px] text-gray-400">
+              {paidIncomesList.length} entrada{paidIncomesList.length !== 1 ? 's' : ''} confirmada{paidIncomesList.length !== 1 ? 's' : ''}
+              {unpaidIncomesList.length > 0 && ` (${unpaidIncomesList.length} a receber)`}
+            </span>
+          </div>
+
+          <div className={`p-4 rounded-xl border ${
+            darkMode ? 'bg-purple-950/20 border-purple-900/60' : 'bg-purple-50 border-purple-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                Saldo Realizado
+              </span>
+              <CreditCard className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className={`text-lg font-extrabold mt-1 ${
+              currentPaidBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+            }`}>
+              {showVal(currentPaidBalance)}
+            </div>
+            <span className="text-[11px] text-gray-400">
+              Entradas pagas - Saídas pagas
+            </span>
+          </div>
+        </div>
+
+        {/* Resumo em Texto Amigável */}
+        <div className={`p-4 rounded-xl text-xs leading-relaxed ${
+          darkMode ? 'bg-gray-700/60 text-gray-300' : 'bg-gray-50 text-gray-700'
+        }`}>
+          💡 <strong>Resumo do mês:</strong> Você já quitou <strong>{showVal(paidExpensesTotal)}</strong> ({paidExpensesList.length} contas pagas) e ainda possui <strong>{showVal(unpaidExpensesTotal)}</strong> ({unpaidExpensesList.length} contas a pagar). Com <strong>{showVal(paidIncomesTotal)}</strong> de receitas recebidas, seu saldo financeiro efetivamente realizado no momento é de <strong className={currentPaidBalance >= 0 ? 'text-green-500 font-bold' : 'text-red-500 font-bold'}>{showVal(currentPaidBalance)}</strong>.
+        </div>
       </div>
     </div>
-  </div>
   );
 }
