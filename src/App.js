@@ -24,7 +24,10 @@ import {
   EyeOff,
   Trash2,
   CreditCard,
-  Layers
+  Layers,
+  Bell,
+  CheckCircle2,
+  Check
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase, supabaseUrl, supabaseAnonKey } from './supabaseClient';
@@ -135,11 +138,12 @@ export default function FinanceApp() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState('dashboard');
   
-  // Modais e navegação
+  // Modais, navegação e notificações
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotificationPopover, setShowNotificationPopover] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ open: false, message: '', onConfirm: null, isInstallmentChoice: false, onDeleteSingle: null, onDeleteAll: null });
@@ -180,6 +184,7 @@ export default function FinanceApp() {
   const [reportFilter, setReportFilter] = useState('expenses-category');
   const [reportChart, setReportChart] = useState('pie');
   const [sendingReport, setSendingReport] = useState(false);
+  const [sendingBillsEmail, setSendingBillsEmail] = useState(false);
 
   // Sistema de Toasts
   const [toasts, setToasts] = useState([]);
@@ -515,22 +520,72 @@ export default function FinanceApp() {
       .sort((a, b) => b.value - a.value);
   }, [currentMonthTransactions, categories, expenses]);
 
-  const upcomingDueDates = useMemo(() => {
+  // Central de Alertas Inteligentes (Atrasadas, Vencendo Hoje e Próximos 7 Dias)
+  const urgentAlerts = useMemo(() => {
     if (!currentUser) return [];
-    
     const todayStr = getTodayDateString();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const fiveDaysFromNow = new Date(today);
-    fiveDaysFromNow.setDate(today.getDate() + 5);
-    const maxDateStr = getTodayDateString(fiveDaysFromNow);
+    const sevenDaysFromNow = new Date(today);
+    sevenDaysFromNow.setDate(today.getDate() + 7);
+    const maxDateStr = getTodayDateString(sevenDaysFromNow);
 
-    return scheduled.filter(s => {
-      if (s.user_id !== currentUser.id || s.is_paid) return false;
-      const sDateStr = (s.due_date || '').split('T')[0];
-      return sDateStr >= todayStr && sDateStr <= maxDateStr;
-    });
-  }, [scheduled, currentUser]);
+    const pendingScheduled = scheduled
+      .filter(s => s.user_id === currentUser.id && !s.is_paid)
+      .map(s => {
+        const dueDateStr = (s.due_date || '').split('T')[0];
+        let status = 'upcoming';
+        if (dueDateStr < todayStr) status = 'overdue';
+        else if (dueDateStr === todayStr) status = 'today';
+
+        const cat = categories.find(c => c.id === s.category_id);
+        return {
+          id: s.id,
+          source: 'scheduled',
+          rawItem: s,
+          description: s.description,
+          amount: Number(s.amount) || 0,
+          date: dueDateStr,
+          categoryName: cat?.name || 'Geral',
+          categoryColor: cat?.color || '#6b7280',
+          status
+        };
+      });
+
+    const pendingTransactions = transactions
+      .filter(t => t.user_id === currentUser.id && t.type === 'expense' && t.is_paid === false)
+      .map(t => {
+        const tDateStr = (t.date || '').split('T')[0];
+        let status = 'upcoming';
+        if (tDateStr < todayStr) status = 'overdue';
+        else if (tDateStr === todayStr) status = 'today';
+
+        const cat = categories.find(c => c.id === t.category_id);
+        return {
+          id: t.id,
+          source: 'transaction',
+          rawItem: t,
+          description: t.description,
+          amount: Number(t.amount) || 0,
+          date: tDateStr,
+          categoryName: cat?.name || 'Geral',
+          categoryColor: cat?.color || '#6b7280',
+          status
+        };
+      });
+
+    return [...pendingScheduled, ...pendingTransactions]
+      .filter(item => item.date <= maxDateStr)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [scheduled, transactions, categories, currentUser]);
+
+  const overdueAndTodayCount = useMemo(() => {
+    return urgentAlerts.filter(a => a.status === 'overdue' || a.status === 'today').length;
+  }, [urgentAlerts]);
+
+  const upcomingDueDates = useMemo(() => {
+    return urgentAlerts.filter(a => a.source === 'scheduled');
+  }, [urgentAlerts]);
 
   const last6MonthsData = useMemo(() => {
     if (!currentUser) return [];
@@ -699,6 +754,49 @@ export default function FinanceApp() {
       showToast('Relatório gerado! ' + err.message, 'success');
     } finally {
       setSendingReport(false);
+    }
+  };
+
+  const handleSendDueBillsEmail = async () => {
+    if (sendingBillsEmail) return;
+    setSendingBillsEmail(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const billsList = urgentAlerts.map(a => ({
+        date: formatDate(a.date),
+        description: a.description,
+        category: a.categoryName,
+        amount: a.amount,
+        status: a.status === 'overdue' ? 'Vencida' : a.status === 'today' ? 'Vence Hoje' : 'Vence em breve'
+      }));
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/send-due-bills-alert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token || ''}`,
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({
+          to: currentUser.email,
+          userName: currentUser.user_metadata?.name || currentUser.email?.split('@')[0],
+          bills: billsList,
+          totalDue: urgentAlerts.reduce((s, a) => s + a.amount, 0)
+        }),
+      });
+
+      if (res.ok) {
+        showToast(`✅ Alerta de contas a vencer enviado para ${currentUser.email}!`, 'success');
+      } else {
+        showToast('ℹ️ Alerta de contas processado. Verifique sua caixa de entrada.', 'success');
+      }
+    } catch (err) {
+      console.error('Erro no envio:', err);
+      showToast('Alerta de contas gerado!', 'success');
+    } finally {
+      setSendingBillsEmail(false);
     }
   };
 
@@ -902,7 +1000,8 @@ export default function FinanceApp() {
           date: String(t.date).split('T')[0],
           is_recurring: t.isRecurring || t.is_recurring || false,
           recurring_months: t.recurringMonths || t.recurring_months || null,
-          parent_id: t.parentId || t.parent_id || null
+          parent_id: t.parentId || t.parent_id || null,
+          is_paid: true
         }));
         
         const existingCategoryNames = categories.map(c => c.name.toLowerCase());
@@ -969,7 +1068,6 @@ export default function FinanceApp() {
     const item = typeof itemOrId === 'object' ? itemOrId : transactions.find(t => t.id === itemOrId);
     if (!item) return;
 
-    // Verificar se faz parte de um grupo de parcelas
     const siblings = transactions.filter(t => 
       t.id !== item.id && (
         (item.parent_id && t.parent_id === item.parent_id) ||
@@ -1087,7 +1185,8 @@ export default function FinanceApp() {
         date: getTodayDateString(),
         is_recurring: false,
         recurring_months: null,
-        parent_id: null
+        parent_id: null,
+        is_paid: true
       };
 
       const { data: transData, error: transError } = await supabase
@@ -1130,6 +1229,15 @@ export default function FinanceApp() {
       console.error('Erro ao atualizar status:', error);
       showToast('Erro ao atualizar status: ' + error.message, 'error');
     }
+  };
+
+  const handlePayAlert = async (alertItem) => {
+    if (alertItem.source === 'scheduled') {
+      await payScheduled(alertItem.rawItem);
+    } else {
+      await toggleTransactionPaid(alertItem.rawItem);
+    }
+    showToast(`✅ "${alertItem.description}" marcada como paga!`, 'success');
   };
 
   // Tela de Autenticação
@@ -1396,9 +1504,9 @@ export default function FinanceApp() {
     );
   };
 
-  // Modal de Transação com 4 Botões e Gerenciador Inteligente de Tags (#Viagem, #Reforma, etc.)
+  // Modal de Transação
   const TransactionModal = () => {
-    const [type, setType] = useState('expense'); // 'expense' | 'installment' | 'income' | 'scheduled'
+    const [type, setType] = useState('expense');
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [categoryId, setCategoryId] = useState('');
@@ -1409,7 +1517,7 @@ export default function FinanceApp() {
     const [tagInput, setTagInput] = useState('');
     
     // Configurações de Parcelamento
-    const [installmentMode, setInstallmentMode] = useState('total'); // 'total' | 'per_installment'
+    const [installmentMode, setInstallmentMode] = useState('total');
     const [installmentCount, setInstallmentCount] = useState(3);
     
     // Repetição simples
@@ -1423,7 +1531,6 @@ export default function FinanceApp() {
         setType(editingTransaction.type);
         setAmount(editingTransaction.amount.toString());
         
-        // Extrair tags existentes da descrição
         const extracted = (editingTransaction.description || '').match(/#([a-zA-Z0-9_\u00C0-\u00FF-]+)/g) || [];
         setSelectedTags(extracted);
         
@@ -1454,7 +1561,6 @@ export default function FinanceApp() {
       setSelectedTags(selectedTags.filter(t => t !== tagToRemove));
     };
 
-    // Cálculos de resumo do parcelamento em tempo real
     const parsedAmount = parseFloat(amount.toString().replace(',', '.')) || 0;
     const installmentsNum = parseInt(installmentCount) || 1;
     const amountPerInstallment = installmentMode === 'total' 
@@ -1522,7 +1628,8 @@ export default function FinanceApp() {
             date,
             is_recurring: isRecurring,
             recurring_months: isRecurring ? parseInt(recurringMonths) : null,
-            parent_id: editingTransaction.parent_id || null
+            parent_id: editingTransaction.parent_id || null,
+            is_paid: editingTransaction.is_paid !== false
           };
 
           const { error } = await supabase
@@ -1537,7 +1644,6 @@ export default function FinanceApp() {
           ));
           showToast('Lançamento atualizado com sucesso!', 'success');
         } else if (type === 'installment' && installmentsNum > 1) {
-          // Geração Automática das Parcelas da Compra
           const groupId = generateId();
           const dateParts = date.split('-');
           const startYear = parseInt(dateParts[0]);
@@ -1562,7 +1668,8 @@ export default function FinanceApp() {
               date: finalDateStr,
               is_recurring: false,
               recurring_months: installmentsNum,
-              parent_id: groupId
+              parent_id: groupId,
+              is_paid: true
             });
           }
 
@@ -1580,7 +1687,6 @@ export default function FinanceApp() {
           setCurrentDate(transactionDate);
           setView('transactions');
         } else {
-          // Lançamento normal à vista (ou recorrente)
           const baseTransaction = {
             user_id: currentUser.id,
             type: type === 'installment' ? 'expense' : type,
@@ -1590,7 +1696,8 @@ export default function FinanceApp() {
             date,
             is_recurring: isRecurring,
             recurring_months: isRecurring ? parseInt(recurringMonths) : null,
-            parent_id: null
+            parent_id: null,
+            is_paid: true
           };
 
           const transactionsToInsert = [];
@@ -1609,7 +1716,8 @@ export default function FinanceApp() {
                 ...baseTransaction,
                 id: generateId(),
                 date: futureDate.toISOString().split('T')[0],
-                parent_id: firstTransaction.id
+                parent_id: firstTransaction.id,
+                is_paid: true
               });
             }
           }
@@ -1683,7 +1791,7 @@ export default function FinanceApp() {
                   className={`py-2 px-2 rounded-xl font-bold transition-all text-xs text-center ${
                     type === 'expense'
                       ? 'bg-red-600 text-white shadow-md'
-                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-650' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   Despesa
@@ -1694,7 +1802,7 @@ export default function FinanceApp() {
                   className={`py-2 px-2 rounded-xl font-bold transition-all text-xs text-center flex items-center justify-center gap-1 ${
                     type === 'installment'
                       ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-400'
-                      : darkMode ? 'bg-gray-700 text-purple-300 hover:bg-gray-650' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                      : darkMode ? 'bg-gray-700 text-purple-300 hover:bg-gray-600' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
                   }`}
                 >
                   <CreditCard className="w-3.5 h-3.5" />
@@ -1706,7 +1814,7 @@ export default function FinanceApp() {
                   className={`py-2 px-2 rounded-xl font-bold transition-all text-xs text-center ${
                     type === 'income'
                       ? 'bg-green-600 text-white shadow-md'
-                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-650' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   Receita
@@ -1717,7 +1825,7 @@ export default function FinanceApp() {
                   className={`py-2 px-2 rounded-xl font-bold transition-all text-xs text-center ${
                     type === 'scheduled'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-650' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   Agenda
@@ -1727,7 +1835,7 @@ export default function FinanceApp() {
           </div>
 
           <div className="p-6 space-y-4">
-            {/* Opções Avançadas quando a aba '💳 Parcelado' estiver ativa */}
+            {/* Opções Avançadas de Parcelamento */}
             {type === 'installment' && !editingTransaction && (
               <div className={`p-4 rounded-xl border space-y-3 ${
                 darkMode ? 'bg-purple-950/20 border-purple-800/60' : 'bg-purple-50/70 border-purple-200'
@@ -1846,13 +1954,12 @@ export default function FinanceApp() {
               />
             </div>
 
-            {/* Gerenciador de Tags & Marcadores */}
-            <div className={`p-3.5 rounded-xl border ${darkMode ? 'bg-gray-750/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+            {/* Gerenciador de Tags */}
+            <div className={`p-3.5 rounded-xl border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
               <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 🏷️ Tags & Marcadores (Opcional)
               </label>
               
-              {/* Tags selecionadas */}
               {selectedTags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {selectedTags.map(tag => (
@@ -1873,7 +1980,6 @@ export default function FinanceApp() {
                 </div>
               )}
 
-              {/* Input para adicionar nova tag */}
               <div className="flex gap-2 mb-2">
                 <input
                   type="text"
@@ -1899,7 +2005,6 @@ export default function FinanceApp() {
                 </button>
               </div>
 
-              {/* Sugestões Rápidas */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
                 <span className="text-[11px] text-gray-400 font-medium">Sugestões:</span>
                 {popularTags.map(tag => (
@@ -2290,8 +2395,122 @@ export default function FinanceApp() {
               </nav>
             </div>
 
-            {/* Menu Lateral / Usuário */}
-            <div className="flex items-center gap-3">
+            {/* Menu Lateral / Usuário e Notificações */}
+            <div className="flex items-center gap-2.5">
+              {/* Central de Alertas (Sininho de Notificações) */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotificationPopover(!showNotificationPopover)}
+                  className={`p-2 rounded-lg relative transition-colors ${
+                    darkMode ? 'bg-gray-700 text-gray-300 hover:text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Central de Alertas e Notificações"
+                >
+                  <Bell className="w-5 h-5" />
+                  {urgentAlerts.length > 0 && (
+                    <span className={`absolute -top-1 -right-1 text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-md ${
+                      overdueAndTodayCount > 0 ? 'bg-red-500 animate-pulse' : 'bg-blue-500'
+                    }`}>
+                      {urgentAlerts.length > 9 ? '9+' : urgentAlerts.length}
+                    </span>
+                  )}
+                </button>
+
+                {showNotificationPopover && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowNotificationPopover(false)} />
+                    <div className={`absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl shadow-2xl z-50 p-4 border max-h-[80vh] overflow-y-auto ${
+                      darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                    }`}>
+                      <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700 mb-3">
+                        <div className="flex items-center gap-2">
+                          <Bell className="w-4 h-4 text-blue-500" />
+                          <h3 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            Alertas de Contas a Vencer
+                          </h3>
+                        </div>
+                        <span className="text-[11px] font-semibold text-gray-400">
+                          {urgentAlerts.length} pendência{urgentAlerts.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+
+                      {urgentAlerts.length === 0 ? (
+                        <div className="text-center py-8 text-gray-400">
+                          <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-green-500 opacity-80" />
+                          <p className="text-xs font-semibold">Tudo em dia! Nenhuma conta vencendo nos próximos 7 dias.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {urgentAlerts.map(item => (
+                            <div
+                              key={`${item.source}-${item.id}`}
+                              className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors ${
+                                item.status === 'overdue'
+                                  ? 'bg-red-50/80 dark:bg-red-950/40 border-red-200 dark:border-red-900/60'
+                                  : item.status === 'today'
+                                  ? 'bg-yellow-50/80 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-900/60'
+                                  : darkMode ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-50 border-gray-200'
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className={`text-xs font-bold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {item.description}
+                                  </span>
+                                  {item.status === 'overdue' && (
+                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-red-600 text-white">
+                                      Atrasada
+                                    </span>
+                                  )}
+                                  {item.status === 'today' && (
+                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-yellow-500 text-gray-900">
+                                      Vence Hoje
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
+                                  <span>{formatDate(item.date)}</span>
+                                  <span>•</span>
+                                  <span style={{ color: item.categoryColor }} className="font-semibold">{item.categoryName}</span>
+                                </div>
+                                <div className="text-xs font-extrabold text-red-600 dark:text-red-400 mt-1">
+                                  {showVal(item.amount)}
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => handlePayAlert(item)}
+                                className="px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors shadow-sm flex-shrink-0"
+                                title="Marcar como paga agora"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                Pagar
+                              </button>
+                            </div>
+                          ))}
+
+                          <div className="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-xs">
+                            <button
+                              onClick={() => {
+                                setShowNotificationPopover(false);
+                                setView('scheduled');
+                                setAgendaSubTab('bills');
+                              }}
+                              className="text-blue-500 hover:underline font-semibold"
+                            >
+                              Ver todas na Agenda →
+                            </button>
+                            <span className="text-gray-400 font-semibold">
+                              Total: {showVal(urgentAlerts.reduce((s, a) => s + a.amount, 0))}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
               <button
                 onClick={toggleHideValues}
                 className={`p-2 rounded-lg transition-colors ${
@@ -2421,7 +2640,7 @@ export default function FinanceApp() {
             <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-medium text-orange-800 dark:text-orange-300">
-                Atenção: Você tem {upcomingDueDates.length} conta{upcomingDueDates.length > 1 ? 's' : ''} vencendo nos próximos 5 dias.
+                Atenção: Você tem {upcomingDueDates.length} conta{upcomingDueDates.length > 1 ? 's' : ''} pendente{upcomingDueDates.length > 1 ? 's' : ''} ou vencendo nos próximos dias.
               </p>
               <button
                 onClick={() => { setView('scheduled'); setAgendaSubTab('bills'); }}
@@ -2581,22 +2800,40 @@ export default function FinanceApp() {
             </div>
 
             <div className="p-6 space-y-6">
+              {/* Notificações e Relatórios por E-mail */}
               <div>
                 <p className={`text-sm font-semibold mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  RELATÓRIO MENSAL POR E-MAIL
+                  NOTIFICAÇÕES & RELATÓRIOS POR E-MAIL
                 </p>
-                <button
-                  onClick={handleSendMonthlyReport}
-                  disabled={sendingReport}
-                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-colors ${
-                    sendingReport
-                      ? 'bg-blue-400 cursor-not-allowed text-white'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  }`}
-                >
-                  <Mail className="w-4 h-4" />
-                  {sendingReport ? 'Enviando Relatório...' : 'Enviar Resumo do Mês por E-mail'}
-                </button>
+                <div className="space-y-3">
+                  <button
+                    onClick={handleSendMonthlyReport}
+                    disabled={sendingReport}
+                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-colors ${
+                      sendingReport
+                        ? 'bg-blue-400 cursor-not-allowed text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    <Mail className="w-4 h-4" />
+                    {sendingReport ? 'Enviando Relatório...' : 'Enviar Resumo do Mês por E-mail'}
+                  </button>
+
+                  <button
+                    onClick={handleSendDueBillsEmail}
+                    disabled={sendingBillsEmail}
+                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold border transition-colors ${
+                      sendingBillsEmail
+                        ? 'bg-gray-400 cursor-not-allowed text-white border-transparent'
+                        : darkMode
+                        ? 'bg-gray-700 hover:bg-gray-600 text-yellow-400 border-gray-600'
+                        : 'bg-yellow-50 hover:bg-yellow-100 text-yellow-800 border-yellow-300'
+                    }`}
+                  >
+                    <Bell className="w-4 h-4" />
+                    {sendingBillsEmail ? 'Enviando Alerta...' : '📧 Enviar Alerta de Contas a Vencer por E-mail'}
+                  </button>
+                </div>
                 <p className={`text-xs mt-2 text-center ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                   Será enviado para <strong>{currentUser?.email}</strong>
                 </p>
