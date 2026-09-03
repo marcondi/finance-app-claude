@@ -147,6 +147,7 @@ export default function FinanceApp() {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ open: false, message: '', onConfirm: null, isInstallmentChoice: false, onDeleteSingle: null, onDeleteAll: null });
+  const [processingAlertIds, setProcessingAlertIds] = useState([]);
 
   // Filtros de transações
   const [filterType, setFilterType] = useState('all');
@@ -1182,7 +1183,7 @@ export default function FinanceApp() {
         amount: scheduledItem.amount,
         description: scheduledItem.description,
         category_id: scheduledItem.category_id,
-        date: getTodayDateString(),
+        date: scheduledItem.due_date || getTodayDateString(),
         is_recurring: false,
         recurring_months: null,
         parent_id: null,
@@ -1207,7 +1208,7 @@ export default function FinanceApp() {
       setScheduled(prev => prev.map(s =>
         s.id === scheduledItem.id ? { ...s, is_paid: true } : s
       ));
-      showToast('Conta marcada como paga e registrada nas suas transações de hoje!', 'success');
+      showToast('Conta marcada como paga e registrada nas suas transações!', 'success');
     } catch (error) {
       console.error('Erro ao marcar como pago:', error);
       showToast('Erro ao marcar como pago: ' + error.message, 'error');
@@ -1232,12 +1233,20 @@ export default function FinanceApp() {
   };
 
   const handlePayAlert = async (alertItem) => {
-    if (alertItem.source === 'scheduled') {
-      await payScheduled(alertItem.rawItem);
-    } else {
-      await toggleTransactionPaid(alertItem.rawItem);
+    const alertKey = `${alertItem.source}-${alertItem.id}`;
+    if (processingAlertIds.includes(alertKey)) return;
+    
+    setProcessingAlertIds(prev => [...prev, alertKey]);
+    try {
+      if (alertItem.source === 'scheduled') {
+        await payScheduled(alertItem.rawItem);
+      } else {
+        await toggleTransactionPaid(alertItem.rawItem);
+      }
+      showToast(`✅ "${alertItem.description}" marcada como paga!`, 'success');
+    } finally {
+      setProcessingAlertIds(prev => prev.filter(k => k !== alertKey));
     }
-    showToast(`✅ "${alertItem.description}" marcada como paga!`, 'success');
   };
 
   // Tela de Autenticação
@@ -2441,53 +2450,57 @@ export default function FinanceApp() {
                         </div>
                       ) : (
                         <div className="space-y-2.5">
-                          {urgentAlerts.map(item => (
-                            <div
-                              key={`${item.source}-${item.id}`}
-                              className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors ${
-                                item.status === 'overdue'
-                                  ? 'bg-red-50/80 dark:bg-red-950/40 border-red-200 dark:border-red-900/60'
-                                  : item.status === 'today'
-                                  ? 'bg-yellow-50/80 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-900/60'
-                                  : darkMode ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-50 border-gray-200'
-                              }`}
-                            >
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className={`text-xs font-bold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {item.description}
-                                  </span>
-                                  {item.status === 'overdue' && (
-                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-red-600 text-white">
-                                      Atrasada
-                                    </span>
-                                  )}
-                                  {item.status === 'today' && (
-                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-yellow-500 text-gray-900">
-                                      Vence Hoje
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
-                                  <span>{formatDate(item.date)}</span>
-                                  <span>•</span>
-                                  <span style={{ color: item.categoryColor }} className="font-semibold">{item.categoryName}</span>
-                                </div>
-                                <div className="text-xs font-extrabold text-red-600 dark:text-red-400 mt-1">
-                                  {showVal(item.amount)}
-                                </div>
-                              </div>
-
-                              <button
-                                onClick={() => handlePayAlert(item)}
-                                className="px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors shadow-sm flex-shrink-0"
-                                title="Marcar como paga agora"
+                          {urgentAlerts.map(item => {
+                            const isProcessing = processingAlertIds.includes(`${item.source}-${item.id}`);
+                            return (
+                              <div
+                                key={`${item.source}-${item.id}`}
+                                className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors ${
+                                  item.status === 'overdue'
+                                    ? 'bg-red-50/80 dark:bg-red-950/40 border-red-200 dark:border-red-900/60'
+                                    : item.status === 'today'
+                                    ? 'bg-yellow-50/80 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-900/60'
+                                    : darkMode ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-50 border-gray-200'
+                                }`}
                               >
-                                <Check className="w-3.5 h-3.5" />
-                                Pagar
-                              </button>
-                            </div>
-                          ))}
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={`text-xs font-bold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                      {item.description}
+                                    </span>
+                                    {item.status === 'overdue' && (
+                                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-red-600 text-white">
+                                        Atrasada
+                                      </span>
+                                    )}
+                                    {item.status === 'today' && (
+                                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-yellow-500 text-gray-900">
+                                        Vence Hoje
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
+                                    <span>{formatDate(item.date)}</span>
+                                    <span>•</span>
+                                    <span style={{ color: item.categoryColor }} className="font-semibold">{item.categoryName}</span>
+                                  </div>
+                                  <div className="text-xs font-extrabold text-red-600 dark:text-red-400 mt-1">
+                                    {showVal(item.amount)}
+                                  </div>
+                                </div>
+
+                                <button
+                                  disabled={isProcessing}
+                                  onClick={() => handlePayAlert(item)}
+                                  className="px-2.5 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors shadow-sm flex-shrink-0"
+                                  title="Marcar como paga agora"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  {isProcessing ? 'Salvando...' : 'Pagar'}
+                                </button>
+                              </div>
+                            );
+                          })}
 
                           <div className="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-xs">
                             <button
