@@ -1,5 +1,5 @@
-import React from 'react';
-import { Search, Plus, Edit2, Trash2, Check, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Plus, Edit2, Trash2, Check, CreditCard, Tag } from 'lucide-react';
 
 export default function TransactionsView({
   darkMode,
@@ -24,6 +24,8 @@ export default function TransactionsView({
   currentPage,
   setCurrentPage
 }) {
+  const [selectedTag, setSelectedTag] = useState(null);
+
   const isInstallment = (t) => {
     return Boolean(t.parent_id || /\(\d+\/\d+\)$/.test(t.description || ''));
   };
@@ -32,6 +34,29 @@ export default function TransactionsView({
     const match = (description || '').match(/\((\d+\/\d+)\)$/);
     return match ? match[1] : null;
   };
+
+  const extractTags = (description) => {
+    const matches = (description || '').match(/#([a-zA-Z0-9_\u00C0-\u00FF-]+)/g) || [];
+    return matches;
+  };
+
+  const getCleanDescription = (description) => {
+    return (description || '')
+      .replace(/\s*\(\d+\/\d+\)$/, '')
+      .replace(/#([a-zA-Z0-9_\u00C0-\u00FF-]+)/g, '')
+      .trim();
+  };
+
+  // Coletar todas as tags do mês para a barra de filtros rápidos
+  const allMonthTags = {};
+  currentMonthTransactions.forEach(t => {
+    const tags = extractTags(t.description);
+    tags.forEach(tag => {
+      const formatted = tag.startsWith('#') ? tag : `#${tag}`;
+      allMonthTags[formatted] = (allMonthTags[formatted] || 0) + 1;
+    });
+  });
+  const tagList = Object.keys(allMonthTags);
 
   let filtered = currentMonthTransactions;
 
@@ -55,6 +80,13 @@ export default function TransactionsView({
     filtered = filtered.filter(t => {
       const category = categories.find(c => c.id === t.category_id);
       return category?.name === highlightedCategory;
+    });
+  }
+
+  if (selectedTag) {
+    filtered = filtered.filter(t => {
+      const tags = extractTags(t.description).map(tg => tg.toLowerCase());
+      return tags.includes(selectedTag.toLowerCase());
     });
   }
 
@@ -105,7 +137,7 @@ export default function TransactionsView({
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar lançamento..."
+              placeholder="Buscar lançamento ou #tag..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -142,14 +174,45 @@ export default function TransactionsView({
         </div>
       </div>
 
-      {/* Categoria em Destaque */}
-      {highlightedCategory && (
+      {/* Barra Rápida de Tags do Mês */}
+      {tagList.length > 0 && (
+        <div className="mb-5 flex items-center gap-2 flex-wrap pb-3 border-b border-gray-100 dark:border-gray-750">
+          <span className="text-xs font-semibold text-gray-400 flex items-center gap-1">
+            <Tag className="w-3.5 h-3.5" />
+            Tags do mês:
+          </span>
+          {tagList.map(tag => (
+            <button
+              key={tag}
+              onClick={() => {
+                setSelectedTag(selectedTag === tag ? null : tag);
+                setCurrentPage(1);
+              }}
+              className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                selectedTag === tag
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : darkMode ? 'bg-gray-750 text-purple-300 hover:bg-gray-700' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+              }`}
+            >
+              {tag} <span className="opacity-70 text-[10px]">({allMonthTags[tag]})</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Alertas de Filtro Ativo */}
+      {(highlightedCategory || selectedTag) && (
         <div className="mb-4 flex items-center justify-between p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
           <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-            Filtrando por: <strong>{highlightedCategory}</strong>
+            {highlightedCategory && `Categoria: ${highlightedCategory}`}
+            {highlightedCategory && selectedTag && ' | '}
+            {selectedTag && `Tag ativa: ${selectedTag}`}
           </span>
           <button
-            onClick={() => setHighlightedCategory(null)}
+            onClick={() => {
+              setHighlightedCategory(null);
+              setSelectedTag(null);
+            }}
             className="text-xs text-blue-600 hover:underline font-semibold"
           >
             Limpar filtro ✕
@@ -183,7 +246,8 @@ export default function TransactionsView({
                 const cat = categories.find(c => c.id === t.category_id);
                 const isIncome = t.type === 'income';
                 const instBadge = getInstallmentBadge(t.description);
-                const cleanDesc = instBadge ? t.description.replace(/\s*\(\d+\/\d+\)$/, '') : t.description;
+                const tags = extractTags(t.description);
+                const cleanDesc = getCleanDescription(t.description);
 
                 return (
                   <tr
@@ -213,13 +277,27 @@ export default function TransactionsView({
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                          {cleanDesc}
+                          {cleanDesc || t.description}
                         </span>
                         {instBadge && (
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300">
                             💳 {instBadge}
                           </span>
                         )}
+                        {tags.map((tag, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setSelectedTag(tag);
+                              setCurrentPage(1);
+                            }}
+                            className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-100 transition-colors"
+                            title={`Filtrar por ${tag}`}
+                          >
+                            {tag}
+                          </button>
+                        ))}
                       </div>
                     </td>
 
