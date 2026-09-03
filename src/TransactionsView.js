@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Check, CreditCard, Tag } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Check, CreditCard, Tag, CheckCircle2, Clock, DollarSign } from 'lucide-react';
 
 export default function TransactionsView({
   darkMode,
@@ -58,6 +58,17 @@ export default function TransactionsView({
   });
   const tagList = Object.keys(allMonthTags);
 
+  // Cálculos de Resumo de Pagos e A Pagar do Mês
+  const paidExpensesList = currentMonthTransactions.filter(t => t.type === 'expense' && t.is_paid !== false);
+  const unpaidExpensesList = currentMonthTransactions.filter(t => t.type === 'expense' && t.is_paid === false);
+  const paidIncomesList = currentMonthTransactions.filter(t => t.type === 'income' && t.is_paid !== false);
+  const unpaidIncomesList = currentMonthTransactions.filter(t => t.type === 'income' && t.is_paid === false);
+
+  const paidExpensesTotal = paidExpensesList.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const unpaidExpensesTotal = unpaidExpensesList.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const paidIncomesTotal = paidIncomesList.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const currentPaidBalance = paidIncomesTotal - paidExpensesTotal;
+
   let filtered = currentMonthTransactions;
 
   if (searchTerm) {
@@ -72,6 +83,10 @@ export default function TransactionsView({
 
   if (filterType === 'income' || filterType === 'expense') {
     filtered = filtered.filter(t => t.type === filterType);
+  } else if (filterType === 'paid') {
+    filtered = filtered.filter(t => t.is_paid !== false);
+  } else if (filterType === 'unpaid') {
+    filtered = filtered.filter(t => t.is_paid === false);
   } else if (filterType === 'installment') {
     filtered = filtered.filter(t => isInstallment(t));
   }
@@ -105,295 +120,405 @@ export default function TransactionsView({
   );
 
   return (
-    <div className={`p-6 rounded-2xl shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-      {/* Barra de Filtros e Busca */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center mb-6">
-        <div className="flex flex-wrap gap-2">
-          {[
-            { key: 'all', label: 'Todos' },
-            { key: 'income', label: 'Entradas' },
-            { key: 'expense', label: 'Saídas' },
-            { key: 'installment', label: '💳 Parcelados' }
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => {
-                setFilterType(key);
-                setCurrentPage(1);
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                filterType === key
-                  ? 'bg-blue-600 text-white shadow'
-                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar lançamento ou #tag..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs border ${
-                darkMode
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                  : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            />
+    <div className="space-y-6">
+      <div className={`p-6 rounded-2xl shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+        {/* Barra de Filtros e Busca */}
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center mb-6">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: 'all', label: 'Todos' },
+              { key: 'paid', label: '✅ Pagos' },
+              { key: 'unpaid', label: '⏳ A Pagar' },
+              { key: 'expense', label: 'Saídas' },
+              { key: 'income', label: 'Entradas' },
+              { key: 'installment', label: '💳 Parcelados' }
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setFilterType(key);
+                  setCurrentPage(1);
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  filterType === key
+                    ? 'bg-blue-600 text-white shadow'
+                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className={`px-3 py-2 rounded-xl text-xs font-semibold border ${
-              darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
-            } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-          >
-            <option value="date-desc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Mais recentes</option>
-            <option value="date-asc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Mais antigas</option>
-            <option value="amount-desc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Maior valor</option>
-            <option value="amount-asc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Menor valor</option>
-          </select>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 sm:w-64">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar lançamento ou #tag..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs border ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+            </div>
 
-          <button
-            onClick={() => setShowTransactionModal(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Lançamento
-          </button>
-        </div>
-      </div>
-
-      {/* Barra Rápida de Tags do Mês */}
-      {tagList.length > 0 && (
-        <div className="mb-5 flex items-center gap-2 flex-wrap pb-3 border-b border-gray-100 dark:border-gray-700">
-          <span className="text-xs font-semibold text-gray-400 flex items-center gap-1">
-            <Tag className="w-3.5 h-3.5" />
-            Tags do mês:
-          </span>
-          {tagList.map(tag => (
-            <button
-              key={tag}
-              onClick={() => {
-                setSelectedTag(selectedTag === tag ? null : tag);
-                setCurrentPage(1);
-              }}
-              className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${
-                selectedTag === tag
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : darkMode ? 'bg-gray-700 text-purple-300 hover:bg-gray-600' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
-              }`}
-            >
-              {tag} <span className="opacity-70 text-[10px]">({allMonthTags[tag]})</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Alertas de Filtro Ativo */}
-      {(highlightedCategory || selectedTag) && (
-        <div className="mb-4 flex items-center justify-between p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-          <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-            {highlightedCategory && `Categoria: ${highlightedCategory}`}
-            {highlightedCategory && selectedTag && ' | '}
-            {selectedTag && `Tag ativa: ${selectedTag}`}
-          </span>
-          <button
-            onClick={() => {
-              setHighlightedCategory(null);
-              setSelectedTag(null);
-            }}
-            className="text-xs text-blue-600 hover:underline font-semibold"
-          >
-            Limpar filtro ✕
-          </button>
-        </div>
-      )}
-
-      {/* Tabela de Transações */}
-      {paginatedTransactions.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm font-semibold">Nenhum lançamento encontrado para os filtros selecionados.</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className={`border-b text-xs font-bold uppercase ${
-                darkMode ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-500'
-              }`}>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Data</th>
-                <th className="py-3 px-4">Descrição</th>
-                <th className="py-3 px-4">Categoria</th>
-                <th className="py-3 px-4 text-right">Valor</th>
-                <th className="py-3 px-4 text-center">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
-              {paginatedTransactions.map(t => {
-                const cat = categories.find(c => c.id === t.category_id);
-                const isIncome = t.type === 'income';
-                const instBadge = getInstallmentBadge(t.description);
-                const tags = extractTags(t.description);
-                const cleanDesc = getCleanDescription(t.description);
-
-                return (
-                  <tr
-                    key={t.id}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
-                      t.is_paid === false ? 'opacity-75' : ''
-                    }`}
-                  >
-                    <td className="py-3 px-4">
-                      <button
-                        onClick={() => toggleTransactionPaid(t)}
-                        className={`p-1.5 rounded-lg border transition-all ${
-                          t.is_paid !== false
-                            ? 'bg-green-100 dark:bg-green-950/60 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300'
-                            : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-400'
-                        }`}
-                        title={t.is_paid !== false ? 'Pago (Clique para desmarcar)' : 'Pendente (Clique para marcar como pago)'}
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-
-                    <td className={`py-3 px-4 text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {formatDate(t.date)}
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                          {cleanDesc || t.description}
-                        </span>
-                        {instBadge && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300">
-                            💳 {instBadge}
-                          </span>
-                        )}
-                        {tags.map((tag, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setSelectedTag(tag);
-                              setCurrentPage(1);
-                            }}
-                            className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-100 transition-colors"
-                            title={`Filtrar por ${tag}`}
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <span
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-white shadow-sm"
-                        style={{ backgroundColor: cat?.color || '#6b7280' }}
-                      >
-                        {cat?.name || 'Sem Categoria'}
-                      </span>
-                    </td>
-
-                    <td className={`py-3 px-4 text-right font-bold ${
-                      isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {isIncome ? '+' : '-'} {showVal(t.amount)}
-                    </td>
-
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => {
-                            setEditingTransaction(t);
-                            setShowTransactionModal(true);
-                          }}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            darkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
-                          }`}
-                          title="Editar"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteTransaction(t)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 hover:text-red-600 transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Paginação */}
-      {filtered.length > pageSize && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs">
-          <div className="flex items-center gap-2">
-            <span className={darkMode ? 'text-gray-300' : 'text-gray-500'}>Itens por página:</span>
             <select
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className={`px-2 py-1 rounded-lg border font-semibold ${
-                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-800'
-              } focus:outline-none`}
-            >
-              <option value={5} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>5</option>
-              <option value={10} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>10</option>
-              <option value={20} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>20</option>
-              <option value={50} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>50</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium ${
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold border ${
                 darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
-              }`}
+              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             >
-              Anterior
+              <option value="date-desc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Mais recentes</option>
+              <option value="date-asc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Mais antigas</option>
+              <option value="amount-desc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Maior valor</option>
+              <option value="amount-asc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Menor valor</option>
+            </select>
+
+            <button
+              onClick={() => setShowTransactionModal(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Lançamento
             </button>
-            <span className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-              Página {currentPage} de {totalPages}
+          </div>
+        </div>
+
+        {/* Barra Rápida de Tags do Mês */}
+        {tagList.length > 0 && (
+          <div className="mb-5 flex items-center gap-2 flex-wrap pb-3 border-b border-gray-100 dark:border-gray-700">
+            <span className="text-xs font-semibold text-gray-400 flex items-center gap-1">
+              <Tag className="w-3.5 h-3.5" />
+              Tags do mês:
+            </span>
+            {tagList.map(tag => (
+              <button
+                key={tag}
+                onClick={() => {
+                  setSelectedTag(selectedTag === tag ? null : tag);
+                  setCurrentPage(1);
+                }}
+                className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                  selectedTag === tag
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : darkMode ? 'bg-gray-700 text-purple-300 hover:bg-gray-600' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                }`}
+              >
+                {tag} <span className="opacity-70 text-[10px]">({allMonthTags[tag]})</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Alertas de Filtro Ativo */}
+        {(highlightedCategory || selectedTag || filterType !== 'all') && (
+          <div className="mb-4 flex items-center justify-between p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+            <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+              {filterType === 'paid' && 'Exibindo apenas: ✅ Pagos'}
+              {filterType === 'unpaid' && 'Exibindo apenas: ⏳ A Pagar (Pendentes)'}
+              {filterType === 'expense' && 'Exibindo apenas: Saídas'}
+              {filterType === 'income' && 'Exibindo apenas: Entradas'}
+              {filterType === 'installment' && 'Exibindo apenas: 💳 Parcelados'}
+              {highlightedCategory && ` | Categoria: ${highlightedCategory}`}
+              {selectedTag && ` | Tag: ${selectedTag}`}
             </span>
             <button
-              onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium ${
-                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
-              }`}
+              onClick={() => {
+                setFilterType('all');
+                setHighlightedCategory(null);
+                setSelectedTag(null);
+              }}
+              className="text-xs text-blue-600 hover:underline font-semibold"
             >
-              Próxima
+              Limpar filtros ✕
             </button>
           </div>
+        )}
+
+        {/* Tabela de Transações */}
+        {paginatedTransactions.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-semibold">Nenhum lançamento encontrado para os filtros selecionados.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className={`border-b text-xs font-bold uppercase ${
+                  darkMode ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-500'
+                }`}>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Data</th>
+                  <th className="py-3 px-4">Descrição</th>
+                  <th className="py-3 px-4">Categoria</th>
+                  <th className="py-3 px-4 text-right">Valor</th>
+                  <th className="py-3 px-4 text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
+                {paginatedTransactions.map(t => {
+                  const cat = categories.find(c => c.id === t.category_id);
+                  const isIncome = t.type === 'income';
+                  const instBadge = getInstallmentBadge(t.description);
+                  const tags = extractTags(t.description);
+                  const cleanDesc = getCleanDescription(t.description);
+
+                  return (
+                    <tr
+                      key={t.id}
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                        t.is_paid === false ? 'opacity-75' : ''
+                      }`}
+                    >
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => toggleTransactionPaid(t)}
+                          className={`p-1.5 rounded-lg border transition-all ${
+                            t.is_paid !== false
+                              ? 'bg-green-100 dark:bg-green-950/60 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300'
+                              : 'bg-yellow-100 dark:bg-yellow-950/60 border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300'
+                          }`}
+                          title={t.is_paid !== false ? 'Pago (Clique para marcar como pendente)' : 'Pendente / A Pagar (Clique para marcar como pago)'}
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+
+                      <td className={`py-3 px-4 text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {formatDate(t.date)}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            {cleanDesc || t.description}
+                          </span>
+                          {t.is_paid === false && (
+                            <span className="inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-950/80 text-yellow-800 dark:text-yellow-300">
+                              A Pagar
+                            </span>
+                          )}
+                          {instBadge && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300">
+                              💳 {instBadge}
+                            </span>
+                          )}
+                          {tags.map((tag, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTag(tag);
+                                setCurrentPage(1);
+                              }}
+                              className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-100 transition-colors"
+                              title={`Filtrar por ${tag}`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-white shadow-sm"
+                          style={{ backgroundColor: cat?.color || '#6b7280' }}
+                        >
+                          {cat?.name || 'Sem Categoria'}
+                        </span>
+                      </td>
+
+                      <td className={`py-3 px-4 text-right font-bold ${
+                        isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {isIncome ? '+' : '-'} {showVal(t.amount)}
+                      </td>
+
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingTransaction(t);
+                              setShowTransactionModal(true);
+                            }}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              darkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
+                            }`}
+                            title="Editar"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteTransaction(t)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 hover:text-red-600 transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Paginação */}
+        {filtered.length > pageSize && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs">
+            <div className="flex items-center gap-2">
+              <span className={darkMode ? 'text-gray-300' : 'text-gray-500'}>Itens por página:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className={`px-2 py-1 rounded-lg border font-semibold ${
+                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-800'
+                } focus:outline-none`}
+              >
+                <option value={5} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>5</option>
+                <option value={10} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>10</option>
+                <option value={20} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>20</option>
+                <option value={50} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>50</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium ${
+                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
+                }`}
+              >
+                Anterior
+              </button>
+              <span className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium ${
+                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
+                }`}
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Card de Resumo Financeiro do Mês (Pagos vs A Pagar) */}
+      <div className={`p-6 rounded-2xl shadow-lg border ${
+        darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+      }`}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className={`text-base font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+            <DollarSign className="w-5 h-5 text-blue-500" />
+            Resumo Financeiro do Mês (Pagos vs A Pagar)
+          </h3>
+          <span className="text-xs text-gray-400">
+            Total de {currentMonthTransactions.length} lançamentos no período
+          </span>
         </div>
-      )}
+
+        {/* 4 Cards de Métricas Rápidas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className={`p-4 rounded-xl border ${
+            darkMode ? 'bg-green-950/20 border-green-900/60' : 'bg-green-50 border-green-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-green-700 dark:text-green-300 uppercase tracking-wider">
+                Despesas Pagas
+              </span>
+              <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="text-lg font-extrabold text-green-600 dark:text-green-400 mt-1">
+              {showVal(paidExpensesTotal)}
+            </div>
+            <span className="text-[11px] text-gray-400">
+              {paidExpensesList.length} conta{paidExpensesList.length !== 1 ? 's' : ''} quitada{paidExpensesList.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className={`p-4 rounded-xl border ${
+            darkMode ? 'bg-yellow-950/20 border-yellow-900/60' : 'bg-yellow-50 border-yellow-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-yellow-700 dark:text-yellow-300 uppercase tracking-wider">
+                Despesas a Pagar
+              </span>
+              <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <div className="text-lg font-extrabold text-yellow-600 dark:text-yellow-400 mt-1">
+              {showVal(unpaidExpensesTotal)}
+            </div>
+            <span className="text-[11px] text-gray-400">
+              {unpaidExpensesList.length} conta{unpaidExpensesList.length !== 1 ? 's' : ''} pendente{unpaidExpensesList.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className={`p-4 rounded-xl border ${
+            darkMode ? 'bg-blue-950/20 border-blue-900/60' : 'bg-blue-50 border-blue-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
+                Receitas Recebidas
+              </span>
+              <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="text-lg font-extrabold text-blue-600 dark:text-blue-400 mt-1">
+              {showVal(paidIncomesTotal)}
+            </div>
+            <span className="text-[11px] text-gray-400">
+              {paidIncomesList.length} entrada{paidIncomesList.length !== 1 ? 's' : ''} confirmada{paidIncomesList.length !== 1 ? 's' : ''}
+              {unpaidIncomesList.length > 0 && ` (${unpaidIncomesList.length} a receber)`}
+            </span>
+          </div>
+
+          <div className={`p-4 rounded-xl border ${
+            darkMode ? 'bg-purple-950/20 border-purple-900/60' : 'bg-purple-50 border-purple-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                Saldo Realizado
+              </span>
+              <CreditCard className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className={`text-lg font-extrabold mt-1 ${
+              currentPaidBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+            }`}>
+              {showVal(currentPaidBalance)}
+            </div>
+            <span className="text-[11px] text-gray-400">
+              Entradas pagas - Saídas pagas
+            </span>
+          </div>
+        </div>
+
+        {/* Resumo em Texto Amigável */}
+        <div className={`p-4 rounded-xl text-xs leading-relaxed ${
+          darkMode ? 'bg-gray-700/60 text-gray-300' : 'bg-gray-50 text-gray-700'
+        }`}>
+          💡 <strong>Resumo do mês:</strong> Você já quitou <strong>{showVal(paidExpensesTotal)}</strong> ({paidExpensesList.length} contas pagas) e ainda possui <strong>{showVal(unpaidExpensesTotal)}</strong> ({unpaidExpensesList.length} contas a pagar). Com <strong>{showVal(paidIncomesTotal)}</strong> de receitas recebidas, seu saldo financeiro efetivamente realizado no momento é de <strong className={currentPaidBalance >= 0 ? 'text-green-500 font-bold' : 'text-red-500 font-bold'}>{showVal(currentPaidBalance)}</strong>.
+        </div>
+      </div>
     </div>
   );
 }
