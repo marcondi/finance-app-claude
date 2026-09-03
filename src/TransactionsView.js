@@ -205,13 +205,30 @@ export default function TransactionsView({
           </div>
         </div>
 
-        {/* Barra Rápida de Tags do Mês com Botão X */}
+        {/* Barra Rápida de Tags do Mês com Botão Mestre 'Todas as Tags' */}
         {tagList.length > 0 && (
           <div className="mb-5 flex items-center gap-2 flex-wrap pb-3 border-b border-gray-100 dark:border-gray-700">
-            <span className="text-xs font-semibold text-gray-400 flex items-center gap-1">
+            <span className="text-xs font-semibold text-gray-400 flex items-center gap-1 mr-1">
               <Tag className="w-3.5 h-3.5" />
-              Tags do mês:
+              Filtrar por Tag:
             </span>
+
+            {/* Botão Mestre: Todas as Tags */}
+            <button
+              onClick={() => {
+                setSelectedTag(null);
+                setCurrentPage(1);
+              }}
+              className={`text-xs px-3 py-1 rounded-lg font-bold transition-all ${
+                selectedTag === null
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              🏷️ Todas as Tags
+            </button>
+
+            {/* Pílulas de Tags Individuais */}
             {tagList.map(tag => {
               const isSelected = selectedTag === tag;
               return (
@@ -221,60 +238,51 @@ export default function TransactionsView({
                     setSelectedTag(isSelected ? null : tag);
                     setCurrentPage(1);
                   }}
-                  className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                  className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-lg font-bold transition-all ${
                     isSelected
                       ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-400'
-                      : darkMode ? 'bg-gray-700 text-purple-300 hover:bg-gray-600' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                      : darkMode ? 'bg-gray-700/80 text-gray-300 hover:bg-gray-600 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
-                  title={isSelected ? 'Clique no ✕ para desmarcar' : `Filtrar por ${tag}`}
+                  title={isSelected ? 'Clique para desmarcar e ver todas' : `Filtrar apenas por ${tag}`}
                 >
                   <span>{tag}</span>
-                  <span className="opacity-75 text-[10px]">({allMonthTags[tag]})</span>
+                  <span className="opacity-70 text-[10px]">({allMonthTags[tag]})</span>
                   {isSelected && (
-                    <span className="bg-purple-700 hover:bg-purple-800 rounded-full p-0.5 ml-0.5">
+                    <span className="bg-purple-800 hover:bg-purple-900 rounded-full p-0.5 ml-0.5" title="Remover filtro">
                       <X className="w-3 h-3" />
                     </span>
                   )}
                 </button>
               );
             })}
-            {selectedTag && (
-              <button
-                onClick={() => {
-                  setSelectedTag(null);
-                  setCurrentPage(1);
-                }}
-                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-semibold text-red-400 hover:text-red-300 hover:bg-red-950/30 transition-colors"
-                title="Limpar filtro de tag"
-              >
-                <X className="w-3.5 h-3.5" />
-                Limpar tag
-              </button>
-            )}
           </div>
         )}
 
-        {/* Alertas de Filtro Ativo */}
-        {(highlightedCategory || selectedTag || filterType !== 'all') && (
+        {/* Alertas de Filtro Ativo com Botão Geral Limpar Tudo */}
+        {(highlightedCategory || selectedTag || filterType !== 'all' || searchTerm) && (
           <div className="mb-4 flex items-center justify-between p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
             <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-              {filterType === 'paid' && 'Exibindo apenas: ✅ Pagos'}
-              {filterType === 'unpaid' && 'Exibindo apenas: ⏳ A Pagar (Pendentes)'}
-              {filterType === 'expense' && 'Exibindo apenas: Saídas'}
-              {filterType === 'income' && 'Exibindo apenas: Entradas'}
-              {filterType === 'installment' && 'Exibindo apenas: 💳 Parcelados'}
+              {filterType === 'paid' && 'Status: ✅ Pagos'}
+              {filterType === 'unpaid' && 'Status: ⏳ A Pagar (Pendentes)'}
+              {filterType === 'expense' && 'Tipo: Saídas'}
+              {filterType === 'income' && 'Tipo: Entradas'}
+              {filterType === 'installment' && 'Tipo: 💳 Parcelados'}
               {highlightedCategory && ` | Categoria: ${highlightedCategory}`}
-              {selectedTag && ` | Tag: ${selectedTag}`}
+              {selectedTag && ` | Tag ativa: ${selectedTag}`}
+              {searchTerm && ` | Busca: "${searchTerm}"`}
             </span>
             <button
               onClick={() => {
                 setFilterType('all');
                 setHighlightedCategory(null);
                 setSelectedTag(null);
+                setSearchTerm('');
+                setCurrentPage(1);
               }}
-              className="text-xs text-blue-600 hover:underline font-semibold"
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-bold flex items-center gap-1"
             >
-              Limpar filtros ✕
+              <X className="w-3.5 h-3.5" />
+              Limpar todos os filtros
             </button>
           </div>
         )}
@@ -353,7 +361,7 @@ export default function TransactionsView({
                               key={idx}
                               type="button"
                               onClick={() => {
-                                setSelectedTag(selectedTag === tag ? null : tag);
+                                setSelectedTag(tag);
                                 setCurrentPage(1);
                               }}
                               className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-100 transition-colors"
