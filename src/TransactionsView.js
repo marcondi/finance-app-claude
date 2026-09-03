@@ -124,7 +124,7 @@ export default function TransactionsView({
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 filterType === key
                   ? 'bg-blue-600 text-white shadow'
-                  : darkMode ? 'bg-gray-750 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               {label}
@@ -145,8 +145,8 @@ export default function TransactionsView({
               }}
               className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs border ${
                 darkMode
-                  ? 'bg-gray-750 border-gray-700 text-white placeholder-gray-400'
-                  : 'bg-white border-gray-200 text-gray-800'
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'
               } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
           </div>
@@ -154,14 +154,14 @@ export default function TransactionsView({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className={`px-3 py-2 rounded-xl text-xs font-medium border ${
-              darkMode ? 'bg-gray-750 border-gray-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'
-            }`}
+            className={`px-3 py-2 rounded-xl text-xs font-semibold border ${
+              darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
+            } focus:outline-none focus:ring-2 focus:ring-blue-500`}
           >
-            <option value="date-desc">Mais recentes</option>
-            <option value="date-asc">Mais antigas</option>
-            <option value="amount-desc">Maior valor</option>
-            <option value="amount-asc">Menor valor</option>
+            <option value="date-desc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Mais recentes</option>
+            <option value="date-asc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Mais antigas</option>
+            <option value="amount-desc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Maior valor</option>
+            <option value="amount-asc" className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>Menor valor</option>
           </select>
 
           <button
@@ -176,7 +176,7 @@ export default function TransactionsView({
 
       {/* Barra Rápida de Tags do Mês */}
       {tagList.length > 0 && (
-        <div className="mb-5 flex items-center gap-2 flex-wrap pb-3 border-b border-gray-100 dark:border-gray-750">
+        <div className="mb-5 flex items-center gap-2 flex-wrap pb-3 border-b border-gray-100 dark:border-gray-700">
           <span className="text-xs font-semibold text-gray-400 flex items-center gap-1">
             <Tag className="w-3.5 h-3.5" />
             Tags do mês:
@@ -191,7 +191,7 @@ export default function TransactionsView({
               className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${
                 selectedTag === tag
                   ? 'bg-purple-600 text-white shadow-md'
-                  : darkMode ? 'bg-gray-750 text-purple-300 hover:bg-gray-700' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                  : darkMode ? 'bg-gray-700 text-purple-300 hover:bg-gray-600' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
               }`}
             >
               {tag} <span className="opacity-70 text-[10px]">({allMonthTags[tag]})</span>
@@ -241,7 +241,7 @@ export default function TransactionsView({
                 <th className="py-3 px-4 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-750 text-sm">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
               {paginatedTransactions.map(t => {
                 const cat = categories.find(c => c.id === t.category_id);
                 const isIncome = t.type === 'income';
@@ -252,7 +252,7 @@ export default function TransactionsView({
                 return (
                   <tr
                     key={t.id}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-750/50 transition-colors ${
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
                       t.is_paid === false ? 'opacity-75' : ''
                     }`}
                   >
@@ -351,21 +351,21 @@ export default function TransactionsView({
       {filtered.length > pageSize && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs">
           <div className="flex items-center gap-2">
-            <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Itens por página:</span>
+            <span className={darkMode ? 'text-gray-300' : 'text-gray-500'}>Itens por página:</span>
             <select
               value={pageSize}
               onChange={(e) => {
                 setPageSize(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className={`px-2 py-1 rounded-lg border ${
-                darkMode ? 'bg-gray-750 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-800'
-              }`}
+              className={`px-2 py-1 rounded-lg border font-semibold ${
+                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-800'
+              } focus:outline-none`}
             >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
+              <option value={5} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>5</option>
+              <option value={10} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>10</option>
+              <option value={20} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>20</option>
+              <option value={50} className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}>50</option>
             </select>
           </div>
 
@@ -373,17 +373,21 @@ export default function TransactionsView({
             <button
               onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium"
+              className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium ${
+                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
+              }`}
             >
               Anterior
             </button>
-            <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            <span className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
               Página {currentPage} de {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium"
+              className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 font-medium ${
+                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200 text-gray-700'
+              }`}
             >
               Próxima
             </button>
