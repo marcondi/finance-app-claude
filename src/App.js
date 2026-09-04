@@ -521,7 +521,7 @@ export default function FinanceApp() {
       .sort((a, b) => b.value - a.value);
   }, [currentMonthTransactions, categories, expenses]);
 
-  // Central de Alertas Inteligentes (Atrasadas, Vencendo Hoje e Próximos 7 Dias)
+  // Central de Alertas Inteligentes Unificada (Sem duplicatas)
   const urgentAlerts = useMemo(() => {
     if (!currentUser) return [];
     const todayStr = getTodayDateString();
@@ -531,51 +531,59 @@ export default function FinanceApp() {
     sevenDaysFromNow.setDate(today.getDate() + 7);
     const maxDateStr = getTodayDateString(sevenDaysFromNow);
 
-    const pendingScheduled = scheduled
-      .filter(s => s.user_id === currentUser.id && !s.is_paid)
-      .map(s => {
-        const dueDateStr = (s.due_date || '').split('T')[0];
-        let status = 'upcoming';
-        if (dueDateStr < todayStr) status = 'overdue';
-        else if (dueDateStr === todayStr) status = 'today';
+    const alertMap = new Map();
 
-        const cat = categories.find(c => c.id === s.category_id);
-        return {
-          id: s.id,
-          source: 'scheduled',
-          rawItem: s,
-          description: s.description,
-          amount: Number(s.amount) || 0,
-          date: dueDateStr,
-          categoryName: cat?.name || 'Geral',
-          categoryColor: cat?.color || '#6b7280',
-          status
-        };
-      });
-
-    const pendingTransactions = transactions
-      .filter(t => t.user_id === currentUser.id && t.type === 'expense' && t.is_paid === false)
-      .map(t => {
+    // 1. Transações pendentes
+    transactions
+      .filter(t => t.user_id === currentUser.id && t.is_paid === false)
+      .forEach(t => {
         const tDateStr = (t.date || '').split('T')[0];
         let status = 'upcoming';
         if (tDateStr < todayStr) status = 'overdue';
         else if (tDateStr === todayStr) status = 'today';
 
         const cat = categories.find(c => c.id === t.category_id);
-        return {
+        alertMap.set(t.id, {
           id: t.id,
           source: 'transaction',
           rawItem: t,
           description: t.description,
           amount: Number(t.amount) || 0,
           date: tDateStr,
+          type: t.type || 'expense',
           categoryName: cat?.name || 'Geral',
           categoryColor: cat?.color || '#6b7280',
           status
-        };
+        });
       });
 
-    return [...pendingScheduled, ...pendingTransactions]
+    // 2. Scheduled legados que ainda não estão em transactions
+    scheduled
+      .filter(s => s.user_id === currentUser.id && !s.is_paid)
+      .forEach(s => {
+        if (!alertMap.has(s.id)) {
+          const dueDateStr = (s.due_date || '').split('T')[0];
+          let status = 'upcoming';
+          if (dueDateStr < todayStr) status = 'overdue';
+          else if (dueDateStr === todayStr) status = 'today';
+
+          const cat = categories.find(c => c.id === s.category_id);
+          alertMap.set(s.id, {
+            id: s.id,
+            source: 'scheduled',
+            rawItem: s,
+            description: s.description,
+            amount: Number(s.amount) || 0,
+            date: dueDateStr,
+            type: cat?.type || 'expense',
+            categoryName: cat?.name || 'Geral',
+            categoryColor: cat?.color || '#6b7280',
+            status
+          });
+        }
+      });
+
+    return Array.from(alertMap.values())
       .filter(item => item.date <= maxDateStr)
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   }, [scheduled, transactions, categories, currentUser]);
@@ -585,7 +593,7 @@ export default function FinanceApp() {
   }, [urgentAlerts]);
 
   const upcomingDueDates = useMemo(() => {
-    return urgentAlerts.filter(a => a.source === 'scheduled');
+    return urgentAlerts.filter(a => a.type === 'expense');
   }, [urgentAlerts]);
 
   const last6MonthsData = useMemo(() => {
@@ -1091,7 +1099,9 @@ export default function FinanceApp() {
               .eq('id', item.id);
             
             if (error) throw error;
+            await supabase.from('finance_scheduled').delete().eq('id', item.id);
             setTransactions(prev => prev.filter(t => t.id !== item.id));
+            setScheduled(prev => prev.filter(s => s.id !== item.id));
             showToast('Parcela excluída com sucesso.', 'success');
           } catch (error) {
             console.error('Erro ao excluir parcela:', error);
@@ -1108,7 +1118,9 @@ export default function FinanceApp() {
               .in('id', allIds);
             
             if (error) throw error;
+            await supabase.from('finance_scheduled').delete().in('id', allIds);
             setTransactions(prev => prev.filter(t => !allIds.includes(t.id)));
+            setScheduled(prev => prev.filter(s => !allIds.includes(s.id)));
             showToast(`Todas as ${allIds.length} parcelas foram excluídas com sucesso!`, 'success');
           } catch (error) {
             console.error('Erro ao excluir parcelas:', error);
@@ -1130,7 +1142,9 @@ export default function FinanceApp() {
               .eq('id', item.id);
             
             if (error) throw error;
+            await supabase.from('finance_scheduled').delete().eq('id', item.id);
             setTransactions(prev => prev.filter(t => t.id !== item.id));
+            setScheduled(prev => prev.filter(s => s.id !== item.id));
             showToast('Lançamento excluído com sucesso.', 'success');
           } catch (error) {
             console.error('Erro ao excluir:', error);
@@ -1173,59 +1187,78 @@ export default function FinanceApp() {
 
   const payScheduled = async (scheduledItem) => {
     try {
-      const category = categories.find(c => c.id === scheduledItem.category_id);
-      const transactionType = category?.type || 'expense';
+      const isIncome = scheduledItem.type === 'income';
 
-      const newTransaction = {
-        id: generateId(),
-        user_id: currentUser.id,
-        type: transactionType,
-        amount: scheduledItem.amount,
-        description: scheduledItem.description,
-        category_id: scheduledItem.category_id,
-        date: scheduledItem.due_date || getTodayDateString(),
-        is_recurring: false,
-        recurring_months: null,
-        parent_id: null,
-        is_paid: true
-      };
+      // 1. Atualizar em finance_transactions
+      const existingTx = transactions.find(t => t.id === scheduledItem.id);
+      if (existingTx) {
+        const { error: txError } = await supabase
+          .from('finance_transactions')
+          .update({ is_paid: true })
+          .eq('id', scheduledItem.id);
+        if (txError) throw txError;
+        setTransactions(prev => prev.map(t => t.id === scheduledItem.id ? { ...t, is_paid: true } : t));
+      } else {
+        const category = categories.find(c => c.id === scheduledItem.category_id);
+        const transactionType = scheduledItem.type || category?.type || 'expense';
+        const newTx = {
+          id: scheduledItem.id,
+          user_id: currentUser.id,
+          type: transactionType,
+          amount: scheduledItem.amount,
+          description: scheduledItem.description,
+          category_id: scheduledItem.category_id,
+          date: scheduledItem.due_date || scheduledItem.date || getTodayDateString(),
+          is_recurring: false,
+          recurring_months: null,
+          parent_id: null,
+          is_paid: true
+        };
+        const { error: insertError } = await supabase
+          .from('finance_transactions')
+          .upsert([newTx]);
+        if (insertError) throw insertError;
+        setTransactions(prev => [...prev.filter(t => t.id !== scheduledItem.id), newTx]);
+      }
 
-      const { data: transData, error: transError } = await supabase
-        .from('finance_transactions')
-        .insert([newTransaction])
-        .select();
-      
-      if (transError) throw transError;
-
+      // 2. Atualizar em finance_scheduled
       const { error: schedError } = await supabase
         .from('finance_scheduled')
         .update({ is_paid: true })
         .eq('id', scheduledItem.id);
-      
-      if (schedError) throw schedError;
+      if (!schedError) {
+        setScheduled(prev => prev.map(s => s.id === scheduledItem.id ? { ...s, is_paid: true } : s));
+      }
 
-      setTransactions(prev => [...prev, ...transData]);
-      setScheduled(prev => prev.map(s =>
-        s.id === scheduledItem.id ? { ...s, is_paid: true } : s
-      ));
-      showToast('Conta marcada como paga e registrada nas suas transações!', 'success');
+      showToast(isIncome ? '✅ Receita confirmada com sucesso!' : '✅ Conta quitada com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao marcar como pago:', error);
-      showToast('Erro ao marcar como pago: ' + error.message, 'error');
+      showToast('Erro ao dar baixa: ' + error.message, 'error');
     }
   };
 
   const toggleTransactionPaid = async (transaction) => {
     try {
-      const newPaid = !transaction.is_paid;
+      const newPaid = transaction.is_paid === false ? true : false;
       const { error } = await supabase
         .from('finance_transactions')
         .update({ is_paid: newPaid })
         .eq('id', transaction.id);
       if (error) throw error;
-      setTransactions(transactions.map(t =>
+
+      // Sincronizar com finance_scheduled se existir
+      await supabase
+        .from('finance_scheduled')
+        .update({ is_paid: newPaid })
+        .eq('id', transaction.id);
+
+      setTransactions(prev => prev.map(t =>
         t.id === transaction.id ? { ...t, is_paid: newPaid } : t
       ));
+      setScheduled(prev => prev.map(s =>
+        s.id === transaction.id ? { ...s, is_paid: newPaid } : s
+      ));
+      showToast(newPaid ? '✅ Marcado como Pago/Recebido!' : '⏳ Marcado como Pendente!', 'success');
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       showToast('Erro ao atualizar status: ' + error.message, 'error');
@@ -1238,12 +1271,9 @@ export default function FinanceApp() {
     
     setProcessingAlertIds(prev => [...prev, alertKey]);
     try {
-      if (alertItem.source === 'scheduled') {
-        await payScheduled(alertItem.rawItem);
-      } else {
-        await toggleTransactionPaid(alertItem.rawItem);
+      if (alertItem.source === 'scheduled' || alertItem.source === 'transaction') {
+        await payScheduled(alertItem.rawItem || alertItem);
       }
-      showToast(`✅ "${alertItem.description}" marcada como paga!`, 'success');
     } finally {
       setProcessingAlertIds(prev => prev.filter(k => k !== alertKey));
     }
@@ -1513,9 +1543,10 @@ export default function FinanceApp() {
     );
   };
 
-  // Modal de Transação (100% sem Tags)
+  // Modal de Transação com Suporte a Agenda Unificada (Despesas e Receitas Agendadas)
   const TransactionModal = () => {
     const [type, setType] = useState('expense');
+    const [scheduledKind, setScheduledKind] = useState('expense');
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [categoryId, setCategoryId] = useState('');
@@ -1570,37 +1601,67 @@ export default function FinanceApp() {
 
       try {
         if (type === 'scheduled') {
-          const baseScheduled = {
-            user_id: currentUser.id,
-            amount: numAmount,
-            description: finalDesc,
-            category_id: categoryId,
-            is_paid: false
-          };
-          
-          const scheduledList = [];
           const months = parseInt(recurringMonths) || 1;
-          
+          const transactionsToInsert = [];
+          const scheduledToInsert = [];
+          const targetType = scheduledKind;
+
+          const dateParts = date.split('-');
+          const startYear = parseInt(dateParts[0]);
+          const startMonth = parseInt(dateParts[1]) - 1;
+          const startDay = parseInt(dateParts[2]);
+
           for (let i = 0; i < months; i++) {
-            const scheduledDate = new Date(date + 'T00:00:00');
-            scheduledDate.setMonth(scheduledDate.getMonth() + i);
-            
-            scheduledList.push({
-              id: generateId(),
-              ...baseScheduled,
-              due_date: scheduledDate.toISOString().split('T')[0]
+            const itemId = generateId();
+            const targetMonthDate = new Date(startYear, startMonth + i, 1);
+            const maxDays = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth() + 1, 0).getDate();
+            const clampedDay = Math.min(startDay, maxDays);
+            const finalDate = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), clampedDay);
+            const finalDateStr = `${finalDate.getFullYear()}-${String(finalDate.getMonth() + 1).padStart(2, '0')}-${String(finalDate.getDate()).padStart(2, '0')}`;
+
+            // Lançamento com status Pendente (is_paid = false)
+            transactionsToInsert.push({
+              id: itemId,
+              user_id: currentUser.id,
+              type: targetType,
+              amount: numAmount,
+              description: months > 1 ? `${finalDesc} (${i + 1}/${months})` : finalDesc,
+              category_id: categoryId,
+              date: finalDateStr,
+              is_recurring: months > 1,
+              recurring_months: months,
+              parent_id: null,
+              is_paid: false
+            });
+
+            scheduledToInsert.push({
+              id: itemId,
+              user_id: currentUser.id,
+              amount: numAmount,
+              description: months > 1 ? `${finalDesc} (${i + 1}/${months})` : finalDesc,
+              category_id: categoryId,
+              due_date: finalDateStr,
+              is_paid: false
             });
           }
-          
-          const { data, error } = await supabase
-            .from('finance_scheduled')
-            .insert(scheduledList)
+
+          // 1. Inserir em finance_transactions
+          const { data: txData, error: txError } = await supabase
+            .from('finance_transactions')
+            .insert(transactionsToInsert)
             .select();
-          
-          if (error) throw error;
-          
-          setScheduled(prev => [...prev, ...data]);
-          showToast('Agendamento criado com sucesso!', 'success');
+          if (txError) throw txError;
+
+          // 2. Inserir em finance_scheduled (compatibilidade e calendário)
+          await supabase.from('finance_scheduled').insert(scheduledToInsert);
+
+          setTransactions(prev => [...prev, ...txData]);
+          setScheduled(prev => [...prev, ...scheduledToInsert]);
+          showToast(`📅 ${months > 1 ? `${months} agendamentos criados` : 'Agendamento criado'} com sucesso!`, 'success');
+
+          const firstDate = new Date(startYear, startMonth, startDay);
+          setCurrentDate(firstDate);
+          setView('transactions');
         } else if (editingTransaction) {
           const updatedTx = {
             user_id: currentUser.id,
@@ -1621,6 +1682,16 @@ export default function FinanceApp() {
             .eq('id', editingTransaction.id);
           
           if (error) throw error;
+
+          await supabase
+            .from('finance_scheduled')
+            .update({
+              amount: numAmount,
+              description: finalDesc,
+              category_id: categoryId,
+              due_date: date
+            })
+            .eq('id', editingTransaction.id);
           
           setTransactions(prev => prev.map(t =>
             t.id === editingTransaction.id ? { ...t, ...updatedTx } : t
@@ -1739,10 +1810,14 @@ export default function FinanceApp() {
       setInstallmentCount(3);
       setIsRecurring(false);
       setRecurringMonths('1');
+      setScheduledKind('expense');
     };
 
     const availableCategories = categories.filter(c => {
-      return (type === 'scheduled' || type === 'installment' || type === 'expense')
+      if (type === 'scheduled') {
+        return c.type === scheduledKind;
+      }
+      return (type === 'installment' || type === 'expense')
         ? c.type === 'expense'
         : c.type === 'income';
     });
@@ -1803,19 +1878,50 @@ export default function FinanceApp() {
                 <button
                   type="button"
                   onClick={() => setType('scheduled')}
-                  className={`py-2 px-2 rounded-xl font-bold transition-all text-xs text-center ${
+                  className={`py-2 px-2 rounded-xl font-bold transition-all text-xs text-center flex items-center justify-center gap-1 ${
                     type === 'scheduled'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400'
+                      : darkMode ? 'bg-gray-700 text-blue-300 hover:bg-gray-600' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
                   }`}
                 >
-                  Agenda
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  📅 Agenda
                 </button>
               </div>
             )}
           </div>
 
           <div className="p-6 space-y-4">
+            {/* Seletor de Tipo de Agendamento (Despesa a Pagar vs Receita a Receber) */}
+            {type === 'scheduled' && !editingTransaction && (
+              <div className={`p-3 rounded-xl border flex gap-2 ${
+                darkMode ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => setScheduledKind('expense')}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                    scheduledKind === 'expense'
+                      ? 'bg-red-600 text-white shadow'
+                      : darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  ⏳ Despesa Agendada (A Pagar)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScheduledKind('income')}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                    scheduledKind === 'income'
+                      ? 'bg-green-600 text-white shadow'
+                      : darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  ⏳ Receita Agendada (A Receber)
+                </button>
+              </div>
+            )}
+
             {/* Opções Avançadas de Parcelamento */}
             {type === 'installment' && !editingTransaction && (
               <div className={`p-4 rounded-xl border space-y-3 ${
@@ -1926,7 +2032,7 @@ export default function FinanceApp() {
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={type === 'installment' ? "Ex: Notebook Dell, TV Sala..." : "Ex: Conta de Luz, Aluguel..."}
+                placeholder={type === 'installment' ? "Ex: Notebook Dell, TV Sala..." : "Ex: Conta de Luz, Aluguel, Salário..."}
                 className={`w-full px-4 py-3 rounded-xl border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
@@ -1957,7 +2063,7 @@ export default function FinanceApp() {
 
             <div>
               <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {type === 'installment' ? 'Data da 1ª Parcela' : 'Data'}
+                {type === 'installment' ? 'Data da 1ª Parcela' : type === 'scheduled' ? 'Data Prevista / Vencimento' : 'Data'}
               </label>
               <input
                 type="date"
@@ -2010,14 +2116,15 @@ export default function FinanceApp() {
             {type === 'scheduled' && !editingTransaction && (
               <div>
                 <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Repetir por quantos meses?
+                  Repetir este agendamento por quantos meses?
                 </label>
                 <input
                   type="number"
                   min="1"
+                  max="48"
                   value={recurringMonths}
                   onChange={(e) => setRecurringMonths(e.target.value)}
-                  placeholder="Ex: 12 para repetir por 1 ano"
+                  placeholder="Ex: 12 para agendar o ano todo"
                   className={`w-full px-4 py-3 rounded-xl border ${
                     darkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
@@ -2032,6 +2139,8 @@ export default function FinanceApp() {
               className={`w-full text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-base ${
                 type === 'installment'
                   ? 'bg-purple-600 hover:bg-purple-700'
+                  : type === 'scheduled'
+                  ? 'bg-blue-600 hover:bg-blue-700'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
@@ -2039,6 +2148,8 @@ export default function FinanceApp() {
                 ? 'Salvar Alterações'
                 : type === 'installment'
                 ? `Confirmar Compra em ${installmentsNum}x`
+                : type === 'scheduled'
+                ? 'Criar Agendamento Unificado'
                 : 'Adicionar Lançamento'}
             </button>
           </div>
@@ -2348,12 +2459,13 @@ export default function FinanceApp() {
                       {urgentAlerts.length === 0 ? (
                         <div className="text-center py-8 text-gray-400">
                           <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-green-500 opacity-80" />
-                          <p className="text-xs font-semibold">Tudo em dia! Nenhuma conta vencendo nos próximos 7 dias.</p>
+                          <p className="text-xs font-semibold">Tudo em dia! Nenhuma conta pendente nos próximos 7 dias.</p>
                         </div>
                       ) : (
                         <div className="space-y-2.5">
                           {urgentAlerts.map(item => {
                             const isProcessing = processingAlertIds.includes(`${item.source}-${item.id}`);
+                            const isIncome = item.type === 'income';
                             return (
                               <div
                                 key={`${item.source}-${item.id}`}
@@ -2386,8 +2498,8 @@ export default function FinanceApp() {
                                     <span>•</span>
                                     <span style={{ color: item.categoryColor }} className="font-semibold">{item.categoryName}</span>
                                   </div>
-                                  <div className="text-xs font-extrabold text-red-600 dark:text-red-400 mt-1">
-                                    {showVal(item.amount)}
+                                  <div className={`text-xs font-extrabold mt-1 ${isIncome ? 'text-green-500' : 'text-red-600 dark:text-red-400'}`}>
+                                    {isIncome ? '+' : '-'} {showVal(item.amount)}
                                   </div>
                                 </div>
 
@@ -2395,10 +2507,10 @@ export default function FinanceApp() {
                                   disabled={isProcessing}
                                   onClick={() => handlePayAlert(item)}
                                   className="px-2.5 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors shadow-sm flex-shrink-0"
-                                  title="Marcar como paga agora"
+                                  title="Marcar como quitada agora"
                                 >
                                   <Check className="w-3.5 h-3.5" />
-                                  {isProcessing ? 'Salvando...' : 'Pagar'}
+                                  {isProcessing ? 'Salvando...' : isIncome ? 'Receber' : 'Pagar'}
                                 </button>
                               </div>
                             );
@@ -2638,6 +2750,7 @@ export default function FinanceApp() {
             darkMode={darkMode}
             currentDate={currentDate}
             scheduled={scheduled}
+            transactions={transactions}
             categories={categories}
             currentUser={currentUser}
             agendaSubTab={agendaSubTab}
