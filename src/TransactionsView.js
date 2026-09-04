@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Check, CreditCard, Tag, CheckCircle2, Clock, DollarSign, X } from 'lucide-react';
+import React from 'react';
+import { Search, Plus, Edit2, Trash2, Check, CreditCard, CheckCircle2, Clock, DollarSign, X } from 'lucide-react';
 
 export default function TransactionsView({
   darkMode,
@@ -24,8 +24,6 @@ export default function TransactionsView({
   currentPage,
   setCurrentPage
 }) {
-  const [selectedTag, setSelectedTag] = useState(null);
-
   const isInstallment = (t) => {
     return Boolean(t.parent_id || /\(\d+\/\d+\)$/.test(t.description || ''));
   };
@@ -35,28 +33,12 @@ export default function TransactionsView({
     return match ? match[1] : null;
   };
 
-  const extractTags = (description) => {
-    const matches = (description || '').match(/#([a-zA-Z0-9_\u00C0-\u00FF-]+)/g) || [];
-    return matches;
-  };
-
   const getCleanDescription = (description) => {
     return (description || '')
       .replace(/\s*\(\d+\/\d+\)$/, '')
       .replace(/#([a-zA-Z0-9_\u00C0-\u00FF-]+)/g, '')
       .trim();
   };
-
-  // Coletar todas as tags do mês para a barra de filtros rápidos
-  const allMonthTags = {};
-  currentMonthTransactions.forEach(t => {
-    const tags = extractTags(t.description);
-    tags.forEach(tag => {
-      const formatted = tag.startsWith('#') ? tag : `#${tag}`;
-      allMonthTags[formatted] = (allMonthTags[formatted] || 0) + 1;
-    });
-  });
-  const tagList = Object.keys(allMonthTags);
 
   // Cálculos de Resumo de Pagos e A Pagar do Mês
   const paidExpensesList = currentMonthTransactions.filter(t => t.type === 'expense' && t.is_paid !== false);
@@ -95,13 +77,6 @@ export default function TransactionsView({
     filtered = filtered.filter(t => {
       const category = categories.find(c => c.id === t.category_id);
       return category?.name === highlightedCategory;
-    });
-  }
-
-  if (selectedTag) {
-    filtered = filtered.filter(t => {
-      const tags = extractTags(t.description).map(tg => tg.toLowerCase());
-      return tags.includes(selectedTag.toLowerCase());
     });
   }
 
@@ -155,7 +130,7 @@ export default function TransactionsView({
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar lançamento ou #tag..."
+                placeholder="Buscar lançamentos..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -205,61 +180,8 @@ export default function TransactionsView({
           </div>
         </div>
 
-        {/* Barra Rápida de Tags do Mês com Botão Mestre 'Todas as Tags' */}
-        {tagList.length > 0 && (
-          <div className="mb-5 flex items-center gap-2 flex-wrap pb-3 border-b border-gray-100 dark:border-gray-700">
-            <span className="text-xs font-semibold text-gray-400 flex items-center gap-1 mr-1">
-              <Tag className="w-3.5 h-3.5" />
-              Filtrar por Tag:
-            </span>
-
-            {/* Botão Mestre: Todas as Tags */}
-            <button
-              onClick={() => {
-                setSelectedTag(null);
-                setCurrentPage(1);
-              }}
-              className={`text-xs px-3 py-1 rounded-lg font-bold transition-all ${
-                selectedTag === null
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              🏷️ Todas as Tags
-            </button>
-
-            {/* Pílulas de Tags Individuais */}
-            {tagList.map(tag => {
-              const isSelected = selectedTag === tag;
-              return (
-                <button
-                  key={tag}
-                  onClick={() => {
-                    setSelectedTag(isSelected ? null : tag);
-                    setCurrentPage(1);
-                  }}
-                  className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-lg font-bold transition-all ${
-                    isSelected
-                      ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-400'
-                      : darkMode ? 'bg-gray-700/80 text-gray-300 hover:bg-gray-600 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  title={isSelected ? 'Clique para desmarcar e ver todas' : `Filtrar apenas por ${tag}`}
-                >
-                  <span>{tag}</span>
-                  <span className="opacity-70 text-[10px]">({allMonthTags[tag]})</span>
-                  {isSelected && (
-                    <span className="bg-purple-800 hover:bg-purple-900 rounded-full p-0.5 ml-0.5" title="Remover filtro">
-                      <X className="w-3 h-3" />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Alertas de Filtro Ativo com Botão Geral Limpar Tudo */}
-        {(highlightedCategory || selectedTag || filterType !== 'all' || searchTerm) && (
+        {/* Alertas de Filtro Ativo */}
+        {(highlightedCategory || filterType !== 'all' || searchTerm) && (
           <div className="mb-4 flex items-center justify-between p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
             <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
               {filterType === 'paid' && 'Status: ✅ Pagos'}
@@ -268,21 +190,19 @@ export default function TransactionsView({
               {filterType === 'income' && 'Tipo: Entradas'}
               {filterType === 'installment' && 'Tipo: 💳 Parcelados'}
               {highlightedCategory && ` | Categoria: ${highlightedCategory}`}
-              {selectedTag && ` | Tag ativa: ${selectedTag}`}
               {searchTerm && ` | Busca: "${searchTerm}"`}
             </span>
             <button
               onClick={() => {
                 setFilterType('all');
                 setHighlightedCategory(null);
-                setSelectedTag(null);
                 setSearchTerm('');
                 setCurrentPage(1);
               }}
               className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-bold flex items-center gap-1"
             >
               <X className="w-3.5 h-3.5" />
-              Limpar todos os filtros
+              Limpar filtros
             </button>
           </div>
         )}
@@ -313,7 +233,6 @@ export default function TransactionsView({
                   const cat = categories.find(c => c.id === t.category_id);
                   const isIncome = t.type === 'income';
                   const instBadge = getInstallmentBadge(t.description);
-                  const tags = extractTags(t.description);
                   const cleanDesc = getCleanDescription(t.description);
 
                   return (
@@ -356,20 +275,6 @@ export default function TransactionsView({
                               💳 {instBadge}
                             </span>
                           )}
-                          {tags.map((tag, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => {
-                                setSelectedTag(tag);
-                                setCurrentPage(1);
-                              }}
-                              className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-100 transition-colors"
-                              title={`Filtrar por ${tag}`}
-                            >
-                              {tag}
-                            </button>
-                          ))}
                         </div>
                       </td>
 
