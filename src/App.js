@@ -1513,17 +1513,13 @@ export default function FinanceApp() {
     );
   };
 
-  // Modal de Transação
+  // Modal de Transação (100% sem Tags)
   const TransactionModal = () => {
     const [type, setType] = useState('expense');
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [categoryId, setCategoryId] = useState('');
     const [date, setDate] = useState(getTodayDateString());
-    
-    // Tags / Marcadores
-    const [selectedTags, setSelectedTags] = useState([]);
-    const [tagInput, setTagInput] = useState('');
     
     // Configurações de Parcelamento
     const [installmentMode, setInstallmentMode] = useState('total');
@@ -1533,42 +1529,21 @@ export default function FinanceApp() {
     const [isRecurring, setIsRecurring] = useState(false);
     const [recurringMonths, setRecurringMonths] = useState('1');
 
-    const popularTags = ['#Viagem', '#Reforma', '#Trabalho', '#Presente', '#Casa', '#Carro', '#Saúde', '#Lazer'];
-
     useEffect(() => {
       if (editingTransaction) {
         setType(editingTransaction.type);
         setAmount(editingTransaction.amount.toString());
-        
-        const extracted = (editingTransaction.description || '').match(/#([a-zA-Z0-9_\u00C0-\u00FF-]+)/g) || [];
-        setSelectedTags(extracted);
-        
         const cleanDesc = (editingTransaction.description || '')
           .replace(/#([a-zA-Z0-9_\u00C0-\u00FF-]+)/g, '')
           .replace(/\s*\(\d+\/\d+\)$/, '')
           .trim();
         setDescription(cleanDesc);
-        
         setCategoryId(editingTransaction.category_id);
         setDate(editingTransaction.date);
         setIsRecurring(editingTransaction.is_recurring || false);
         setRecurringMonths((editingTransaction.recurring_months || 1).toString());
       }
     }, [editingTransaction]);
-
-    const addTag = (raw) => {
-      const clean = raw.trim().replace(/^#+/, '');
-      if (!clean) return;
-      const formatted = `#${clean}`;
-      if (!selectedTags.some(t => t.toLowerCase() === formatted.toLowerCase())) {
-        setSelectedTags([...selectedTags, formatted]);
-      }
-      setTagInput('');
-    };
-
-    const removeTag = (tagToRemove) => {
-      setSelectedTags(selectedTags.filter(t => t !== tagToRemove));
-    };
 
     const parsedAmount = parseFloat(amount.toString().replace(',', '.')) || 0;
     const installmentsNum = parseInt(installmentCount) || 1;
@@ -1591,15 +1566,14 @@ export default function FinanceApp() {
         return;
       }
 
-      const tagSuffix = selectedTags.length > 0 ? ` ${selectedTags.join(' ')}` : '';
-      const finalCleanDesc = description.trim();
+      const finalDesc = description.trim();
 
       try {
         if (type === 'scheduled') {
           const baseScheduled = {
             user_id: currentUser.id,
             amount: numAmount,
-            description: `${finalCleanDesc}${tagSuffix}`.trim(),
+            description: finalDesc,
             category_id: categoryId,
             is_paid: false
           };
@@ -1632,7 +1606,7 @@ export default function FinanceApp() {
             user_id: currentUser.id,
             type: type === 'installment' ? 'expense' : type,
             amount: numAmount,
-            description: `${finalCleanDesc}${tagSuffix}`.trim(),
+            description: finalDesc,
             category_id: categoryId,
             date,
             is_recurring: isRecurring,
@@ -1672,7 +1646,7 @@ export default function FinanceApp() {
               user_id: currentUser.id,
               type: 'expense',
               amount: parseFloat(amountPerInstallment.toFixed(2)),
-              description: `${finalCleanDesc} (${i + 1}/${installmentsNum})${tagSuffix}`.trim(),
+              description: `${finalDesc} (${i + 1}/${installmentsNum})`,
               category_id: categoryId,
               date: finalDateStr,
               is_recurring: false,
@@ -1700,7 +1674,7 @@ export default function FinanceApp() {
             user_id: currentUser.id,
             type: type === 'installment' ? 'expense' : type,
             amount: numAmount,
-            description: `${finalCleanDesc}${tagSuffix}`.trim(),
+            description: finalDesc,
             category_id: categoryId,
             date,
             is_recurring: isRecurring,
@@ -1759,8 +1733,6 @@ export default function FinanceApp() {
     const resetForm = () => {
       setAmount('');
       setDescription('');
-      setSelectedTags([]);
-      setTagInput('');
       setCategoryId('');
       setDate(getTodayDateString());
       setInstallmentMode('total');
@@ -1954,83 +1926,13 @@ export default function FinanceApp() {
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={type === 'installment' ? "Ex: Notebook Dell, TV Sala..." : "Ex: Passagens aéreas, Almoço..."}
+                placeholder={type === 'installment' ? "Ex: Notebook Dell, TV Sala..." : "Ex: Conta de Luz, Aluguel..."}
                 className={`w-full px-4 py-3 rounded-xl border ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               />
-            </div>
-
-            {/* Gerenciador de Tags */}
-            <div className={`p-3.5 rounded-xl border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-              <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                🏷️ Tags & Marcadores (Opcional)
-              </label>
-              
-              {selectedTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {selectedTags.map(tag => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-sm"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="hover:bg-indigo-700 rounded-full p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  placeholder="Digitar nova tag (ex: #Viagem-Chile)..."
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addTag(tagInput);
-                    }
-                  }}
-                  className={`flex-1 px-3 py-1.5 rounded-lg text-xs border ${
-                    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => addTag(tagInput)}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors"
-                >
-                  + Tag
-                </button>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[11px] text-gray-400 font-medium">Sugestões:</span>
-                {popularTags.map(tag => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => addTag(tag)}
-                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-md transition-all ${
-                      selectedTags.includes(tag)
-                        ? 'bg-indigo-600 text-white opacity-50'
-                        : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    + {tag}
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div>
