@@ -5,13 +5,17 @@ import {
   Plus, 
   Check, 
   Clock, 
-  ExternalLink 
+  ExternalLink,
+  AlertCircle,
+  ArrowDownRight,
+  ArrowUpRight
 } from 'lucide-react';
 
 export default function AgendaView({
   darkMode,
   currentDate,
   scheduled,
+  transactions,
   categories,
   currentUser,
   agendaSubTab,
@@ -34,7 +38,7 @@ export default function AgendaView({
 }) {
   const [filterPaid, setFilterPaid] = useState('all');
 
-  const showAmount = (val) => hideValues ? 'R$ •••••' : formatCurrency(val);
+  const showAmount = (val) => hideValues ? 'R$ ••••••••••' : formatCurrency(val);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -42,90 +46,103 @@ export default function AgendaView({
   const targetPrefix = `${year}-${monthStr}`;
   const todayStr = getTodayDateString();
 
-  const monthScheduled = scheduled.filter(s => {
-    if (s.user_id !== currentUser.id) return false;
-    const sDate = (s.due_date || '').split('T')[0];
-    return sDate.startsWith(targetPrefix);
-  });
+  // Consolidar todos os agendamentos e transações pendentes/agendadas do mês sem duplicação
+  const monthItems = (() => {
+    const map = new Map();
 
-  const totalMes = monthScheduled.reduce((s, c) => s + (Number(c.amount) || 0), 0);
-  const totalPago = monthScheduled.filter(c => c.is_paid).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    // 1. Transações do mês
+    (transactions || [])
+      .filter(t => {
+        if (t.user_id !== currentUser?.id) return false;
+        const tDate = (t.date || '').split('T')[0];
+        return tDate.startsWith(targetPrefix);
+      })
+      .forEach(t => {
+        map.set(t.id, {
+          id: t.id,
+          description: t.description,
+          amount: Number(t.amount) || 0,
+          category_id: t.category_id,
+          date: (t.date || '').split('T')[0],
+          type: t.type || 'expense',
+          is_paid: t.is_paid !== false,
+          rawItem: t,
+          source: 'transaction'
+        });
+      });
+
+    // 2. Scheduled legados que ainda não estão em transactions
+    (scheduled || [])
+      .filter(s => {
+        if (s.user_id !== currentUser?.id) return false;
+        const sDate = (s.due_date || '').split('T')[0];
+        return sDate.startsWith(targetPrefix);
+      })
+      .forEach(s => {
+        if (!map.has(s.id)) {
+          const cat = categories.find(c => c.id === s.category_id);
+          map.set(s.id, {
+            id: s.id,
+            description: s.description,
+            amount: Number(s.amount) || 0,
+            category_id: s.category_id,
+            date: (s.due_date || '').split('T')[0],
+            type: cat?.type || 'expense',
+            is_paid: Boolean(s.is_paid),
+            rawItem: s,
+            source: 'scheduled'
+          });
+        }
+      });
+
+    return Array.from(map.values());
+  })();
+
+  const totalMes = monthItems.reduce((s, c) => s + (c.type === 'expense' ? c.amount : 0), 0);
+  const totalPago = monthItems.filter(c => c.is_paid && c.type === 'expense').reduce((s, c) => s + c.amount, 0);
   const totalPendente = totalMes - totalPago;
 
   const contasPorDia = {};
-  monthScheduled.forEach(s => {
-    const d = parseInt((s.due_date || '').split('T')[0].split('-')[2]);
+  monthItems.forEach(s => {
+    const d = parseInt((s.date || '').split('-')[2]);
     if (!isNaN(d)) {
       if (!contasPorDia[d]) contasPorDia[d] = [];
       contasPorDia[d].push(s);
     }
   });
 
-  const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
-  const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay();
+  const primeiroDiaSemana = new Date(year, month, 1).getDay();
+  const totalDiasNoMes = new Date(year, month + 1, 0).getDate();
+  const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfMonth(year, month);
-  const days = [];
-  for (let i = 0; i < firstDay; i++) days.push(null);
-  for (let i = 1; i <= daysInMonth; i++) days.push(i);
-
-  const getDayStatus = (day) => {
-    if (!day) return null;
-    const items = contasPorDia[day] || [];
-    if (items.length === 0) return null;
-    const allPaid = items.every(i => i.is_paid);
-    const dayStr = `${year}-${monthStr}-${String(day).padStart(2, '0')}`;
-    const isLate = !allPaid && dayStr < todayStr;
-    if (isLate) return 'late';
-    if (allPaid) return 'paid';
-    return 'pending';
-  };
-
-  const filteredBills = monthScheduled.filter(s => {
-    if (filterPaid === 'pending') return !s.is_paid;
-    if (filterPaid === 'paid') return s.is_paid;
-    return true;
-  });
-
-  const selectedDayItems = selectedCalendarDay ? (contasPorDia[selectedCalendarDay] || []) : [];
+  const contasDiaSelecionado = selectedCalendarDay ? (contasPorDia[selectedCalendarDay] || []) : [];
 
   return (
-    <div className="space-y-6">
-      {/* Sub-abas da Agenda */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-700 pb-4">
-        <div className="flex gap-2">
+    <div>
+      {/* Alternador de Sub-Aba: Contas vs Google Calendar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className={`flex gap-2 p-1.5 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
           <button
             onClick={() => setAgendaSubTab('bills')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
               agendaSubTab === 'bills'
-                ? 'bg-blue-600 text-white shadow-md'
-                : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            Contas a Pagar / Receber
-          </button>
-          <button
-            onClick={() => setAgendaSubTab('calendar')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-              agendaSubTab === 'calendar'
-                ? 'bg-blue-600 text-white shadow-md'
-                : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-100'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
             }`}
           >
             <Calendar className="w-4 h-4" />
-            Calendário Mensal
+            Contas & Previsões Agendadas
           </button>
+
           <button
             onClick={() => {
               setAgendaSubTab('google-calendar');
-              if (hasGoogleToken) fetchCalendarEvents();
+              fetchCalendarEvents(calendarFilter);
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
               agendaSubTab === 'google-calendar'
-                ? 'bg-blue-600 text-white shadow-md'
-                : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-100'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
             }`}
           >
             <CalendarDays className="w-4 h-4 text-red-500" />
@@ -133,373 +150,428 @@ export default function AgendaView({
           </button>
         </div>
 
-        <button
-          onClick={() => setShowTransactionModal(true)}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Agendar Conta
-        </button>
+        {agendaSubTab === 'bills' ? (
+          <button
+            onClick={() => setShowTransactionModal(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-5 h-5" />
+            Novo Agendamento
+          </button>
+        ) : (
+          !hasGoogleToken && (
+            <button
+              onClick={handleGoogleLogin}
+              className="flex items-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow text-sm"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              Conectar Google Calendar
+            </button>
+          )
+        )}
       </div>
 
-      {/* SUB-ABA 1: Contas a Pagar / Receber */}
+      {/* CONTEÚDO: CONTAS AGENDADAS COM CALENDÁRIO */}
       {agendaSubTab === 'bills' && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className={`p-4 rounded-xl shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <p className={`text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Agendado</p>
-              <p className={`text-2xl font-bold mt-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{showAmount(totalMes)}</p>
-              <p className="text-xs text-gray-400 mt-1">{monthScheduled.length} lançamentos no mês</p>
+          {/* Resumo Financeiro do Mês */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow p-4 text-center`}>
+              <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>TOTAL DE DESPESAS DO MÊS</p>
+              <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{showAmount(totalMes)}</p>
             </div>
-            <div className={`p-4 rounded-xl shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <p className={`text-xs font-semibold uppercase text-amber-500`}>Pendente / A Vencer</p>
-              <p className={`text-2xl font-bold mt-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{showAmount(totalPendente)}</p>
-              <p className="text-xs text-gray-400 mt-1">{monthScheduled.filter(c => !c.is_paid).length} contas restantes</p>
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow p-4 text-center`}>
+              <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>JÁ QUITADO</p>
+              <p className="text-xl font-bold text-green-500">{showAmount(totalPago)}</p>
             </div>
-            <div className={`p-4 rounded-xl shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <p className={`text-xs font-semibold uppercase text-green-500`}>Já Pago / Liquidado</p>
-              <p className={`text-2xl font-bold mt-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{showAmount(totalPago)}</p>
-              <p className="text-xs text-gray-400 mt-1">{monthScheduled.filter(c => c.is_paid).length} contas liquidadas</p>
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow p-4 text-center`}>
+              <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>A PAGAR (PENDENTE)</p>
+              <p className="text-xl font-bold text-orange-500">{showAmount(totalPendente)}</p>
             </div>
           </div>
 
-          <div className={`p-6 rounded-2xl shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-              <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                Contas do Mês
-              </h3>
-              <div className={`flex p-1 rounded-xl text-xs font-semibold ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                {[
-                  { key: 'all', label: 'Todas' },
-                  { key: 'pending', label: 'Pendentes' },
-                  { key: 'paid', label: 'Pagas' }
-                ].map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => setFilterPaid(key)}
-                    className={`px-3 py-1.5 rounded-lg transition-all ${
-                      filterPaid === key
-                        ? 'bg-blue-600 text-white shadow'
-                        : darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {filteredBills.length === 0 ? (
-              <div className="text-center py-12">
-                <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3 opacity-40" />
-                <p className={`text-base font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Nenhuma conta encontrada para o filtro selecionado.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredBills.map(item => {
-                  const cat = categories.find(c => c.id === item.category_id);
-                  const isLate = !item.is_paid && item.due_date < todayStr;
-                  const isToday = !item.is_paid && item.due_date === todayStr;
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${
-                        item.is_paid
-                          ? darkMode ? 'bg-gray-750/40 border-gray-700 opacity-60' : 'bg-gray-50 border-gray-200 opacity-60'
-                          : isLate
-                          ? darkMode ? 'bg-red-950/20 border-red-800/60' : 'bg-red-50 border-red-200'
-                          : isToday
-                          ? darkMode ? 'bg-amber-950/20 border-amber-800/60' : 'bg-amber-50 border-amber-200'
-                          : darkMode ? 'bg-gray-750 border-gray-700' : 'bg-white border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-3 h-10 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: cat?.color || '#3b82f6' }}
-                        />
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                              {item.description}
-                            </span>
-                            {isLate && (
-                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300">
-                                Atrasada
-                              </span>
-                            )}
-                            {isToday && (
-                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300">
-                                Vence Hoje
-                              </span>
-                            )}
-                            {item.is_paid && (
-                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-950/80 dark:text-green-300">
-                                Paga
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {cat?.name || 'Geral'} • Vencimento: <strong>{formatDate(item.due_date)}</strong>
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 self-end sm:self-auto">
-                        <span className={`text-lg font-bold ${
-                          item.is_paid ? 'line-through text-gray-400' : darkMode ? 'text-white' : 'text-gray-800'
-                        }`}>
-                          {showAmount(item.amount)}
-                        </span>
-                        {!item.is_paid && (
-                          <button
-                            onClick={() => payScheduled(item)}
-                            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors shadow"
-                            title="Registrar pagamento"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            Pagar
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* SUB-ABA 2: Visão Calendário Mensal */}
-      {agendaSubTab === 'calendar' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className={`lg:col-span-2 p-6 rounded-2xl shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-            <div className="grid grid-cols-7 gap-2 mb-2 text-center text-xs font-bold text-gray-400 uppercase">
-              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-                <div key={d} className="py-1">{d}</div>
+          {/* Calendário Interativo em Grid */}
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+            <div className="grid grid-cols-7 mb-3 text-center">
+              {diasSemana.map(d => (
+                <div key={d} className={`text-xs font-bold py-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {d}
+                </div>
               ))}
             </div>
 
             <div className="grid grid-cols-7 gap-2">
-              {days.map((day, idx) => {
-                if (!day) {
-                  return <div key={`empty-${idx}`} className="h-20 rounded-xl bg-transparent" />;
-                }
+              {Array.from({ length: primeiroDiaSemana }).map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square opacity-0" />
+              ))}
 
-                const status = getDayStatus(day);
-                const isSelected = selectedCalendarDay === day;
-                const count = (contasPorDia[day] || []).length;
-                const isToday = `${year}-${monthStr}-${String(day).padStart(2, '0')}` === todayStr;
+              {Array.from({ length: totalDiasNoMes }, (_, i) => i + 1).map(dia => {
+                const contas = contasPorDia[dia] || [];
+                const ehHoje = new Date().getDate() === dia && new Date().getMonth() === month && new Date().getFullYear() === year;
+                const temConta = contas.length > 0;
+                const todasPagas = temConta && contas.every(c => c.is_paid);
+                const selecionado = selectedCalendarDay === dia;
 
                 return (
                   <button
-                    key={day}
-                    onClick={() => setSelectedCalendarDay(isSelected ? null : day)}
-                    className={`h-20 p-1.5 rounded-xl border flex flex-col justify-between transition-all text-left ${
-                      isSelected
-                        ? 'ring-2 ring-blue-500 border-transparent shadow-md'
-                        : darkMode ? 'border-gray-700 hover:border-gray-600' : 'border-gray-200 hover:border-gray-300'
+                    key={dia}
+                    onClick={() => setSelectedCalendarDay(selecionado ? null : dia)}
+                    className={`relative aspect-square rounded-xl flex flex-col items-center justify-center p-1 text-sm font-semibold transition-all border ${
+                      selecionado 
+                        ? 'ring-2 ring-blue-500 border-blue-500 scale-105 z-10' 
+                        : 'border-transparent'
                     } ${
-                      status === 'late'
-                        ? darkMode ? 'bg-red-950/20' : 'bg-red-50'
-                        : status === 'paid'
-                        ? darkMode ? 'bg-green-950/20' : 'bg-green-50'
-                        : status === 'pending'
-                        ? darkMode ? 'bg-amber-950/20' : 'bg-amber-50'
-                        : darkMode ? 'bg-gray-750' : 'bg-gray-50'
+                      ehHoje
+                        ? 'bg-blue-600 text-white font-bold shadow'
+                        : temConta
+                        ? todasPagas
+                          ? darkMode ? 'bg-green-950/40 text-green-300 border-green-800' : 'bg-green-100 text-green-800 border-green-300'
+                          : darkMode ? 'bg-orange-950/40 text-orange-300 border-orange-800' : 'bg-orange-100 text-orange-800 border-orange-300'
+                        : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className={`text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ${
-                        isToday ? 'bg-blue-600 text-white' : darkMode ? 'text-gray-300' : 'text-gray-700'
+                    <span>{dia}</span>
+                    {temConta && (
+                      <span className={`text-[10px] font-bold px-1 rounded-full ${
+                        ehHoje ? 'text-white bg-blue-700' : todasPagas ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400 font-extrabold'
                       }`}>
-                        {day}
+                        {contas.length} {contas.length === 1 ? 'item' : 'itens'}
                       </span>
-                      {count > 0 && (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                          status === 'late' ? 'bg-red-500 text-white' :
-                          status === 'paid' ? 'bg-green-600 text-white' :
-                          'bg-amber-500 text-white'
-                        }`}>
-                          {count}
-                        </span>
-                      )}
-                    </div>
-
-                    {count > 0 && (
-                      <div className="text-[10px] font-medium truncate opacity-80">
-                        {contasPorDia[day][0].description}
-                      </div>
                     )}
                   </button>
                 );
               })}
             </div>
+
+            {/* Legenda do Calendário */}
+            <div className="flex gap-4 mt-5 justify-center flex-wrap pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="w-3 h-3 rounded bg-blue-600" />
+                <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Hoje</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="w-3 h-3 rounded bg-orange-400" />
+                <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>A Pagar / Pendente</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="w-3 h-3 rounded bg-green-500" />
+                <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Quitado / Pago</span>
+              </div>
+            </div>
           </div>
 
-          <div className={`p-6 rounded-2xl shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-            <h3 className={`text-base font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              {selectedCalendarDay
-                ? `Contas do dia ${selectedCalendarDay}/${monthStr}`
-                : 'Selecione um dia para ver os detalhes'}
-            </h3>
-
-            {selectedCalendarDay ? (
-              selectedDayItems.length === 0 ? (
-                <p className="text-sm text-gray-400">Nenhum agendamento para este dia.</p>
-              ) : (
-                <div className="space-y-3">
-                  {selectedDayItems.map(item => (
-                    <div key={item.id} className={`p-3 rounded-xl border ${
-                      darkMode ? 'bg-gray-750 border-gray-700' : 'bg-gray-50 border-gray-200'
-                    }`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-sm">{item.description}</span>
-                        <span className="font-bold text-sm">{showAmount(item.amount)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
-                        <span>{item.is_paid ? '✅ Pago' : '⏳ Pendente'}</span>
-                        {!item.is_paid && (
-                          <button
-                            onClick={() => payScheduled(item)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold px-2 py-1 rounded"
-                          >
-                            Pagar
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            ) : (
-              <p className="text-sm text-gray-400">
-                💡 Clique em qualquer dia do calendário para listar as contas correspondentes.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* SUB-ABA 3: Google Calendar */}
-      {agendaSubTab === 'google-calendar' && (
-        <>
-          <div className={`p-6 rounded-2xl shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className={`text-xl font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                  <CalendarDays className="w-6 h-6 text-red-500" />
-                  Sincronização Google Calendar
-                </h3>
-                <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Veja seus compromissos e eventos diretamente ao lado das suas contas financeiras.
-                </p>
+          {/* Detalhes do Dia Selecionado */}
+          {selectedCalendarDay && (
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 mb-6`}>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  📅 Lançamentos do Dia {selectedCalendarDay}/{monthStr}/{year}
+                </h4>
+                <button
+                  onClick={() => setSelectedCalendarDay(null)}
+                  className={`text-xs px-2.5 py-1 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
+                >
+                  ✕ Fechar dia
+                </button>
               </div>
 
-              {!hasGoogleToken ? (
-                <button
-                  onClick={handleGoogleLogin}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-colors shadow"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Conectar Google Calendar
-                </button>
+              {contasDiaSelecionado.length === 0 ? (
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Nenhum lançamento previsto para este dia.
+                </p>
               ) : (
-                <div className="flex items-center gap-2">
-                  <div className={`flex p-1 rounded-xl text-xs font-semibold ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    {[
-                      { key: 'today', label: 'Hoje' },
-                      { key: 'tomorrow', label: 'Amanhã' },
-                      { key: 'week', label: '7 Dias' },
-                      { key: 'month', label: 'Mês' }
-                    ].map(({ key, label }) => (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          setCalendarFilter(key);
-                          fetchCalendarEvents(key);
-                        }}
-                        className={`px-3 py-1.5 rounded-lg transition-all ${
-                          calendarFilter === key
-                            ? 'bg-blue-600 text-white shadow'
-                            : darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => fetchCalendarEvents(calendarFilter)}
-                    className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:opacity-80"
-                    title="Recarregar"
-                  >
-                    🔄
-                  </button>
+                <div className="space-y-3">
+                  {contasDiaSelecionado.map(c => {
+                    const cat = categories.find(category => category.id === c.category_id);
+                    const isIncome = c.type === 'income';
+                    return (
+                      <div key={c.id} className={`flex items-center justify-between p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <div className="flex items-center gap-3">
+                          {cat && <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ background: cat.color }} />}
+                          <div>
+                            <p className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{c.description}</p>
+                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {cat?.name || 'Geral'} · {c.is_paid ? '✅ Quitado' : isIncome ? '⏳ A receber' : '⏳ A pagar'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className={`text-base font-bold ${isIncome ? 'text-green-500' : 'text-red-500'}`}>
+                            {isIncome ? '+' : '-'} {showAmount(c.amount)}
+                          </span>
+                          {!c.is_paid && (
+                            <button
+                              onClick={() => payScheduled(c)}
+                              className="bg-green-600 hover:bg-green-700 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg transition-colors shadow-sm"
+                            >
+                              {isIncome ? 'Confirmar Recebimento' : 'Dar Baixa / Pagar'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
+          )}
+
+          {/* Filtro de Status dos Agendamentos */}
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-4 mb-6`}>
+            <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Filtrar Agendamentos
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFilterPaid('all')}
+                className={`px-4 py-2 rounded-full font-medium text-sm transition-colors ${
+                  filterPaid === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Todos
+              </button>
+              <button
+                onClick={() => setFilterPaid('paid')}
+                className={`inline-flex items-center gap-1 px-4 py-2 rounded-full font-medium text-sm transition-colors ${
+                  filterPaid === 'paid'
+                    ? 'bg-green-600 text-white'
+                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Check className="w-4 h-4" />
+                Pagos / Recebidos
+              </button>
+              <button
+                onClick={() => setFilterPaid('unpaid')}
+                className={`inline-flex items-center gap-1 px-4 py-2 rounded-full font-medium text-sm border transition-colors ${
+                  filterPaid === 'unpaid'
+                    ? darkMode ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-300 text-gray-800 border-gray-400'
+                    : darkMode ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+                Pendentes (A Pagar / A Receber)
+              </button>
+            </div>
           </div>
 
-          {loadingCalendar ? (
-            <div className="text-center py-12">
-              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-              <p className="text-sm text-gray-400">Carregando eventos da sua agenda Google...</p>
-            </div>
-          ) : !hasGoogleToken ? (
-            <div className={`p-8 rounded-2xl text-center border border-dashed ${
-              darkMode ? 'border-gray-700 bg-gray-800 text-gray-400' : 'border-gray-300 bg-white text-gray-500'
-            }`}>
-              <CalendarDays className="w-12 h-12 mx-auto mb-3 text-red-500 opacity-60" />
-              <p className="font-semibold text-base mb-1">Google Calendar não conectado</p>
-              <p className="text-xs mb-4">Clique no botão acima para autenticar sua conta Google e visualizar seus eventos.</p>
-            </div>
-          ) : calendarEvents.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {calendarEvents.map(event => {
-                const start = event.start?.dateTime || event.start?.date;
-                const isAllDay = !event.start?.dateTime;
+          {/* Lista Completa de Agendamentos */}
+          <div className="grid gap-4">
+            {(() => {
+              let filteredList = monthItems.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+              if (filterPaid === 'paid') {
+                filteredList = filteredList.filter(s => s.is_paid);
+              } else if (filterPaid === 'unpaid') {
+                filteredList = filteredList.filter(s => !s.is_paid);
+              }
+
+              if (filteredList.length === 0) {
+                return (
+                  <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
+                    <Calendar className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+                    <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {filterPaid !== 'all'
+                        ? 'Nenhum lançamento encontrado com esse status.'
+                        : 'Nenhum agendamento para este mês.'}
+                    </p>
+                  </div>
+                );
+              }
+
+              return filteredList.map(item => {
+                const category = categories.find(c => c.id === item.category_id);
+                const sDateStr = (item.date || '').split('T')[0];
+                const isPastDue = sDateStr < todayStr && !item.is_paid;
+                const isIncome = item.type === 'income';
 
                 return (
-                  <div key={event.id} className={`p-4 rounded-xl border shadow-sm ${
-                    darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                  }`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                          {event.summary || '(Sem título)'}
-                        </h4>
-                        <p className="text-xs text-gray-400 mt-1">
-                          📅 {isAllDay ? formatDate(start) : new Date(start).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                        </p>
+                  <div
+                    key={item.id}
+                    className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 ${
+                      isPastDue ? 'border-2 border-red-500' : ''
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            {item.description}
+                          </h3>
+                          {item.is_paid ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                              <Check className="w-3.5 h-3.5 mr-1" />
+                              {isIncome ? 'Recebido' : 'Pago'}
+                            </span>
+                          ) : isPastDue ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                              <AlertCircle className="w-3.5 h-3.5 mr-1" />
+                              Atrasado
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                              <Clock className="w-3.5 h-3.5 mr-1" />
+                              {isIncome ? 'A Receber' : 'A Pagar'}
+                            </span>
+                          )}
+                          <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded ${
+                            isIncome ? 'bg-green-50 text-green-700 dark:bg-green-950/60 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-400'
+                          }`}>
+                            {isIncome ? <ArrowDownRight className="w-3.5 h-3.5 mr-1" /> : <ArrowUpRight className="w-3.5 h-3.5 mr-1" />}
+                            {isIncome ? 'Receita' : 'Despesa'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-4 text-sm">
+                          <span
+                            className="inline-flex items-center px-3 py-1 rounded-full text-white font-medium text-xs shadow-sm"
+                            style={{ backgroundColor: category?.color || '#6b7280' }}
+                          >
+                            {category?.name || 'Geral'}
+                          </span>
+                          <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                            Data Prevista: {formatDate(item.date)}
+                          </span>
+                          <span className={`font-bold ${isIncome ? 'text-green-500' : 'text-red-500'}`}>
+                            {isIncome ? '+' : '-'} {showAmount(item.amount)}
+                          </span>
+                        </div>
                       </div>
-                      {event.htmlLink && (
-                        <a
-                          href={event.htmlLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:text-blue-600 p-1"
-                          title="Abrir no Google Agenda"
+
+                      {!item.is_paid && (
+                        <button
+                          onClick={() => payScheduled(item)}
+                          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap shadow"
                         >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
+                          {isIncome ? 'Dar Baixa (Recebido)' : 'Dar Baixa (Pago)'}
+                        </button>
                       )}
                     </div>
                   </div>
                 );
-              })}
+              });
+            })()}
+          </div>
+        </>
+      )}
+
+      {/* CONTEÚDO: GOOGLE CALENDAR */}
+      {agendaSubTab === 'google-calendar' && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { key: 'today', label: 'Hoje' },
+                { key: 'tomorrow', label: 'Amanhã' },
+                { key: 'week', label: 'Esta Semana' },
+                { key: 'month', label: 'Este Mês' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setCalendarFilter(key);
+                    fetchCalendarEvents(key);
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                    calendarFilter === key
+                      ? 'bg-blue-600 text-white shadow'
+                      : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {loadingCalendar && calendarFilter === key ? 'Carregando...' : label}
+                </button>
+              ))}
             </div>
-          ) : (
-            <div className="text-center py-12 text-gray-400">
-              <p className="text-sm">
-                Nenhum evento registrado no Google Calendar para o período selecionado.
+
+            <button
+              onClick={() => fetchCalendarEvents(calendarFilter)}
+              className={`text-sm font-semibold flex items-center gap-1 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}
+            >
+              🔄 Atualizar Eventos
+            </button>
+          </div>
+
+          {!hasGoogleToken && (
+            <div className={`p-6 rounded-2xl border mb-6 text-center ${
+              darkMode ? 'bg-blue-900/20 border-blue-800 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800'
+            }`}>
+              <CalendarDays className="w-12 h-12 mx-auto mb-3 text-blue-500" />
+              <h3 className="text-lg font-bold mb-2">Conecte sua conta do Google</h3>
+              <p className="text-sm mb-4 max-w-md mx-auto">
+                Faça login com o Google para visualizar seus compromissos e eventos do Google Calendar diretamente no FinanceApp!
               </p>
+              <button
+                onClick={handleGoogleLogin}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow"
+              >
+                Conectar com o Google
+              </button>
             </div>
           )}
+
+          {loadingCalendar ? (
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Carregando compromissos do Google Calendar...</p>
+            </div>
+          ) : calendarEvents.length > 0 ? (
+            <div className="grid gap-4">
+              {calendarEvents.map(event => (
+                <div
+                  key={event.id}
+                  className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4`}
+                >
+                  <div>
+                    <h4 className={`text-lg font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                      {event.summary || 'Sem título'}
+                    </h4>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                      <Clock className="w-4 h-4" />
+                      <span>
+                        {event.start?.dateTime
+                          ? new Date(event.start.dateTime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                          : event.start?.date
+                          ? formatDate(event.start.date)
+                          : 'Data não informada'}
+                      </span>
+                    </div>
+                    {event.description && (
+                      <p className={`text-sm mt-2 line-clamp-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {event.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {event.htmlLink && (
+                    <a
+                      href={event.htmlLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`flex items-center gap-1 text-xs font-semibold px-3 py-2 rounded-lg border transition-colors ${
+                        darkMode ? 'border-gray-700 hover:bg-gray-700 text-blue-400' : 'border-gray-200 hover:bg-gray-50 text-blue-600'
+                      }`}
+                    >
+                      Abrir no Google <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : hasGoogleToken ? (
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-12 text-center`}>
+              <CalendarDays className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+              <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Nenhum evento encontrado no Google Calendar para o período selecionado.
+              </p>
+            </div>
+          ) : null}
         </>
       )}
     </div>
