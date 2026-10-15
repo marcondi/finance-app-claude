@@ -1,0 +1,3340 @@
+{
+  "user": {
+    "id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+    "email": "marcondestl@gmail.com",
+    "name": "Marcondes Lima"
+  },
+  "categories": [
+    {
+      "id": "cat-1",
+      "name": "Alimentação",
+      "color": "#ef4444",
+      "type": "expense",
+      "user_id": null
+    },
+    {
+      "id": "cat-2",
+      "name": "Transporte",
+      "color": "#f59e0b",
+      "type": "expense",
+      "user_id": null
+    },
+    {
+      "id": "cat-3",
+      "name": "Moradia",
+      "color": "#8b5cf6",
+      "type": "expense",
+      "user_id": null
+    },
+    {
+      "id": "cat-4",
+      "name": "Lazer",
+      "color": "#ec4899",
+      "type": "expense",
+      "user_id": null
+    },
+    {
+      "id": "cat-5",
+      "name": "Saúde",
+      "color": "#14b8a6",
+      "type": "expense",
+      "user_id": null
+    },
+    {
+      "id": "cat-6",
+      "name": "Educação",
+      "color": "#3b82f6",
+      "type": "expense",
+      "user_id": null
+    },
+    {
+      "id": "cat-7",
+      "name": "Salário",
+      "color": "#10b981",
+      "type": "income",
+      "user_id": null
+    },
+    {
+      "id": "1775058468509-7g9qkik38",
+      "name": "Dízimos",
+      "color": "#3b82f6",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "cat-9",
+      "name": "Investimentos",
+      "color": "#059669",
+      "type": "income",
+      "user_id": null
+    },
+    {
+      "id": "cat-10",
+      "name": "Poupança",
+      "color": "#6366f1",
+      "type": "income",
+      "user_id": null
+    },
+    {
+      "id": "1780338290400-crvul52hv",
+      "name": "IMPOSTO DE RENDA",
+      "color": "#3b82f6",
+      "type": "income",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1785154062699-wm98pk4t6",
+      "name": "Aluguel",
+      "color": "#3bf751",
+      "type": "income",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1788463417318-1fsm121dn",
+      "name": "Vestuario",
+      "color": "#903bf7",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-nx2cty43z",
+      "name": "Advogada",
+      "color": "#f97316",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-gjqzrtjd6",
+      "name": "Cartão alimentação",
+      "color": "#06b6d4",
+      "type": "income",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-lcxiiryfs",
+      "name": "Cartão Crédito Caixa",
+      "color": "#84cc16",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-d8jnyzmix",
+      "name": "Cartão Crédito C6",
+      "color": "#ef4444",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-4us0pa3li",
+      "name": "Cartão Crédito Merc. Pago",
+      "color": "#f59e0b",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-q6b9rphi3",
+      "name": "Cartão Crédito Neon",
+      "color": "#10b981",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-i1hwds3g7",
+      "name": "Aux. Mãe",
+      "color": "#8b5cf6",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-ha28tnyc5",
+      "name": "Fisioterapia Mãe",
+      "color": "#ec4899",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-dpkv00dk4",
+      "name": "Férias",
+      "color": "#14b8a6",
+      "type": "income",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-0xx60b8fk",
+      "name": "13º Salário",
+      "color": "#f97316",
+      "type": "income",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-2pss4m2md",
+      "name": "Empréstimo",
+      "color": "#84cc16",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103257521-eea0mjuue",
+      "name": "Energia",
+      "color": "#ef4444",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1771103808221-9slyqpn8f",
+      "name": "📱Plano Telefônico",
+      "color": "#3b82f6",
+      "type": "expense",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1772655417333-oiodrai09",
+      "name": "TERAPIA",
+      "color": "#3b82f6",
+      "type": "income",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    },
+    {
+      "id": "1773923369142-yicyjpbu3",
+      "name": "Empréstimo",
+      "color": "#3b82f6",
+      "type": "income",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d"
+    }
+  ],
+  "scheduled": [
+    {
+      "id": "1771104310003-7ni14hvvz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "due_date": "2026-02-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771104310003-xpmnx9pfi",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "due_date": "2026-03-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771104310003-iajgg7bqm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "due_date": "2026-04-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771104310003-3kmcp5k86",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "due_date": "2026-05-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771104310003-ipeix390g",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "due_date": "2026-06-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771104310003-wjqhhbv8g",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "due_date": "2026-07-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771104310003-znj4gx5t7",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "due_date": "2026-08-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771104310003-zpy5ae4es",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "due_date": "2026-09-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771104310003-revavwo6n",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "due_date": "2026-10-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771104310003-34a4rgt87",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "due_date": "2026-11-05",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031956-ifvf6kfz4",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2026-09-04",
+      "is_paid": true
+    },
+    {
+      "id": "1788531031957-1c5ftfrqe",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2026-10-04",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031957-i0kda7vkf",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2026-11-04",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031957-ajo2wysuu",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2026-12-04",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031957-y22cj6mla",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2027-01-04",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031957-ympxdjuwb",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2027-02-04",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031957-4cwzyh01p",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2027-03-04",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031957-7k9z25dw3",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2027-04-04",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031957-11z05m6cg",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2027-05-04",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031957-57dze4w86",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2027-06-04",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031957-dapcsr3wc",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2027-07-04",
+      "is_paid": false
+    },
+    {
+      "id": "1788531031957-2j1wscczf",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "due_date": "2027-08-04",
+      "is_paid": false
+    }
+  ],
+  "categoryBudgets": {
+    "1788524763196-d3g5o5ly7": 2230
+  },
+  "transactions": [
+    {
+      "id": "1771103257521-zc2sw3dew",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-05-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-xho92kvaf",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-04-05",
+      "is_paid": true
+    },
+    {
+      "id": "1775479290304-voyu9lv3z",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 325,
+      "description": "advogada",
+      "category_id": "1771103257521-nx2cty43z",
+      "date": "2026-04-06",
+      "is_paid": true
+    },
+    {
+      "id": "1776427056861-2q82gzpfu",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "internet",
+      "category_id": "cat-6",
+      "date": "2026-04-10",
+      "is_paid": true
+    },
+    {
+      "id": "1782841322526-jknhi83dz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1980,
+      "description": "CARTÃO NEOM",
+      "category_id": "1771103257521-q6b9rphi3",
+      "date": "2026-06-25",
+      "is_paid": true
+    },
+    {
+      "id": "1774440167196-xhjfwi6zr",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1030,
+      "description": "caartão NEON",
+      "category_id": "1771103257521-q6b9rphi3",
+      "date": "2026-04-27",
+      "is_paid": true
+    },
+    {
+      "id": "1778119418436-iefrh9zgk",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1050,
+      "description": "Empréstimo Fábio",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-05-06",
+      "is_paid": true
+    },
+    {
+      "id": "1780338533031-1efwhwrfx",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2026-11-10",
+      "is_paid": false
+    },
+    {
+      "id": "1780338533031-8pt6ki04j",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2026-12-10",
+      "is_paid": false
+    },
+    {
+      "id": "1780338533031-fdtadknzm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2027-01-10",
+      "is_paid": false
+    },
+    {
+      "id": "1780338533032-77e9seefj",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2027-02-10",
+      "is_paid": false
+    },
+    {
+      "id": "1780338533032-85vjdrmz8",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2027-03-10",
+      "is_paid": false
+    },
+    {
+      "id": "1780338533032-f18bqq1jy",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2027-04-10",
+      "is_paid": false
+    },
+    {
+      "id": "1780338533031-7kgtew457",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2026-06-10",
+      "is_paid": true
+    },
+    {
+      "id": "1780665817708-di0x5vdkq",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 160,
+      "description": "Alinhamento carro",
+      "category_id": "cat-2",
+      "date": "2026-06-05",
+      "is_paid": true
+    },
+    {
+      "id": "1782903875921-magh62ng4",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 130,
+      "description": "IPVA carro",
+      "category_id": "cat-2",
+      "date": "2026-06-29",
+      "is_paid": true
+    },
+    {
+      "id": "1784644855097-xqbupmbpl",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 402,
+      "description": "emprestimo cicera 1/4",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-08-07",
+      "is_paid": true
+    },
+    {
+      "id": "1782927559687-tz90h3hh7",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 30,
+      "description": "Dízimo+oferta terapia",
+      "category_id": "1775058468509-7g9qkik38",
+      "date": "2026-07-01",
+      "is_paid": true
+    },
+    {
+      "id": "1783703978633-sse44enbp",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 58.9,
+      "description": "tenis",
+      "category_id": "cat-4",
+      "date": "2027-02-10",
+      "is_paid": false
+    },
+    {
+      "id": "1783703978633-z75gyxbxp",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 58.9,
+      "description": "tenis",
+      "category_id": "cat-4",
+      "date": "2027-03-10",
+      "is_paid": false
+    },
+    {
+      "id": "1780338533031-gomnckfaz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2026-07-10",
+      "is_paid": true
+    },
+    {
+      "id": "1783946429646-2xmb7beur",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 63,
+      "description": "presente Lenir vizinha 1/2",
+      "category_id": "cat-4",
+      "date": "2026-07-13",
+      "is_paid": true
+    },
+    {
+      "id": "1780338533031-4bdirw5ey",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2026-10-10",
+      "is_paid": true
+    },
+    {
+      "id": "1777404592654-q4458co4r",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 1000,
+      "description": "emprestimo",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-04-28",
+      "is_paid": true
+    },
+    {
+      "id": "1784573428872-3lt3xie9j",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1666,
+      "description": "cartão neom",
+      "category_id": "1771103257521-q6b9rphi3",
+      "date": "2026-07-27",
+      "is_paid": true
+    },
+    {
+      "id": "1785154098150-wik1y68mo",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2026-10-05",
+      "is_paid": false
+    },
+    {
+      "id": "1785154098150-9r4c51yz8",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2026-11-05",
+      "is_paid": false
+    },
+    {
+      "id": "1785154098150-b0kgrgb0f",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2026-12-05",
+      "is_paid": false
+    },
+    {
+      "id": "1785154098150-iodzrkg21",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2027-01-05",
+      "is_paid": false
+    },
+    {
+      "id": "1785154098150-rukzsuuoj",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2027-02-05",
+      "is_paid": false
+    },
+    {
+      "id": "1785154098150-4kxcbs26e",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2027-03-05",
+      "is_paid": false
+    },
+    {
+      "id": "1782903875921-urh6nvfq7",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 130,
+      "description": "IPVA carro 3/5",
+      "category_id": "cat-2",
+      "date": "2026-07-29",
+      "is_paid": true
+    },
+    {
+      "id": "1780338533031-uf2rkmx7g",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2026-08-10",
+      "is_paid": true
+    },
+    {
+      "id": "1782903875922-c2falf7cv",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 130,
+      "description": "IPVA carro 4/5",
+      "category_id": "cat-2",
+      "date": "2026-08-29",
+      "is_paid": true
+    },
+    {
+      "id": "1780337266885-h0jqpzojc",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 12884,
+      "description": "férias",
+      "category_id": "1771103257521-dpkv00dk4",
+      "date": "2026-06-01",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-998lbfh9i",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-02-05",
+      "is_paid": true
+    },
+    {
+      "id": "1780338533031-r4ld6upf3",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 50,
+      "description": "INTERNET",
+      "category_id": "cat-3",
+      "date": "2026-09-10",
+      "is_paid": true
+    },
+    {
+      "id": "1785154098150-dn4hfu2w0",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2026-09-05",
+      "is_paid": true
+    },
+    {
+      "id": "1784641173065-6osxnw6ai",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 63,
+      "description": "presente lenir 2/2",
+      "category_id": "cat-4",
+      "date": "2026-08-20",
+      "is_paid": true
+    },
+    {
+      "id": "1782903875921-lrg02y9e3",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 130,
+      "description": "IPVA carro",
+      "category_id": "cat-2",
+      "date": "2026-05-29",
+      "is_paid": true
+    },
+    {
+      "id": "1780337294101-l6camdcyn",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 5200,
+      "description": "salario",
+      "category_id": "cat-7",
+      "date": "2026-06-01",
+      "is_paid": true
+    },
+    {
+      "id": "1782927538982-rwkggakbk",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 240,
+      "description": "Terapias",
+      "category_id": "1772655417333-oiodrai09",
+      "date": "2026-07-01",
+      "is_paid": true
+    },
+    {
+      "id": "1784643930230-4dunf4jvn",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 1500,
+      "description": "emprestimo mãe F.",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-07-21",
+      "is_paid": true
+    },
+    {
+      "id": "1785154098150-v3hr9sq5c",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2026-08-05",
+      "is_paid": true
+    },
+    {
+      "id": "1780338237703-nk2auuz37",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 222,
+      "description": "emprestimo luma 4/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-09-05",
+      "is_paid": true
+    },
+    {
+      "id": "1775479345184-qeibnskmo",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 285,
+      "description": "emprestimo Luma 4/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-04-06",
+      "is_paid": true
+    },
+    {
+      "id": "1776427152788-adw6krypk",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "internet",
+      "category_id": "cat-3",
+      "date": "2026-05-11",
+      "is_paid": true
+    },
+    {
+      "id": "1778150174327-jp152gbnq",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 600,
+      "description": "dizimo pagto",
+      "category_id": "1775058468509-7g9qkik38",
+      "date": "2026-05-07",
+      "is_paid": true
+    },
+    {
+      "id": "1778150198848-x79mea2uy",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 12,
+      "description": "dizimos terapia",
+      "category_id": "1775058468509-7g9qkik38",
+      "date": "2026-05-07",
+      "is_paid": true
+    },
+    {
+      "id": "1780338237703-ecejuy72y",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 222,
+      "description": "emprestimo luma 1/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-06-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771103924580-2eejdn9uo",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-06-05",
+      "is_paid": true
+    },
+    {
+      "id": "1780340213693-kc8p3a65e",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 380,
+      "description": "ULTIMA PARCELA DO CARRO",
+      "category_id": "cat-2",
+      "date": "2026-06-30",
+      "is_paid": true
+    },
+    {
+      "id": "1782841424542-7xpybvadh",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 4000,
+      "description": "DEPESAS FÉRIAS",
+      "category_id": "cat-4",
+      "date": "2026-06-30",
+      "is_paid": true
+    },
+    {
+      "id": "1780666021396-51zjrimev",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 660,
+      "description": "Cartão C6",
+      "category_id": "1771103257521-d8jnyzmix",
+      "date": "2026-06-22",
+      "is_paid": true
+    },
+    {
+      "id": "1776426725868-kcdtovwyt",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2026-06-19",
+      "is_paid": true
+    },
+    {
+      "id": "1782928517795-lyl50v46q",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "Parcela TV 1/12",
+      "category_id": "cat-3",
+      "date": "2026-12-01",
+      "is_paid": false
+    },
+    {
+      "id": "1782928517795-6zdw8yitz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "Parcela TV 1/12",
+      "category_id": "cat-3",
+      "date": "2026-12-31",
+      "is_paid": false
+    },
+    {
+      "id": "1782928517795-ldux4k4n5",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "Parcela TV 1/12",
+      "category_id": "cat-3",
+      "date": "2027-01-31",
+      "is_paid": false
+    },
+    {
+      "id": "1782928517795-j05uhfaar",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "Parcela TV 1/12",
+      "category_id": "cat-3",
+      "date": "2027-03-03",
+      "is_paid": false
+    },
+    {
+      "id": "1782928517795-jydgshzu8",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "Parcela TV 1/12",
+      "category_id": "cat-3",
+      "date": "2027-03-31",
+      "is_paid": false
+    },
+    {
+      "id": "1782928517795-rdpnagp8u",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "Parcela TV 1/12",
+      "category_id": "cat-3",
+      "date": "2027-05-01",
+      "is_paid": false
+    },
+    {
+      "id": "1782928517795-hncu6b5f6",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "Parcela TV 1/12",
+      "category_id": "cat-3",
+      "date": "2026-07-01",
+      "is_paid": true
+    },
+    {
+      "id": "1772464451603-rsy3o7v7s",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 6227,
+      "description": "SÁLARIO",
+      "category_id": "cat-7",
+      "date": "2026-03-02",
+      "is_paid": true
+    },
+    {
+      "id": "1782928517795-3orayi2zb",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "Parcela TV 2/12",
+      "category_id": "cat-3",
+      "date": "2026-08-31",
+      "is_paid": true
+    },
+    {
+      "id": "1777573198678-ymoka5b8x",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 1200,
+      "description": "terapia",
+      "category_id": "1772655417333-oiodrai09",
+      "date": "2026-04-30",
+      "is_paid": true
+    },
+    {
+      "id": "1782928517795-m958x2moc",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 215,
+      "description": "Parcela TV 4/12",
+      "category_id": "cat-3",
+      "date": "2026-10-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-w4nlukj5i",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 300,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-10-26",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-if4biuhtk",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 160,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-03-26",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-u0ff9fmys",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 160,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-11-26",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-4if31spnk",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 160,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-12-26",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-h00h7m0hw",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 160,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2027-01-26",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-b4jca807q",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 160,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2027-02-26",
+      "is_paid": false
+    },
+    {
+      "id": "1772464776506-qo7y1soi8",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 900,
+      "description": "CARTÃO NEOM",
+      "category_id": "1771103257521-q6b9rphi3",
+      "date": "2026-03-25",
+      "is_paid": true
+    },
+    {
+      "id": "1778075400336-2x7uj4wo6",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 325,
+      "description": "advogada 5/5",
+      "category_id": "1771103257521-nx2cty43z",
+      "date": "2026-05-06",
+      "is_paid": true
+    },
+    {
+      "id": "1773663595845-n87scmyge",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1200,
+      "description": "cartão caixa economica",
+      "category_id": "1771103257521-lcxiiryfs",
+      "date": "2026-03-30",
+      "is_paid": true
+    },
+    {
+      "id": "1774003396301-hgq7etv3j",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 300,
+      "description": "parcela do carro",
+      "category_id": "cat-2",
+      "date": "2026-03-20",
+      "is_paid": true
+    },
+    {
+      "id": "1773923853030-vh2pegnll",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 230,
+      "description": "depositar banco Cora1/5(emprestimo)",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-04-18",
+      "is_paid": true
+    },
+    {
+      "id": "1773923853030-2pt6xgc2k",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 230,
+      "description": "depositar banco Cora 2/5(emprestimo)",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-05-18",
+      "is_paid": true
+    },
+    {
+      "id": "1778150326470-k24omx8d1",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 220,
+      "description": "ajuda reforma casa mãe",
+      "category_id": "cat-3",
+      "date": "2026-05-07",
+      "is_paid": true
+    },
+    {
+      "id": "1780399202153-j99l0wpp8",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 158,
+      "description": "roupas irmã aracy 1/2",
+      "category_id": "cat-4",
+      "date": "2026-06-02",
+      "is_paid": true
+    },
+    {
+      "id": "1782902921570-rwemv637v",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 500,
+      "description": "Credi amigo",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-06-01",
+      "is_paid": true
+    },
+    {
+      "id": "1781697047931-refv7ba4z",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 230,
+      "description": "Empréstimo Cora 3/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-06-20",
+      "is_paid": true
+    },
+    {
+      "id": "1782904028761-rftayq869",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 290,
+      "description": "Presente luã",
+      "category_id": "cat-4",
+      "date": "2026-06-25",
+      "is_paid": true
+    },
+    {
+      "id": "1781697047932-4cwh6qsy3",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 230,
+      "description": "Empréstimo Cora 4/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-07-18",
+      "is_paid": true
+    },
+    {
+      "id": "1782928517795-qftte3uft",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "Parcela TV 1/12",
+      "category_id": "cat-3",
+      "date": "2027-05-31",
+      "is_paid": false
+    },
+    {
+      "id": "1783964678687-oven6upa5",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 2300,
+      "description": "cartão mercado pago",
+      "category_id": "1771103257521-4us0pa3li",
+      "date": "2026-07-20",
+      "is_paid": true
+    },
+    {
+      "id": "1775585006020-yfpy5325s",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 380,
+      "description": "PARCELADO CARRO",
+      "category_id": "cat-2",
+      "date": "2026-04-30",
+      "is_paid": true
+    },
+    {
+      "id": "1772730815880-70brwyb6c",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "telhado casa",
+      "category_id": "cat-3",
+      "date": "2026-03-05",
+      "is_paid": true
+    },
+    {
+      "id": "1773147519740-qqgwfeyb6",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 160,
+      "description": "Remédio Luã",
+      "category_id": "cat-5",
+      "date": "2026-03-10",
+      "is_paid": true
+    },
+    {
+      "id": "1772564348142-xtlede7zo",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 2050,
+      "description": "cartão mercado pago",
+      "category_id": "1771103257521-4us0pa3li",
+      "date": "2026-03-20",
+      "is_paid": true
+    },
+    {
+      "id": "1783852812510-k710vt8ir",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 145,
+      "description": "Pagar Fábio frangos",
+      "category_id": "cat-1",
+      "date": "2026-08-03",
+      "is_paid": true
+    },
+    {
+      "id": "1773923853030-omfvwcn46",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 230,
+      "description": "depositar banco Cora(emprestimo) 5/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-08-18",
+      "is_paid": true
+    },
+    {
+      "id": "1775585006020-rstmzirod",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 380,
+      "description": "PARCELADO CARRO",
+      "category_id": "cat-2",
+      "date": "2026-05-30",
+      "is_paid": true
+    },
+    {
+      "id": "1773923413526-x07sz8qcd",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 1000,
+      "description": "emprestimo",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-03-19",
+      "is_paid": true
+    },
+    {
+      "id": "1776692222620-d2eo7vaav",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 800,
+      "description": "PLR - EMPRESA",
+      "category_id": "cat-9",
+      "date": "2026-04-20",
+      "is_paid": true
+    },
+    {
+      "id": "1778075423240-k8qtmn2ix",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 5900,
+      "description": "salario",
+      "category_id": "cat-7",
+      "date": "2026-05-06",
+      "is_paid": true
+    },
+    {
+      "id": "1778075450664-hh6u3w6b4",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 860,
+      "description": "cartão alimentação",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-05-06",
+      "is_paid": true
+    },
+    {
+      "id": "1780338310010-nwcz9h0hx",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 3900,
+      "description": "IMPOSTO DE RENDA",
+      "category_id": "1780338290400-crvul52hv",
+      "date": "2026-06-01",
+      "is_paid": true
+    },
+    {
+      "id": "1783704136465-n3zeoxsl8",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 1000,
+      "description": "emprestimo adagilda",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-07-10",
+      "is_paid": true
+    },
+    {
+      "id": "1776256511833-rlyv3sc8y",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 67,
+      "description": "presente JD",
+      "category_id": "cat-4",
+      "date": "2026-11-07",
+      "is_paid": false
+    },
+    {
+      "id": "1771104654830-z26a4sm56",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-04-14",
+      "is_paid": true
+    },
+    {
+      "id": "1776692364268-nnl9uje2m",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "DIZIMO E OFERTA SOBRE O PLR",
+      "category_id": "1775058468509-7g9qkik38",
+      "date": "2026-04-20",
+      "is_paid": true
+    },
+    {
+      "id": "1776256511832-0wcpsylmc",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 67,
+      "description": "presente JD 1/10",
+      "category_id": "cat-4",
+      "date": "2026-05-07",
+      "is_paid": true
+    },
+    {
+      "id": "1776256511832-2qfgovew7",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 67,
+      "description": "presente JD 2/10",
+      "category_id": "cat-4",
+      "date": "2026-06-07",
+      "is_paid": true
+    },
+    {
+      "id": "1780338407991-7hom647ap",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1500,
+      "description": "EMPRESTADO MAURO",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-06-01",
+      "is_paid": true
+    },
+    {
+      "id": "1776256511832-69f9he603",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 67,
+      "description": "presente JD",
+      "category_id": "cat-4",
+      "date": "2026-07-07",
+      "is_paid": true
+    },
+    {
+      "id": "1782902999751-oscbst5l2",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 500,
+      "description": "Credi amigo",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-07-01",
+      "is_paid": true
+    },
+    {
+      "id": "1782904752322-yemdq5qgx",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 305,
+      "description": "dizimo",
+      "category_id": "1775058468509-7g9qkik38",
+      "date": "2026-07-01",
+      "is_paid": true
+    },
+    {
+      "id": "1783511000743-2p7fhgy7u",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 810,
+      "description": "Cartão C6",
+      "category_id": "1771103257521-d8jnyzmix",
+      "date": "2026-07-20",
+      "is_paid": true
+    },
+    {
+      "id": "1784641006114-pviw3wtx2",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "guarda roupas 2/10",
+      "category_id": "cat-3",
+      "date": "2026-11-25",
+      "is_paid": false
+    },
+    {
+      "id": "1784641006114-4k9j73kr2",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "guarda roupas 2/10",
+      "category_id": "cat-3",
+      "date": "2026-12-25",
+      "is_paid": false
+    },
+    {
+      "id": "1784641006114-sn8qz3tlm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "guarda roupas 2/10",
+      "category_id": "cat-3",
+      "date": "2027-01-25",
+      "is_paid": false
+    },
+    {
+      "id": "1784641006114-3oni7nizk",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "guarda roupas 2/10",
+      "category_id": "cat-3",
+      "date": "2027-02-25",
+      "is_paid": false
+    },
+    {
+      "id": "1785780042203-5y7vor71c",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 490,
+      "description": "cartão c6",
+      "category_id": "1771103257521-d8jnyzmix",
+      "date": "2026-08-20",
+      "is_paid": true
+    },
+    {
+      "id": "1776256511832-crrc6zu3p",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 67,
+      "description": "presente JD 4/10",
+      "category_id": "cat-4",
+      "date": "2026-08-07",
+      "is_paid": true
+    },
+    {
+      "id": "1784641006113-20yaxcwvo",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "guarda roupas 2/10",
+      "category_id": "cat-3",
+      "date": "2026-07-25",
+      "is_paid": true
+    },
+    {
+      "id": "1784643877431-fmi3jah8r",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 18,
+      "description": "cartão caixa",
+      "category_id": "1771103257521-lcxiiryfs",
+      "date": "2026-07-28",
+      "is_paid": true
+    },
+    {
+      "id": "1785154098150-v31zrtg99",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2027-04-05",
+      "is_paid": false
+    },
+    {
+      "id": "1785154098150-ziw67toxa",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2027-05-05",
+      "is_paid": false
+    },
+    {
+      "id": "1785154098150-zbj5xpxsi",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2027-06-05",
+      "is_paid": false
+    },
+    {
+      "id": "1785154098150-vwao25vm2",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 950,
+      "description": "aluguel",
+      "category_id": "1785154062699-wm98pk4t6",
+      "date": "2027-07-05",
+      "is_paid": false
+    },
+    {
+      "id": "1784641006113-n5eovq2by",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "guarda roupas 3/10",
+      "category_id": "cat-3",
+      "date": "2026-08-25",
+      "is_paid": true
+    },
+    {
+      "id": "1783704170224-v1dbe3xzo",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1000,
+      "description": "emprestimo Adagilda",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-08-03",
+      "is_paid": true
+    },
+    {
+      "id": "1785780146724-f7wtwf9b1",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 57,
+      "description": "RECEBER FERNANDA",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-10-25",
+      "is_paid": false
+    },
+    {
+      "id": "1785780146724-qd17ww3tu",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 57,
+      "description": "RECEBER FERNANDA",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-11-25",
+      "is_paid": false
+    },
+    {
+      "id": "1778332394947-6txur4yhz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 416,
+      "description": "Cartão c6",
+      "category_id": "1771103257521-d8jnyzmix",
+      "date": "2026-05-20",
+      "is_paid": true
+    },
+    {
+      "id": "1784641006114-69wcwcu7h",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "guarda roupas 4/10",
+      "category_id": "cat-3",
+      "date": "2026-10-25",
+      "is_paid": false
+    },
+    {
+      "id": "1776256511833-7x3rqscvr",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 67,
+      "description": "presente JD",
+      "category_id": "cat-4",
+      "date": "2026-09-07",
+      "is_paid": true
+    },
+    {
+      "id": "1775058282436-f7q89yv5g",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 5100,
+      "description": "salario",
+      "category_id": "cat-7",
+      "date": "2026-04-01",
+      "is_paid": true
+    },
+    {
+      "id": "1778075497048-xmp18u8nf",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 1000,
+      "description": "emprestimo cartão luma",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-05-06",
+      "is_paid": true
+    },
+    {
+      "id": "1778075525279-gfag33nkz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 120,
+      "description": "terapia",
+      "category_id": "1772655417333-oiodrai09",
+      "date": "2026-05-06",
+      "is_paid": true
+    },
+    {
+      "id": "1780571556976-7z4lmnacd",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 2000,
+      "description": "INESTIMENTO",
+      "category_id": "cat-10",
+      "date": "2026-06-04",
+      "is_paid": true
+    },
+    {
+      "id": "1782903022261-awm7rcfkm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 3000,
+      "description": "Pagamento",
+      "category_id": "cat-7",
+      "date": "2026-07-01",
+      "is_paid": true
+    },
+    {
+      "id": "1783944655710-tcitmwh87",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 120,
+      "description": "Terapia",
+      "category_id": "1772655417333-oiodrai09",
+      "date": "2026-07-13",
+      "is_paid": true
+    },
+    {
+      "id": "1784297710198-fmzxv8od7",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 150,
+      "description": "TERAPIA",
+      "category_id": "1772655417333-oiodrai09",
+      "date": "2026-07-16",
+      "is_paid": true
+    },
+    {
+      "id": "1785181347462-kwt4uhj60",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 200,
+      "description": "terapia",
+      "category_id": "1772655417333-oiodrai09",
+      "date": "2026-07-27",
+      "is_paid": true
+    },
+    {
+      "id": "1785154026381-1k85fu8a1",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 1000,
+      "description": "crediamigo",
+      "category_id": "cat-9",
+      "date": "2026-08-03",
+      "is_paid": true
+    },
+    {
+      "id": "1785779196873-3u4a4bptw",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 5990,
+      "description": "salario",
+      "category_id": "cat-7",
+      "date": "2026-08-03",
+      "is_paid": true
+    },
+    {
+      "id": "1785780146724-kb2uxfznk",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 57,
+      "description": "RECEBER FERNANDA",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-08-25",
+      "is_paid": true
+    },
+    {
+      "id": "1785780146724-g6wvpijw1",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 57,
+      "description": "RECEBER FERNANDA",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-09-25",
+      "is_paid": true
+    },
+    {
+      "id": "1784641006114-1pb58yin4",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "guarda roupas 3/10",
+      "category_id": "cat-3",
+      "date": "2026-09-25",
+      "is_paid": true
+    },
+    {
+      "id": "1784644855097-mismyv1cj",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 402,
+      "description": "emprestimo cicera 3/4",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-10-07",
+      "is_paid": false
+    },
+    {
+      "id": "1776256511833-2ucedb8qx",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 67,
+      "description": "presente JD",
+      "category_id": "cat-4",
+      "date": "2026-10-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-cc7ubk1pk",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 710,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-05-01",
+      "is_paid": true
+    },
+    {
+      "id": "1776426725868-rdyzf5tyc",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2026-11-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-oebxecizl",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2026-12-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-cg59lz9by",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-01-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-52o5x5pn4",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-02-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-3m2lzsv2a",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-03-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-t1aib9pft",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-04-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-o48fizklc",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-05-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-5hs1lyqbd",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-06-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-7kq2zqevz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-07-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-xb0l5ir9m",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-08-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-ph4gdy4pm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-09-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-f2gmnuxbw",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-10-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-ixwfhogct",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-11-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-j6e4oyf7l",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2027-12-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-z4dtsz2zr",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2028-01-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-kcix4nm98",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2028-02-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-l78en1hn4",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2028-03-19",
+      "is_paid": false
+    },
+    {
+      "id": "1776426725868-7un1qwgrb",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2026-04-19",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-bwq915xhh",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-11-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-ut6ymgi4l",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-12-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-2jy8ifxed",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2027-01-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-9jgh158kz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2027-02-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-rztx224pv",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 710,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-11-01",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-88rps8yo7",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 710,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-12-01",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-7tuiij8nm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 710,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2027-01-01",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-4knq254c6",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 710,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2027-02-01",
+      "is_paid": false
+    },
+    {
+      "id": "1775058401403-u8q6zzlu0",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 583,
+      "description": "cartão C6",
+      "category_id": "1771103257521-d8jnyzmix",
+      "date": "2026-04-20",
+      "is_paid": true
+    },
+    {
+      "id": "1776426725868-w116gajau",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2026-07-19",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-z49ok7qxu",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 5800,
+      "description": "salario",
+      "category_id": "cat-7",
+      "date": "2026-02-01",
+      "is_paid": true
+    },
+    {
+      "id": "1776426725868-iw4mdgj74",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2026-10-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-vim3awne8",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 300,
+      "description": "parcela do carro",
+      "category_id": "cat-2",
+      "date": "2026-02-28",
+      "is_paid": true
+    },
+    {
+      "id": "1777373859277-dc02vob2a",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "perfume 1/2",
+      "category_id": "cat-4",
+      "date": "2026-05-02",
+      "is_paid": true
+    },
+    {
+      "id": "1776426725868-6w8tbpgb5",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2026-05-19",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-whxwh48ud",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 710,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-02-01",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-gl5u5cdsh",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 717,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-04-01",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-xhfsn1oty",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 710,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-06-01",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-eh48572lo",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 710,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-07-01",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-acdwc7mqc",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 803,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-08-01",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-yj8iajafh",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 900,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-10-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-hgjanlaej",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 730,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-10-01",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-idq4f9sce",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-11-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-zvtjoxq6f",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-12-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-o25s3oltm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2027-01-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103257521-232anbcde",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2027-02-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103924580-sd90y3qbj",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-11-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103924580-99d6osg8b",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-12-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771103924580-p3gcv1wr8",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2027-01-05",
+      "is_paid": false
+    },
+    {
+      "id": "1771104654830-mus2sb1yd",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-10-14",
+      "is_paid": false
+    },
+    {
+      "id": "1771104654830-1z52dgvjq",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-11-14",
+      "is_paid": false
+    },
+    {
+      "id": "1771104654830-bxjyqj1dd",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-12-14",
+      "is_paid": false
+    },
+    {
+      "id": "1771104654830-wk8qlbdf1",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2027-01-14",
+      "is_paid": false
+    },
+    {
+      "id": "1772464611795-gczavgl3j",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 325,
+      "description": "advogada 3/5",
+      "category_id": "1771103257521-nx2cty43z",
+      "date": "2026-03-02",
+      "is_paid": true
+    },
+    {
+      "id": "1771104654830-ous2ewc9l",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-05-14",
+      "is_paid": true
+    },
+    {
+      "id": "1771104654830-8c7dc8cww",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-06-14",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-hf6uiwvo8",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 123,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-05-26",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-e6xp7muaf",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 170,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-06-26",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-ag7cgrnyn",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-07-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771103924580-d211a2ylh",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-08-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771104654830-3ls1admll",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-07-14",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-6ks750fzy",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 102,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-07-26",
+      "is_paid": true
+    },
+    {
+      "id": "1771104654830-blhlrjfyo",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-08-14",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-hmgt1n9ab",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 160,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-08-26",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-euu8c1vh6",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 325,
+      "description": "advogada 2/5",
+      "category_id": "1771103257521-nx2cty43z",
+      "date": "2026-02-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-ljw9c6odc",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 2400,
+      "description": "cartão caixa",
+      "category_id": "1771103257521-lcxiiryfs",
+      "date": "2026-02-06",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-y3kcmkopl",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 230,
+      "description": "emprestimo adagilda 5/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-02-07",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-q48ot6ja9",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 285,
+      "description": "emprestimo Luma+celular 2/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-02-07",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-81855h4pz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 165,
+      "description": "internet+balcão",
+      "category_id": "cat-3",
+      "date": "2026-02-10",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-on5x0gnvb",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1040,
+      "description": "cartão c6",
+      "category_id": "1771103257521-d8jnyzmix",
+      "date": "2026-02-18",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-3ck5w83uf",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "fiioterapia de Mãe",
+      "category_id": "cat-5",
+      "date": "2026-02-10",
+      "is_paid": true
+    },
+    {
+      "id": "1771104654830-phijxspuu",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-02-14",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-9x52cet4n",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 164.99,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-04-26",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-jw2ey160t",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 300,
+      "description": "cartão neon",
+      "category_id": "1771103257521-q6b9rphi3",
+      "date": "2026-02-25",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-dxr1pqt1g",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar de Mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2026-02-19",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-cxi2get0k",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 703.95,
+      "description": "cartão mercado pago",
+      "category_id": "1771103257521-4us0pa3li",
+      "date": "2026-02-20",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-3f2cf6744",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 690,
+      "description": "visa vale",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-03-01",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-oq6dh5b0p",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 160,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-02-26",
+      "is_paid": true
+    },
+    {
+      "id": "1771104654830-hqtly5j3r",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-09-14",
+      "is_paid": true
+    },
+    {
+      "id": "1771103257521-yta789dzq",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 380,
+      "description": "energia",
+      "category_id": "cat-3",
+      "date": "2026-09-26",
+      "is_paid": true
+    },
+    {
+      "id": "1772464542890-xrb8tkpcg",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 285,
+      "description": "emprestimo Luma+celular 3/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-03-02",
+      "is_paid": true
+    },
+    {
+      "id": "1771103924580-trc6mpzqx",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 800,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-03-05",
+      "is_paid": true
+    },
+    {
+      "id": "1771104769868-5wnck8mjg",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "emprestimo fabio",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-03-02",
+      "is_paid": true
+    },
+    {
+      "id": "1771427453891-y6dmfj7kc",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 623,
+      "description": "cartão c6",
+      "category_id": "1771103257521-d8jnyzmix",
+      "date": "2026-03-16",
+      "is_paid": true
+    },
+    {
+      "id": "1771104654830-usn5n96ab",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 45,
+      "description": "telefone",
+      "category_id": "1771103808221-9slyqpn8f",
+      "date": "2026-03-14",
+      "is_paid": true
+    },
+    {
+      "id": "1772464670163-g6mz3k45d",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 150,
+      "description": "auxiliar de Mãe",
+      "category_id": "1771103257521-i1hwds3g7",
+      "date": "2026-03-19",
+      "is_paid": true
+    },
+    {
+      "id": "1775058506132-wu464fq41",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 510,
+      "description": "dizimos",
+      "category_id": "1775058468509-7g9qkik38",
+      "date": "2026-04-06",
+      "is_paid": true
+    },
+    {
+      "id": "1783703978633-4d2oscoqw",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 58.9,
+      "description": "tenis",
+      "category_id": "cat-4",
+      "date": "2026-07-10",
+      "is_paid": true
+    },
+    {
+      "id": "1776426795508-l3almbdmo",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 2200,
+      "description": "cartão M.Pago",
+      "category_id": "1771103257521-4us0pa3li",
+      "date": "2026-04-22",
+      "is_paid": true
+    },
+    {
+      "id": "1777404514550-2wpytrbgm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 224,
+      "description": "cartão caixa",
+      "category_id": "1771103257521-lcxiiryfs",
+      "date": "2026-04-28",
+      "is_paid": true
+    },
+    {
+      "id": "1778075608063-z4jscn9wv",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 285,
+      "description": "emprestimo luma +celular 5/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-05-06",
+      "is_paid": true
+    },
+    {
+      "id": "1780338477919-lm7tctzgk",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 520,
+      "description": "DIZIMOS",
+      "category_id": "1775058468509-7g9qkik38",
+      "date": "2026-06-01",
+      "is_paid": true
+    },
+    {
+      "id": "1780665779583-5n1y7yqcl",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 300,
+      "description": "Depilação, unhas e suplá",
+      "category_id": "cat-5",
+      "date": "2026-06-05",
+      "is_paid": true
+    },
+    {
+      "id": "1782916767773-xk47n07yv",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 222,
+      "description": "emprestimo luma 2/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-07-01",
+      "is_paid": true
+    },
+    {
+      "id": "1783703978633-blqoru6ew",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 58.9,
+      "description": "tenis",
+      "category_id": "cat-4",
+      "date": "2026-10-10",
+      "is_paid": false
+    },
+    {
+      "id": "1783703978633-acyhq0oev",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 58.9,
+      "description": "tenis",
+      "category_id": "cat-4",
+      "date": "2026-11-10",
+      "is_paid": false
+    },
+    {
+      "id": "1783703978633-pa2a80ag9",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 58.9,
+      "description": "tenis",
+      "category_id": "cat-4",
+      "date": "2026-12-10",
+      "is_paid": false
+    },
+    {
+      "id": "1783703978633-l1zc2t56z",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 58.9,
+      "description": "tenis",
+      "category_id": "cat-4",
+      "date": "2027-01-10",
+      "is_paid": false
+    },
+    {
+      "id": "1782916767773-6ty8az5il",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 222,
+      "description": "emprestimo luma 3/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-08-31",
+      "is_paid": true
+    },
+    {
+      "id": "1783703978633-bztqav733",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 49,
+      "description": "tenis 2/10",
+      "category_id": "cat-4",
+      "date": "2026-08-10",
+      "is_paid": true
+    },
+    {
+      "id": "1782903207491-9z4ukqd67",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 125,
+      "description": "Reforma casa F. 2/4",
+      "category_id": "cat-3",
+      "date": "2026-08-31",
+      "is_paid": true
+    },
+    {
+      "id": "1783703978633-3toqxgea7",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 58.9,
+      "description": "tenis 3/10",
+      "category_id": "1788463417318-1fsm121dn",
+      "date": "2026-09-10",
+      "is_paid": true
+    },
+    {
+      "id": "1785780146724-bvcfbnybr",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 57,
+      "description": "RECEBER FERNANDA",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-12-25",
+      "is_paid": false
+    },
+    {
+      "id": "1785780146724-2uwrhqb9d",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 57,
+      "description": "RECEBER FERNANDA",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2027-01-25",
+      "is_paid": false
+    },
+    {
+      "id": "1785854157489-e4sxni9vp",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 70,
+      "description": "presente de laura",
+      "category_id": "cat-4",
+      "date": "2026-08-04",
+      "is_paid": true
+    },
+    {
+      "id": "1786539930729-vu5x2s9e2",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 275,
+      "description": "Pilates",
+      "category_id": "cat-5",
+      "date": "2026-10-28",
+      "is_paid": false
+    },
+    {
+      "id": "1786539930729-6szonja6i",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 275,
+      "description": "Pilates",
+      "category_id": "cat-5",
+      "date": "2026-11-28",
+      "is_paid": false
+    },
+    {
+      "id": "1786539930729-tpd30d0pm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 275,
+      "description": "Pilates",
+      "category_id": "cat-5",
+      "date": "2026-12-28",
+      "is_paid": false
+    },
+    {
+      "id": "1788265648555-nlpv4ksgn",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 70,
+      "description": "1ª parcela da camisa",
+      "category_id": "cat-4",
+      "date": "2026-09-01",
+      "is_paid": true
+    },
+    {
+      "id": "1786563697000-ck3iqc4ft",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 100,
+      "description": "consulta mãe",
+      "category_id": "cat-5",
+      "date": "2026-08-12",
+      "is_paid": true
+    },
+    {
+      "id": "1786028767789-cp494daoi",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 2230,
+      "description": "cartão mercado pago",
+      "category_id": "1771103257521-4us0pa3li",
+      "date": "2026-08-20",
+      "is_paid": true
+    },
+    {
+      "id": "1787230649318-vygur315f",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 140,
+      "description": "pneus bike",
+      "category_id": "cat-4",
+      "date": "2026-08-15",
+      "is_paid": true
+    },
+    {
+      "id": "1786028905335-uxji3w00e",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1650,
+      "description": "cartão neom",
+      "category_id": "1771103257521-q6b9rphi3",
+      "date": "2026-08-25",
+      "is_paid": true
+    },
+    {
+      "id": "1787829447648-iwv3ekpq2",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 90,
+      "description": "inscrição encontro com Deus isa",
+      "category_id": "cat-6",
+      "date": "2026-08-27",
+      "is_paid": true
+    },
+    {
+      "id": "1786967566964-adaigx38a",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 474,
+      "description": "cartão caixa",
+      "category_id": "1771103257521-lcxiiryfs",
+      "date": "2026-08-28",
+      "is_paid": true
+    },
+    {
+      "id": "1786539930722-2mvi1ewbn",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 275,
+      "description": "Pilates",
+      "category_id": "cat-5",
+      "date": "2026-08-28",
+      "is_paid": true
+    },
+    {
+      "id": "1788265513725-a6ssszvps",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 5225,
+      "description": "salario",
+      "category_id": "cat-7",
+      "date": "2026-09-01",
+      "is_paid": true
+    },
+    {
+      "id": "1788480619528-ql6p55fk4",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 217,
+      "description": "TELEVISÃO 2/10",
+      "category_id": "cat-3",
+      "date": "2026-09-03",
+      "is_paid": true
+    },
+    {
+      "id": "1788480693130-1j6cunonq",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 550,
+      "description": "Dízimo",
+      "category_id": "1775058468509-7g9qkik38",
+      "date": "2026-09-03",
+      "is_paid": true
+    },
+    {
+      "id": "1788532018522-xhgo2e9uz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 2230,
+      "description": "cartão mercado pago",
+      "category_id": "1771103257521-4us0pa3li",
+      "date": "2026-09-21",
+      "is_paid": true
+    },
+    {
+      "id": "1788460516767-hhyiddkch",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 900,
+      "description": "aluguel",
+      "category_id": "cat-3",
+      "date": "2026-09-03",
+      "is_paid": true
+    },
+    {
+      "id": "1788959179755-kubtgnii9",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 258,
+      "description": "IPTU CASA L.R.V.",
+      "category_id": "cat-3",
+      "date": "2026-09-28",
+      "is_paid": true
+    },
+    {
+      "id": "1788480619529-5ezq5ex9b",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 217,
+      "description": "TELEVISÃO",
+      "category_id": "cat-3",
+      "date": "2026-11-03",
+      "is_paid": true
+    },
+    {
+      "id": "1788480619529-ssmg3vhzr",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 217,
+      "description": "TELEVISÃO",
+      "category_id": "cat-3",
+      "date": "2026-12-03",
+      "is_paid": true
+    },
+    {
+      "id": "1788480619529-9s8tq17cs",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 217,
+      "description": "TELEVISÃO",
+      "category_id": "cat-3",
+      "date": "2027-01-03",
+      "is_paid": true
+    },
+    {
+      "id": "1788480619529-q8zzjt58p",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 217,
+      "description": "TELEVISÃO",
+      "category_id": "cat-3",
+      "date": "2027-02-03",
+      "is_paid": true
+    },
+    {
+      "id": "1788480619529-50j0kwb8r",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 217,
+      "description": "TELEVISÃO",
+      "category_id": "cat-3",
+      "date": "2027-03-03",
+      "is_paid": true
+    },
+    {
+      "id": "1788480619529-k7xc5dkw3",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 217,
+      "description": "TELEVISÃO",
+      "category_id": "cat-3",
+      "date": "2027-04-03",
+      "is_paid": true
+    },
+    {
+      "id": "1788463621335-f3vn505wk",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 710,
+      "description": "Cartão alimentação",
+      "category_id": "1771103257521-gjqzrtjd6",
+      "date": "2026-09-03",
+      "is_paid": true
+    },
+    {
+      "id": "1786539930729-61z1pln9d",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 275,
+      "description": "Pilates",
+      "category_id": "cat-5",
+      "date": "2026-09-28",
+      "is_paid": true
+    },
+    {
+      "id": "1790768580630-hkqydig5j",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 2500,
+      "description": "emprestimo",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-09-30",
+      "is_paid": true
+    },
+    {
+      "id": "1790768610048-9vwrq9rsm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 2280,
+      "description": "cartão caixa",
+      "category_id": "1771103257521-lcxiiryfs",
+      "date": "2026-09-28",
+      "is_paid": true
+    },
+    {
+      "id": "1788534719465-so9nkx2b5",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 200,
+      "description": "terapia",
+      "category_id": "1772655417333-oiodrai09",
+      "date": "2026-09-03",
+      "is_paid": true
+    },
+    {
+      "id": "1788534778277-lywo2zgsm",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 300,
+      "description": "terapia",
+      "category_id": "1772655417333-oiodrai09",
+      "date": "2026-08-28",
+      "is_paid": true
+    },
+    {
+      "id": "1784644855097-z58h0gxkc",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 402,
+      "description": "emprestimo cicera 2/4",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-09-07",
+      "is_paid": true
+    },
+    {
+      "id": "1788959179756-yx0zhphxx",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 258,
+      "description": "IPTU CASA L.R.V.",
+      "category_id": "cat-3",
+      "date": "2026-11-28",
+      "is_paid": true
+    },
+    {
+      "id": "1788531031956-ifvf6kfz4",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "aux. mãe",
+      "category_id": "cat-5",
+      "date": "2026-09-04",
+      "is_paid": true
+    },
+    {
+      "id": "1788531947609-bbizwac76",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 140,
+      "description": "pneu bike 2/2",
+      "category_id": "cat-4",
+      "date": "2026-09-15",
+      "is_paid": true
+    },
+    {
+      "id": "1788439129233-gpm3fgwxf",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 180,
+      "description": "reforma casa - bahia #Reforma Casa-Bahia",
+      "category_id": "cat-3",
+      "date": "2026-09-05",
+      "is_paid": true
+    },
+    {
+      "id": "1788532090001-ncmh2a36c",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 281,
+      "description": "cartão c6",
+      "category_id": "1771103257521-d8jnyzmix",
+      "date": "2026-09-21",
+      "is_paid": true
+    },
+    {
+      "id": "1788532170833-hfjdz0swz",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 598,
+      "description": "cartão neom",
+      "category_id": "1771103257521-q6b9rphi3",
+      "date": "2026-09-25",
+      "is_paid": true
+    },
+    {
+      "id": "1790768691705-tz9ngk9lt",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 200,
+      "description": "ajuda passagem Adagilda",
+      "category_id": "cat-4",
+      "date": "2026-09-24",
+      "is_paid": true
+    },
+    {
+      "id": "1788959179755-zk6xhn9qw",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 258,
+      "description": "IPTU CASA L.R.V.",
+      "category_id": "cat-3",
+      "date": "2026-10-28",
+      "is_paid": false
+    },
+    {
+      "id": "1790773113190-xu8v385gl",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 225,
+      "description": "emprestimo luma 5/5",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-10-05",
+      "is_paid": true
+    },
+    {
+      "id": "1790773146923-5p3btsgzd",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1500,
+      "description": "emprestimo Fabio",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-10-15",
+      "is_paid": false
+    },
+    {
+      "id": "1790773377767-w3z8d0eh1",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 110,
+      "description": "receber de cicera 2/4-bateria",
+      "category_id": "1773923369142-yicyjpbu3",
+      "date": "2026-10-12",
+      "is_paid": false
+    },
+    {
+      "id": "1790773307800-tangy3c5f",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 2100,
+      "description": "cartão mercado pago",
+      "category_id": "1771103257521-4us0pa3li",
+      "date": "2026-10-20",
+      "is_paid": false
+    },
+    {
+      "id": "1790773170677-ye1cg31ze",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "expense",
+      "amount": 1200,
+      "description": "emprestimo Adagilda",
+      "category_id": "1771103257521-2pss4m2md",
+      "date": "2026-10-15",
+      "is_paid": false
+    },
+    {
+      "id": "1790881939589-5yj00ziz9",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 150,
+      "description": "terapia",
+      "category_id": "1772655417333-oiodrai09",
+      "date": "2026-09-30",
+      "is_paid": true
+    },
+    {
+      "id": "1790773601081-3p5lyjzow",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 5060,
+      "description": "salario",
+      "category_id": "cat-7",
+      "date": "2026-10-01",
+      "is_paid": true
+    },
+    {
+      "id": "1790773576525-1vddv2vjp",
+      "user_id": "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+      "type": "income",
+      "amount": 2500,
+      "description": "saque aniversario FGTS",
+      "category_id": "cat-9",
+      "date": "2026-10-15",
+      "is_paid": false
+    }
+  ]
+}

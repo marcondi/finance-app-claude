@@ -1,0 +1,70 @@
+const fs = require('fs');
+
+const user = {
+  id: "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+  email: "marcondestl@gmail.com",
+  name: "Marcondes Lima"
+};
+
+const categoryBudgets = {
+  "1788524763196-d3g5o5ly7": 2230
+};
+
+const categories = [
+  { id: "cat-1", name: "Alimentação", color: "#ef4444", type: "expense", user_id: null },
+  { id: "cat-2", name: "Transporte", color: "#f59e0b", type: "expense", user_id: null },
+  { id: "cat-3", name: "Moradia", color: "#8b5cf6", type: "expense", user_id: null },
+  { id: "cat-4", name: "Lazer", color: "#ec4899", type: "expense", user_id: null },
+  { id: "cat-5", name: "Saúde", color: "#14b8a6", type: "expense", user_id: null },
+  { id: "cat-6", name: "Educação", color: "#3b82f6", type: "expense", user_id: null },
+  { id: "cat-7", name: "Salário", color: "#10b981", type: "income", user_id: null },
+  { id: "1775058468509-7g9qkik38", name: "Dízimos", color: "#3b82f6", type: "expense", user_id: user.id },
+  { id: "cat-9", name: "Investimentos", color: "#059669", type: "income", user_id: null },
+  { id: "cat-10", name: "Poupança", color: "#6366f1", type: "income", user_id: null },
+  { id: "1780338290400-crvul52hv", name: "IMPOSTO DE RENDA", color: "#3b82f6", type: "income", user_id: user.id },
+  { id: "1785154062699-wm98pk4t6", name: "Aluguel", color: "#3bf751", type: "income", user_id: user.id },
+  { id: "1788463417318-1fsm121dn", name: "Vestuario", color: "#903bf7", type: "expense", user_id: user.id },
+  { id: "1771103257521-nx2cty43z", name: "Advogada", color: "#f97316", type: "expense", user_id: user.id },
+  { id: "1771103257521-gjqzrtjd6", name: "Cartão alimentação", color: "#06b6d4", type: "income", user_id: user.id },
+  { id: "1771103257521-lcxiiryfs", name: "Cartão Crédito Caixa", color: "#84cc16", type: "expense", user_id: user.id },
+  { id: "1771103257521-d8jnyzmix", name: "Cartão Crédito C6", color: "#ef4444", type: "expense", user_id: user.id },
+  { id: "1771103257521-4us0pa3li", name: "Cartão Crédito Merc. Pago", color: "#f59e0b", type: "expense", user_id: user.id },
+  { id: "1771103257521-q6b9rphi3", name: "Cartão Crédito Neon", color: "#10b981", type: "expense", user_id: user.id },
+  { id: "1771103257521-i1hwds3g7", name: "Aux. Mãe", color: "#8b5cf6", type: "expense", user_id: user.id },
+  { id: "1771103257521-ha28tnyc5", name: "Fisioterapia Mãe", color: "#ec4899", type: "expense", user_id: user.id },
+  { id: "1771103257521-dpkv00dk4", name: "Férias", color: "#14b8a6", type: "income", user_id: user.id },
+  { id: "1771103257521-0xx60b8fk", name: "13º Salário", color: "#f97316", type: "income", user_id: user.id },
+  { id: "1771103257521-2pss4m2md", name: "Empréstimo", color: "#84cc16", type: "expense", user_id: user.id },
+  { id: "1771103257521-eea0mjuue", name: "Energia", color: "#ef4444", type: "expense", user_id: user.id },
+  { id: "1771103808221-9slyqpn8f", name: "📱Plano Telefônico", color: "#3b82f6", type: "expense", user_id: user.id },
+  { id: "1772655417333-oiodrai09", name: "TERAPIA", color: "#3b82f6", type: "income", user_id: user.id },
+  { id: "1773923369142-yicyjpbu3", name: "Empréstimo", color: "#3b82f6", type: "income", user_id: user.id }
+];
+
+const scheduled = [
+  { id: "1771104310003-7ni14hvvz", user_id: user.id, amount: 800, description: "aluguel", category_id: "cat-3", due_date: "2026-02-05", is_paid: true },
+  { id: "1771104310003-xpmnx9pfi", user_id: user.id, amount: 800, description: "aluguel", category_id: "cat-3", due_date: "2026-03-05", is_paid: true },
+  { id: "1771104310003-iajgg7bqm", user_id: user.id, amount: 800, description: "aluguel", category_id: "cat-3", due_date: "2026-04-05", is_paid: true },
+  { id: "1771104310003-3kmcp5k86", user_id: user.id, amount: 800, description: "aluguel", category_id: "cat-3", due_date: "2026-05-05", is_paid: true },
+  { id: "1771104310003-ipeix390g", user_id: user.id, amount: 800, description: "aluguel", category_id: "cat-3", due_date: "2026-06-05", is_paid: true },
+  { id: "1771104310003-wjqhhbv8g", user_id: user.id, amount: 800, description: "aluguel", category_id: "cat-3", due_date: "2026-07-05", is_paid: true },
+  { id: "1771104310003-znj4gx5t7", user_id: user.id, amount: 800, description: "aluguel", category_id: "cat-3", due_date: "2026-08-05", is_paid: true },
+  { id: "1771104310003-zpy5ae4es", user_id: user.id, amount: 800, description: "aluguel", category_id: "cat-3", due_date: "2026-09-05", is_paid: true },
+  { id: "1771104310003-revavwo6n", user_id: user.id, amount: 800, description: "aluguel", category_id: "cat-3", due_date: "2026-10-05", is_paid: false },
+  { id: "1771104310003-34a4rgt87", user_id: user.id, amount: 800, description: "aluguel", category_id: "cat-3", due_date: "2026-11-05", is_paid: false },
+  { id: "1788531031956-ifvf6kfz4", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2026-09-04", is_paid: true },
+  { id: "1788531031957-1c5ftfrqe", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2026-10-04", is_paid: false },
+  { id: "1788531031957-i0kda7vkf", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2026-11-04", is_paid: false },
+  { id: "1788531031957-ajo2wysuu", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2026-12-04", is_paid: false },
+  { id: "1788531031957-y22cj6mla", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2027-01-04", is_paid: false },
+  { id: "1788531031957-ympxdjuwb", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2027-02-04", is_paid: false },
+  { id: "1788531031957-4cwzyh01p", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2027-03-04", is_paid: false },
+  { id: "1788531031957-7k9z25dw3", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2027-04-04", is_paid: false },
+  { id: "1788531031957-11z05m6cg", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2027-05-04", is_paid: false },
+  { id: "1788531031957-57dze4w86", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2027-06-04", is_paid: false },
+  { id: "1788531031957-dapcsr3wc", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2027-07-04", is_paid: false },
+  { id: "1788531031957-2j1wscczf", user_id: user.id, amount: 200, description: "aux. mãe", category_id: "cat-5", due_date: "2027-08-04", is_paid: false }
+];
+
+fs.writeFileSync(__dirname + '/base_meta.json', JSON.stringify({ user, categories, scheduled, categoryBudgets }, null, 2));
+console.log('base_meta.json written');

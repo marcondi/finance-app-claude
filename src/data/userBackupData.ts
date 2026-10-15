@@ -1,0 +1,42 @@
+import { Category } from '../types';
+
+export const BACKUP_USER = {
+  id: "cbbe8c73-8d6b-4523-bc0f-2d621d9b5a6d",
+  email: "marcondestl@gmail.com",
+  name: "Marcondes Lima"
+};
+
+export const BACKUP_CATEGORIES: Category[] = [
+  { id: "cat-1", name: "Alimentação", color: "#ef4444", type: "expense" },
+  { id: "cat-2", name: "Transporte", color: "#f59e0b", type: "expense" },
+  { id: "cat-3", name: "Moradia", color: "#8b5cf6", type: "expense" },
+  { id: "cat-4", name: "Lazer", color: "#ec4899", type: "expense" },
+  { id: "cat-5", name: "Saúde", color: "#14b8a6", type: "expense" },
+  { id: "cat-6", name: "Educação", color: "#3b82f6", type: "expense" },
+  { id: "cat-7", name: "Salário", color: "#10b981", type: "income" },
+  { id: "1775058468509-7g9qkik38", name: "Dízimos", color: "#3b82f6", type: "expense" },
+  { id: "cat-9", name: "Investimentos", color: "#059669", type: "income" },
+  { id: "cat-10", name: "Poupança", color: "#6366f1", type: "income" },
+  { id: "1780338290400-crvul52hv", name: "IMPOSTO DE RENDA", color: "#3b82f6", type: "income" },
+  { id: "1785154062699-wm98pk4t6", name: "Aluguel", color: "#3bf751", type: "income" },
+  { id: "1788463417318-1fsm121dn", name: "Vestuario", color: "#903bf7", type: "expense" },
+  { id: "1771103257521-nx2cty43z", name: "Advogada", color: "#f97316", type: "expense" },
+  { id: "1771103257521-gjqzrtjd6", name: "Cartão alimentação", color: "#06b6d4", type: "income" },
+  { id: "1771103257521-lcxiiryfs", name: "Cartão Crédito Caixa", color: "#84cc16", type: "expense" },
+  { id: "1771103257521-d8jnyzmix", name: "Cartão Crédito C6", color: "#ef4444", type: "expense" },
+  { id: "1771103257521-4us0pa3li", name: "Cartão Crédito Merc. Pago", color: "#f59e0b", type: "expense" },
+  { id: "1771103257521-q6b9rphi3", name: "Cartão Crédito Neon", color: "#10b981", type: "expense" },
+  { id: "1771103257521-i1hwds3g7", name: "Aux. Mãe", color: "#8b5cf6", type: "expense" },
+  { id: "1771103257521-ha28tnyc5", name: "Fisioterapia Mãe", color: "#ec4899", type: "expense" },
+  { id: "1771103257521-dpkv00dk4", name: "Férias", color: "#14b8a6", type: "income" },
+  { id: "1771103257521-0xx60b8fk", name: "13º Salário", color: "#f97316", type: "income" },
+  { id: "1771103257521-2pss4m2md", name: "Empréstimo", color: "#84cc16", type: "expense" },
+  { id: "1771103257521-eea0mjuue", name: "Energia", color: "#ef4444", type: "expense" },
+  { id: "1771103808221-9slyqpn8f", name: "📱Plano Telefônico", color: "#3b82f6", type: "expense" },
+  { id: "1772655417333-oiodrai09", name: "TERAPIA", color: "#3b82f6", type: "income" },
+  { id: "1773923369142-yicyjpbu3", name: "Empréstimo", color: "#3b82f6", type: "income" }
+];
+
+export const BACKUP_BUDGETS: Record<string, number> = {
+  "1788524763196-d3g5o5ly7": 2230
+};

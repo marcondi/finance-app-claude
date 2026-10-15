@@ -1,0 +1,8 @@
+{
+  "name": "FinanceApp",
+  "description": "App de Finanças Pessoais com Google Calendar integrado",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

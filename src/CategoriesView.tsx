@@ -1,15 +1,26 @@
 import React from 'react';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Category } from './types';
+
+interface CategoriesViewProps {
+  darkMode: boolean;
+  categories: Category[];
+  categoryBudgets: Record<string, number>;
+  showVal: (val: number) => string;
+  setEditingCategory: (cat: Category) => void;
+  setShowCategoryModal: (show: boolean) => void;
+  deleteCategory: (id: string) => void;
+}
 
 export default function CategoriesView({
   darkMode,
-  categories,
-  categoryBudgets,
+  categories = [],
+  categoryBudgets = {},
   showVal,
   setEditingCategory,
   setShowCategoryModal,
   deleteCategory
-}) {
+}: CategoriesViewProps) {
   return (
     <>
       <div className="flex justify-between items-center mb-6">
@@ -18,7 +29,7 @@ export default function CategoriesView({
         </h2>
         <button
           onClick={() => setShowCategoryModal(true)}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors shadow"
         >
           <Plus className="w-5 h-5" />
           Nova Categoria

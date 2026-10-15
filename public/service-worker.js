@@ -1,43 +1,21 @@
-const CACHE_NAME = 'financeapp-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/static/js/main.chunk.js',
-  '/static/js/bundle.js',
-  '/manifest.json',
-  '/logo192.png',
-  '/logo512.png',
-];
+const CACHE_NAME = 'financeapp-v2-' + Date.now();
 
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      Promise.all(keys.map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
-  // Apenas recursos same-origin e não API calls
-  if (!event.request.url.startsWith(self.location.origin)) return;
-  if (event.request.url.includes('/functions/v1/')) return;
-  if (event.request.url.includes('supabase.co')) return;
-
+  // Always fetch fresh network response first
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
