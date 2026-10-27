@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HydroDiag AI — Diagnóstico Eletromecânico para PCH/UHE</title>
+<style>
+:root{--bg:#10151b;--panel:#171e26;--panel2:#1d262f;--line:#2b3744;--text:#dbe4ec;--mute:#a9b8c6;--accent:#f2a623;--ok:#3fb58a;--err:#e5586b;--mono:"JetBrains Mono",ui-monospace,Consolas,monospace;--sans:"IBM Plex Sans","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 var(--sans)}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.01em}
+h1 small{display:block;color:var(--mute);font-weight:400;font-size:12px}
+main{max-width:1500px;margin:0 auto;padding:20px;display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+.col{display:grid;gap:18px;align-content:start}
+@media(min-width:1000px){main{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}.col.right{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}}
+section{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);padding:16px 18px;border-radius:4px}
+section h2{margin:0 0 10px;font-size:15px;font-weight:600}
+.drop{border:1px dashed var(--line);padding:22px;text-align:center;color:var(--mute);cursor:pointer;border-radius:4px;background:var(--panel2)}
+.drop.over{border-color:var(--accent);color:var(--text)}
+.files{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:6px}
+.files li{display:flex;justify-content:space-between;gap:10px;background:var(--panel2);padding:6px 10px;border-radius:3px;font-family:var(--mono);font-size:12px}
+.files .tag{color:var(--accent)}
+button,input,textarea{font:inherit;color:var(--text)}
+button{background:var(--panel2);border:1px solid var(--line);padding:8px 12px;border-radius:3px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:#1a1200;border-color:var(--accent);font-weight:600}
+button:disabled{opacity:.5;cursor:wait}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+textarea,input[type=password]{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:3px;padding:10px}
+textarea{min-height:84px;resize:vertical}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.key{display:flex;gap:8px;align-items:center}
+.key input{width:230px}
+.md h3{font-size:16px;margin:18px 0 8px;color:var(--accent)}
+.md h3:first-child{margin-top:0}
+.md code{font-family:var(--mono);background:var(--bg);padding:1px 5px;border-radius:3px;font-size:13px}
+.md ul,.md ol{padding-left:22px}
+.md p{margin:8px 0}
+.status{color:var(--mute);font-size:13px;min-height:20px}
+.status.err{color:var(--err)}
+.chat{display:grid;gap:10px;margin-bottom:12px;max-height:40vh;overflow:auto}
+.msg{padding:10px 12px;border-radius:4px;background:var(--panel2)}
+.msg.user{background:#243242;justify-self:end;max-width:85%}
+.hidden{display:none}
+.msg.user{white-space:pre-wrap}
+.md table{border-collapse:collapse;display:block;overflow-x:auto;margin:8px 0}
+.md th,.md td{border:1px solid var(--line);padding:5px 9px;text-align:left;font-size:13px}
+.md th{background:var(--panel2)}
+.warn{border:1px solid var(--err);background:#2a1a20;padding:8px 12px;border-radius:3px;font-size:13px;margin-bottom:12px}
+.rhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.rhead h2{margin:0}
+#placeholder{color:var(--mute);border-left-color:var(--line)}
+#caseLine{color:var(--mute);font-size:13px;margin:0 0 10px}
+@media print{body{background:#fff;color:#000}header,.col:not(.right),#chatBox,#placeholder,.noprint{display:none!important}.col.right{position:static;max-height:none;overflow:visible}section{border:0;background:#fff}.md h3{color:#000}.md code,.md th{background:#eee;color:#000}.warn{border:1px solid #000;background:#fff;color:#000}#caseLine{color:#000}}
+.files li{flex-wrap:wrap;align-items:center;gap:6px}
+.fl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sel{width:200px;padding:3px 6px;background:var(--bg);border:1px solid var(--line);border-radius:3px;font-size:12px}
+.est{color:var(--mute)}
+.md a,#checklist a{color:var(--accent)}
+.cl{list-style:none;padding:0}.cl li{margin:7px 0}.cl label{display:flex;gap:8px;align-items:flex-start}
+#viewer{position:fixed;inset:2vh 1vw 2vh 1vw;z-index:50;background:var(--panel);border:1px solid var(--accent);display:flex;flex-direction:column}
+@media(min-width:1000px){#viewer{right:auto;width:min(46vw,900px)}}
+#viewer.hidden{display:none}
+.vbar{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line)}
+#vBody{flex:1;min-height:0}#vBody iframe,#vBody img{width:100%;height:100%;border:0;object-fit:contain;background:#fff}
+#field{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column}
+#field.hidden{display:none}
+.fbody{flex:1;overflow:auto;padding:12px;display:grid;gap:10px;align-content:start;max-width:760px;width:100%;margin:0 auto}
+#fVideo{width:100%;max-height:38vh;background:#000;border-radius:4px;object-fit:contain}
+#field button{min-height:46px;font-size:15px}
+#stopFab{position:fixed;right:14px;bottom:14px;z-index:80;background:var(--err);color:#fff;border:0;padding:14px 18px;font-size:15px;border-radius:28px;box-shadow:0 2px 10px #000a}
+#stopFab.hidden{display:none}
+@media print{#viewer,#auditBox,#field,#stopFab{display:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>HydroDiag AI<small>Diagnóstico eletromecânico, supervisório e resolução de falhas — PCH/UHE</small></h1>
+  <div class="key">
+    <input id="modelName" type="text" placeholder="Modelo Gemini" aria-label="Modelo Gemini" style="width:200px">
+    <input id="apiKey" type="password" placeholder="Chave da API Gemini" autocomplete="off" aria-label="Chave da API Gemini">
+    <button id="saveKey">Salvar chave</button>
+    <button id="detect">Detectar modelos</button>
+    <button id="ping">🩺 Testar conexão</button>
+    <button id="fieldBtn" class="primary">📱 Modo campo</button>
+  </div>
+</header>
+
+<main>
+<div class="col">
+  <section>
+    <h2>1. Desenhos do projeto (PDF ou foto)</h2>
+    <div id="drop" class="drop" tabindex="0" role="button">Arraste PDFs (/EL, /ME, /RM, /RB) ou fotos de campo, ou clique para selecionar</div>
+    <input id="fileMain" type="file" accept="application/pdf,image/jpeg,image/png" multiple hidden>
+    <input id="fileNext" type="file" accept="application/pdf,image/jpeg,image/png" multiple hidden>
+    <input id="filePhoto" type="file" accept="image/*" capture="environment" hidden>
+    <ul id="files" class="files"></ul>
+    <div class="row"><button id="countTok">Contar tokens (API)</button><span id="tokenInfo" class="status"></span></div>
+    <div class="row"><button id="indexBtn">🗂 Indexar projeto</button><button id="indexExport">⬇ Índice (JSON)</button><button id="auditBtn">🔎 Auditar índice</button><span id="indexInfo" class="status"></span></div>
+    <div class="row">
+      <button id="addNext">Adicionar próximo desenho na sequência</button>
+      <button id="photo">📷 Tirar foto</button>
+      <button id="reset">Nova análise (limpar histórico)</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Consulta de falha ou alarme</h2>
+    <textarea id="query" placeholder="Ex.: Baixa pressão de óleo na UHLM / Falta de tensão 125Vcc no CSG2 / Fusível queimado na folha 4"></textarea>
+    <div class="row">
+      <button class="primary" id="diagnose">Diagnosticar</button>
+      <button data-quick="measure">Onde medir com o multímetro?</button>
+      <button data-quick="fix">Como resolver e corrigir a falha?</button>
+      <button data-quick="place">Localização física (/ME)</button>
+      <button data-quick="part">Código da peça na Lista de Materiais (/RM)</button>
+      <label class="est"><input type="checkbox" id="useIndex" checked> Usar índice/catálogo para enviar só as páginas relevantes</label>
+      <label class="est"><input type="checkbox" id="useAiSyn"> Pedir sinônimos à IA (1 chamada curta, só texto)</label>
+    </div>
+    <p id="status" class="status" role="status"></p>
+  </section>
+
+  <section>
+    <h2>4. Casos salvos (neste navegador)</h2>
+    <ul id="cases" class="files"></ul>
+  </section>
+  <section>
+    <h2>5. Catálogo alarme → TAG (aprendido dos casos)</h2>
+    <ul id="catalog" class="files"></ul>
+    <div class="row"><button id="catExport">⬇ Catálogo (JSON)</button></div>
+  </section>
+  <section>
+    <h2>6. Glossário de equivalências</h2>
+    <p class="est">Um grupo por linha, termos separados por "=". A busca no índice considera todos os termos do grupo. Alarmes salvos no catálogo já funcionam como apelido do TAG.</p>
+    <textarea id="glossary" style="min-height:150px;font-family:var(--mono);font-size:12px"></textarea>
+    <div class="row"><button id="glossarySave">Salvar glossário</button><button id="glossaryReset">Restaurar padrão</button><span id="glossaryInfo" class="status"></span></div>
+  </section>
+</div>
+<div class="col right">
+  <section id="auditBox" class="hidden">
+    <h2>Auditoria do índice (amostragem)</h2>
+    <p class="est">Abra o link de cada item, compare com o desenho e marque ✔ ou ✘. Itens errados saem do índice; os confirmados passam a ter prioridade na busca.</p>
+    <ul id="auditList" class="files"></ul>
+    <div class="row"><button class="primary" id="auditApply">Aplicar resultado</button><button id="auditClose">Fechar</button></div>
+    <p id="auditResult" class="status"></p>
+  </section>
+  <section id="placeholder">O diagnóstico e o chat de investigação aparecerão aqui.</section>
+  <section id="resultBox" class="hidden">
+    <div class="rhead"><h2>3. Diagnóstico</h2>
+      <div class="noprint"><button id="listBtn">📋 Checklist de campo</button> <button id="reportBtn">🧾 Relatório de OS</button> <button id="copyBtn">Copiar</button> <button id="printBtn">Imprimir / salvar PDF</button></div></div>
+    <div class="warn">⚠️ Segurança: desenergize e bloqueie (LOTO) antes de testes de continuidade; siga a NR-10; use multímetro com categoria CAT adequada; medição energizada só por pessoa habilitada. Em média tensão (52G, 89-x), siga o procedimento da usina. O resultado é apoio técnico: confira cada folha, borne e revisão no desenho oficial.</div>
+    <p id="caseLine"></p>
+    <div id="result" class="md"></div>
+    <div id="checklistBox" class="hidden"><h3 style="color:var(--accent)">Checklist de campo</h3><div id="checklist"></div></div>
+  </section>
+
+  <section id="chatBox" class="hidden">
+    <h2>Chat de investigação com Google Gemini</h2>
+    <div id="chat" class="chat"></div>
+    <ul id="chatChips" class="files"></ul>
+    <textarea id="chatInput" placeholder="Pergunte sobre bornes, folhas, componentes mecânicos... Arraste ou anexe novos PDFs/fotos para continuar a investigação (Ctrl+Enter envia)"></textarea>
+    <input id="fileChat" type="file" accept="application/pdf,image/jpeg,image/png" multiple hidden>
+    <div class="row"><button class="primary" id="chatSend">Enviar</button><button id="attachChat">📎 Anexar arquivo</button></div>
+  </section>
+</div>
+</main>
+
+<button id="stopFab" class="hidden" aria-label="Parar geração">⏹ Parar</button>
+<div id="field" class="hidden" role="dialog" aria-label="Modo campo">
+  <div class="vbar"><strong>📱 Modo campo</strong><button id="fClose">✕ Fechar</button></div>
+  <div class="fbody">
+    <video id="fVideo" playsinline muted></video>
+    <div class="row"><button id="fCam">🎥 Ligar câmera</button><button id="fShot">📸 Capturar</button><button id="fMic">🎤 Falar alarme</button></div>
+    <p id="fInfo" class="status" role="status"></p>
+    <textarea id="fQuery" placeholder="Fale ou digite o alarme (ex.: SASE-MSS falha switch). Confira o texto ditado, siglas costumam sair erradas."></textarea>
+    <div class="row"><button class="primary" id="fGo">Diagnosticar</button><button id="fSpeak">🔊 Ler resposta</button><label class="est"><input type="checkbox" id="fAuto"> ler automaticamente</label></div>
+    <div class="warn">⚠️ Apoio técnico: confirme no desenho oficial. Desenergize e bloqueie (LOTO) e siga a NR-10 antes de qualquer teste.</div>
+    <div id="fResult" class="md"></div>
+  </div>
+</div>
+<div id="viewer" class="hidden"><div class="vbar"><strong id="vTitle"></strong><span><button id="vNew">Abrir em nova aba</button> <button id="vClose">✕ Fechar</button></span></div><div id="vBody"></div></div>
+<script type="module">
+import { GoogleGenAI } from "https://esm.sh/@google/genai@1.0.0";
+
+let marked = null, DOMPurify = null, PDFDocument = null;
+try {
+  ({ marked } = await import("https://esm.sh/marked@12.0.2"));
+  DOMPurify = (await import("https://esm.sh/dompurify@3.1.6")).default;
+} catch { /* sem rede para as bibliotecas: usa o renderizador simples */ }
+try { ({ PDFDocument } = await import("https://esm.sh/pdf-lib@1.17.1")); } catch { /* sem pdf-lib: envia o PDF inteiro */ }
+
+/* ============ DOMAIN: regras e conhecimento do especialista ============ */
+const DEFAULT_MODELS = ["gemini-flash-latest", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.1-flash-lite"];
+const DEFAULT_MODEL = DEFAULT_MODELS[0];
+const KEY_STORAGE = "hydrodiag.apiKey";
+const MODEL_STORAGE = "hydrodiag.model.v2";
+const FALLBACK_STORAGE = "hydrodiag.fallbacks.v2";
+
+const SYSTEM_INSTRUCTION = `Você é um Sistema Especialista Híbrido composto por um Engenheiro Eletricista Sênior de Manutenção/Proteção de Usinas Hidrelétricas (PCH/UHE) e um Engenheiro de Automação.
+Sua missão é analisar cadernos de projetos elétricos industriais (padrão WEG/IEC/ANSI, contendo diagramas unifilares, funcionais \`/EL\`, mecânicos \`/ME\`, materiais \`/RM\` e réguas de bornes \`/RB\`) enviados em PDF ou imagem para localizar falhas sinalizadas no supervisório e ensinar como corrigi-las passo a passo.
+
+DIRETRIZES DE ANÁLISE TÉCNICA E RESOLUÇÃO:
+1. VARREDURA E LOCALIZAÇÃO:
+   - Localize a Folha exata (\`/EL\`, \`/RB\`, \`/ME\`, \`/RM\`), o número da página do PDF e a coordenada (Linha A-F, Coluna 1-8) que envia a informação da falha para o supervisório/CLP (ex: entradas digitais \`XED\`, cartões de CLP, relés SEL).
+   - Se o alarme consultado (ex: "Baixa pressão de óleo na UHLM") NÃO pertencer ao PDF anexado atualmente, avise claramente o que consta no PDF atual e peça para o usuário subir o caderno elétrico correspondente (ex: Painel da Unidade Geradora \`PCPG\`, \`CLP-SASE\` ou \`QDCC\`).
+
+2. RASTREAMENTO E REFERÊNCIAS CRUZADAS:
+   - Siga os barramentos de comando (ex: \`125 Vcc\`, \`220 Vca\`) e leia as referências cruzadas (\`Folha/LinhaColuna\`, ex: \`3/E4\`) para identificar bobinas (\`A1-A2\`), contatos auxiliares e intertravamentos.
+
+3. GUIA PRÁTICO DE MULTÍMETRO (PONTA DE PROVA):
+   - Indique exatamente em qual Régua de Bornes (ex: \`1X2\`, \`2X2\`, \`3X2\`, \`4X2\`, \`3XD\`) e em qual número de borne colocar a ponta de prova vermelha (+) e a preta (-) do multímetro para medir os \`125 Vcc\` (ou continuidade).
+   - Especifique qual contato \`NA\` (Normalmente Aberto) ou \`NF\` (Normalmente Fechado) testar (indicando a numeração dos terminais, ex: \`13-14\`, \`21-22\`, \`31-32\`, \`43-44\` ou pinos da tomada \`XB1\`), explicando o valor esperado em condição normal e em condição de falha.
+
+4. PROCEDIMENTO DE RESOLUÇÃO E CORREÇÃO DA FALHA:
+   - Forneça um guia de ação corretiva claro e seguro para o operador/eletricista resolver o problema com base no diagrama elétrico.
+   - Especifique a manobra física necessária (ex: substituição de cartucho de fusível tipo HH, rearme de minidisjuntor termomagnético, correção de sinalização no supervisório).
+   - Se envolver chaves seccionadoras (\`89-5\`, \`89-31\`) ou disjuntores a vácuo (\`52G1\`/\`52G2\`), alerte sobre intertravamentos mecânicos, bloqueios Kirk e o sentido correto de acionamento (ex: ciclos de 90° no sentido anti-horário conforme as plaquetas de advertência do projeto).
+
+5. LOCALIZAÇÃO FÍSICA E REPOSIÇÃO DE PEÇA:
+   - Consulte os Desenhos Mecânicos (\`/ME\`) e descreva a posição física exata do componente no painel (Coluna, compartimento de baixa/média tensão).
+   - Consulte a Relação de Materiais (\`/RM\`) e informe TAG, Fabricante, Modelo e Código do material para substituição.
+
+6. NAVEGAÇÃO SEQUENCIAL ENTRE DESENHOS:
+   - Quando o sinal sair para outro documento externo (indicado por linhas tracejadas na régua de bornes ou funcional), informe o Número do Documento externo (ex: \`10001879846-PRJ\`), o nome do painel (\`PCPG1\`, \`PCPG2\`, \`PSE+CLP-SASE\`), a Folha de destino (\`EL.xx\`) e os bornes de chegada, solicitando o upload desse desenho na sequência caso necessário.
+
+FORMATO OBRIGATÓRIO DE RESPOSTA:
+### 🚨 1. Diagnóstico e Localização no Desenho
+### 📟 2. Guia de Teste com Multímetro (Passo a Passo)
+### 🛠️ 3. Como Resolver e Corrigir a Falha (Procedimento de Campo)
+### 🗄️ 4. Localização Física no Painel (/ME) e Dados da Peça (/RM)
+### 🔄 5. Próximo Desenho na Sequência (Se aplicável)`;
+
+const RIGOR = `
+
+REGRAS DE EVIDÊNCIA E SEGURANÇA (obrigatórias):
+- Marque cada afirmação técnica com [LIDO: nome-do-arquivo.pdf, folha, pág. N, coordenada] quando estiver no desenho (repita o nome exato do arquivo e use sempre o número da página ORIGINAL do arquivo, nunca a posição dentro de um PDF recortado), ou [INFERIDO] quando for dedução ou conhecimento típico de usina. Nunca use certeza absoluta (ex.: "100% comprovado"); informe a confiança apenas como alta, média ou baixa, com o motivo, e nunca use percentuais de probabilidade.
+- Informe a revisão (as-built) de cada folha citada, se constar na legenda, e avise se houver mais de uma versão.
+- Use somente as tensões lidas no desenho citado; se não estiverem legíveis, diga isso. Não presuma 125 Vcc ou 220 Vca.
+- Separe "medições com circuito energizado (tensão)" de "testes com circuito desenergizado e bloqueado (continuidade)", na ordem: alimentação a montante, queda sobre proteção/fusível, entrada digital do CLP.
+- Antes de qualquer teste ou manobra, lembre desenergização e bloqueio (LOTO), NR-10 e a categoria (CAT) do multímetro; em média tensão, siga o procedimento da usina.`;
+const DIAG_INSTRUCTION = SYSTEM_INSTRUCTION + RIGOR;
+
+const CHAT_INSTRUCTION = SYSTEM_INSTRUCTION.split("FORMATO OBRIGATÓRIO DE RESPOSTA:")[0] + `
+PAPEL NO CHAT DE INVESTIGAÇÃO:
+Neste chat você atua também como Engenheiro Eletromecânico Sênior de usinas hidrelétricas (PCH/UHE), com domínio de: geradores síncronos e excitação; turbinas (Francis, Kaplan, Pelton), regulador de velocidade e UHRV; unidade hidráulica de lubrificação (UHLM) e mancais (guia, escora); selo do eixo e vedações; sistemas auxiliares (resfriamento, drenagem, esgotamento, ar comprimido, detecção e combate a incêndio); comportas e válvula de entrada; serviços auxiliares CA/CC (125 Vcc, 220 Vca), proteção, SPDA e aterramento; supervisório, CLP e redes Ethernet (switches, fibra, protocolos).
+Continue a investigação da falha já discutida, mantendo o contexto e os documentos enviados anteriormente, incluindo novos anexos.
+REGRAS:
+1. Raciocine de causa para efeito: liste hipóteses em ordem de probabilidade e indique o teste que confirma ou descarta cada uma (elétrico e mecânico).
+2. Baseie-se nos documentos. Cite folha, página do PDF e coordenada quando houver. Nunca invente TAG, borne, código de material ou pino; se o dado não estiver nos documentos enviados, diga isso e peça o desenho necessário.
+3. Separe claramente o que está no desenho do que é conhecimento geral ou típico de usina.
+4. Segurança primeiro: indique desenergização, bloqueio e etiquetagem (LOTO), NR-10, bloqueios mecânicos (Kirk), parada e isolamento hidráulico e de pressão residual antes de qualquer intervenção, e confirmação com o procedimento da usina.
+5. Responda de forma objetiva e técnica, em português do Brasil. O formato de 5 seções não é obrigatório no chat; use-o apenas se o usuário pedir um novo diagnóstico completo.
+6. Se um anexo estiver ilegível ou ambíguo, diga o que não conseguiu ler e peça foto ou folha melhor.` + RIGOR;
+
+const CHECKLIST_INSTRUCTION = "Converta o diagnóstico em um checklist de campo em JSON. Use somente informações presentes no texto; não invente bornes, páginas ou códigos (deixe vazio o que não constar). Ordem: segurança, medições, correção, verificação final. 'pagina' é o número ORIGINAL citado e 'arquivo' o nome do arquivo citado. evidencia = LIDO ou INFERIDO; risco = baixo, medio ou alto. Preencha também 'catalogo' com o alarme consultado, o TAG, o arquivo, a folha, a coordenada e a página que o originam e a resolução resumida.";
+const CHECKLIST_SCHEMA = { type: "OBJECT", required: ["etapas"], properties: {
+  resumo: { type: "STRING" }, peca: { type: "STRING" }, proximo_desenho: { type: "STRING" },
+  catalogo: { type: "OBJECT", properties: { alarme: { type: "STRING" }, tag: { type: "STRING" }, arquivo: { type: "STRING" }, folha: { type: "STRING" }, coordenada: { type: "STRING" }, pagina: { type: "INTEGER" }, resolucao: { type: "STRING" } } },
+  etapas: { type: "ARRAY", items: { type: "OBJECT", required: ["fase", "acao"], properties: {
+    fase: { type: "STRING" }, acao: { type: "STRING" }, detalhe: { type: "STRING" }, arquivo: { type: "STRING" },
+    pagina: { type: "INTEGER" }, referencia: { type: "STRING" }, evidencia: { type: "STRING" }, risco: { type: "STRING" } } } } } };
+
+const LIMITS = { first: 600000, idle: 60000, maxChars: 30000 };
+const REPEAT_NOTE = "\n\n⚠️ Resposta interrompida: o modelo entrou em repetição. Reformule a pergunta ou tente outro modelo.";
+const LIMIT_NOTE = "\n\n⚠️ Resposta interrompida por tamanho excessivo.";
+const IDLE_NOTE = "\n\n⚠️ Resposta interrompida: o modelo parou de responder.";
+const STOP_NOTE = "\n\n⚠️ Geração interrompida por você.";
+const GLOSSARY_KEY = "hydrodiag.glossary";
+const DEFAULT_GLOSSARY = [
+  "regulador de velocidade = rv = uhrv = governor",
+  "unidade hidráulica de lubrificação = uhlm = óleo de lubrificação",
+  "baixa pressão de óleo = pressão de óleo baixa = baixa pressão óleo",
+  "falha de comunicação = perda de comunicação = sem comunicação = falha de link = timeout",
+  "falha switch = falha de switch = switch ethernet = falha de rede",
+  "falta de tensão = sem tensão = perda de tensão = ausência de tensão",
+  "fusível queimado = fusível aberto = fusível atuado",
+  "temperatura alta = alta temperatura = sobretemperatura",
+  "nível baixo = baixo nível",
+  "mancal guia = mancal de guia",
+  "mancal de escora = mancal escora",
+  "clp = plc = controlador lógico programável"
+].join("\n");
+const CHUNK_PAGES = 8;
+const STOP = new Set(["alarme", "falha", "erro", "sinalizando", "supervisorio", "para", "com", "que", "uma", "por", "dos", "das", "nao", "esta"]);
+const INDEX_INSTRUCTION = "Você extrai o índice de um caderno de projeto elétrico de usina hidrelétrica (folhas /EL, /ME, /RM, /RB). Extraia SOMENTE o que estiver legível; não invente. 'pagina' é a posição da página neste arquivo (1 a N). folhas: uma por página (código da folha, título, painel). bornes: cada borne das réguas (régua, número, função/sinal, destino). materiais: itens da relação de materiais (TAG, fabricante, modelo, código). sinais: alarmes, sinalizações e entradas/saídas digitais do supervisório/CLP (nome do sinal, TAG, coordenada linha/coluna, destino/cartão).";
+const STR = { type: "STRING" }, INT = { type: "INTEGER" };
+const ARR = (properties) => ({ type: "ARRAY", items: { type: "OBJECT", properties } });
+const INDEX_SCHEMA = { type: "OBJECT", properties: {
+  folhas: ARR({ pagina: INT, folha: STR, titulo: STR, painel: STR }),
+  bornes: ARR({ pagina: INT, regua: STR, borne: STR, funcao: STR, destino: STR }),
+  materiais: ARR({ pagina: INT, tag: STR, fabricante: STR, modelo: STR, codigo: STR }),
+  sinais: ARR({ pagina: INT, nome: STR, tag: STR, coordenada: STR, destino: STR }) } };
+
+const QUICK_ACTIONS = {
+  measure: "Onde medir com o multímetro? Detalhe bornes, pontas de prova e valores esperados.",
+  fix: "Como resolver e corrigir a falha? Detalhe o procedimento de campo e os cuidados de segurança.",
+  place: "Qual a localização física do componente envolvido nos desenhos /ME?",
+  part: "Qual o código da peça na Relação de Materiais (/RM)? Informe TAG, fabricante e modelo."
+};
+
+/* ============ INFRASTRUCTURE: arquivos e gateway Gemini ============ */
+
+/**
+ * Determina o MIME do arquivo, usando a extensão quando o navegador não informa.
+ * @param {File} file Arquivo selecionado.
+ * @returns {string} Tipo MIME ou string vazia.
+ */
+function resolveMime(file) {
+  if (file.type) return file.type;
+  const ext = file.name.split(".").pop().toLowerCase();
+  return { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png" }[ext] || "";
+}
+
+let stopFlag = false, stopHandle = null, genStatus = "";
+
+/**
+ * Define a etapa mostrada durante a geração (com cronômetro).
+ * @param {string} msg Texto da etapa.
+ */
+function phase(msg) { genStatus = msg; }
+
+/**
+ * Tamanho aproximado do envio (dados inline + texto) em megabytes.
+ * @param {Array} contents Conteúdos do Gemini.
+ * @returns {string} Tamanho com uma casa decimal.
+ */
+function payloadMB(contents) {
+  let n = 0;
+  for (const c of contents) for (const p of c.parts) n += p.inlineData ? p.inlineData.data.length : (p.text || "").length;
+  return (n / 1048576).toFixed(1);
+}
+
+/** Pede a interrupção da geração (ou da indexação) em andamento. */
+function requestStop() { stopFlag = true; if (stopHandle) stopHandle(); }
+
+/**
+ * Aguarda uma promessa com tempo limite.
+ * @param {Promise} promise Promessa.
+ * @param {number} ms Limite em milissegundos.
+ * @param {string} msg Mensagem do erro de tempo esgotado.
+ * @returns {Promise} Resultado da promessa ou erro de tempo esgotado.
+ */
+function withTimeout(promise, ms, msg) {
+  let t;
+  const timer = new Promise((_, rej) => { t = setTimeout(() => rej(new Error(msg)), ms); });
+  return Promise.race([promise, timer]).finally(() => clearTimeout(t));
+}
+
+/**
+ * Detecta repetição degenerada: o trecho final (120 caracteres) aparece 4 vezes ou mais nos últimos 6000 caracteres.
+ * @param {string} acc Texto acumulado.
+ * @returns {number} Posição do fim da primeira cópia do trecho repetido, ou -1.
+ */
+function findRepetition(acc) {
+  if (acc.length < 600) return -1;
+  const tail = acc.slice(-120);
+  const base = Math.max(0, acc.length - 6000);
+  const win = acc.slice(base);
+  let n = 0, pos = win.indexOf(tail);
+  const first = pos;
+  while (pos !== -1) { n++; pos = win.indexOf(tail, pos + 1); }
+  return n >= 4 ? base + first + tail.length : -1;
+}
+
+/** @returns {object} Índice de projeto vazio (folhas, bornes, materiais, sinais e páginas já indexadas). */
+function emptyIndex() { return { folhas: [], bornes: [], materiais: [], sinais: [], done: {}, suspect: [] }; }
+
+/**
+ * Normaliza texto para busca (sem acentos, minúsculo).
+ * @param {unknown} s Texto.
+ * @returns {string} Texto normalizado.
+ */
+function norm(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+
+/**
+ * Escapa caracteres especiais para uso em expressão regular.
+ * @param {string} s Texto.
+ * @returns {string} Texto escapado.
+ */
+function escRe(s) { return s.replace(/[.*+?^$()|[\]\\{}]/g, "\\$&"); }
+
+/**
+ * Testa se o texto normalizado contém o termo (siglas de até 3 letras exigem palavra inteira).
+ * @param {string} txt Texto normalizado.
+ * @param {string} v Termo normalizado.
+ * @returns {boolean} Verdadeiro se contém.
+ */
+function hasTerm(txt, v) { return v.length <= 3 ? new RegExp(`(^|[^a-z0-9])${escRe(v)}([^a-z0-9]|$)`).test(txt) : txt.includes(v); }
+
+/**
+ * Converte o texto do glossário (um grupo por linha, termos separados por "=") em grupos normalizados.
+ * @param {string} text Texto do editor.
+ * @returns {string[][]} Grupos com pelo menos dois termos.
+ */
+function parseGlossary(text) {
+  return text.split("\n").map((l) => l.split("=").map((v) => norm(v).trim()).filter(Boolean)).filter((g) => g.length >= 2);
+}
+
+/**
+ * Transforma a consulta em conceitos: grupos do glossário reconhecidos (todas as variantes) e palavras soltas restantes.
+ * @param {string} query Texto digitado.
+ * @param {string[][]} groups Grupos do glossário.
+ * @returns {string[][]} Cada conceito é uma lista de variantes equivalentes.
+ */
+function buildConcepts(query, groups) {
+  const q = norm(query);
+  const toks = [...new Set(q.split(/[^a-z0-9]+/).filter((t) => t.length >= 3 && !STOP.has(t)))];
+  const used = new Set(), concepts = [];
+  for (const g of groups) {
+    const hit = g.find((v) => hasTerm(q, v));
+    if (hit) { concepts.push(g); hit.split(/[^a-z0-9]+/).forEach((t) => used.add(t)); }
+  }
+  toks.filter((t) => !used.has(t)).forEach((t) => concepts.push([t]));
+  return concepts;
+}
+
+/**
+ * Busca itens que casem com os conceitos da consulta; um conceito casa se qualquer variante aparecer no item.
+ * @param {object[]} list Itens do índice ou do catálogo.
+ * @param {string} query Consulta digitada.
+ * @param {number} limit Máximo de itens.
+ * @param {{groups?:string[][],concepts?:string[][],boost?:string[]}} [ctx] Glossário, conceitos extras (ex.: sinônimos da IA) e TAGs de apelido (bônus).
+ * @returns {object[]} Melhores itens.
+ */
+function searchList(list, query, limit, ctx = {}) {
+  const concepts = [...buildConcepts(query, ctx.groups || []), ...(ctx.concepts || [])];
+  const boost = ctx.boost || [];
+  if (!concepts.length && !boost.length) return [];
+  const min = concepts.length >= 3 ? 2 : 1;
+  return list.map((it) => {
+    const txt = norm(Object.entries(it).filter(([k]) => k !== "ok").map(([, v]) => v).join(" "));
+    const bonus = boost.some((b) => b && txt.includes(b)) ? 3 : 0;
+    const sc = concepts.filter((c) => c.some((v) => hasTerm(txt, v))).length + bonus;
+    return { it, sc, rank: sc + (it.ok ? 0.5 : 0) };
+  }).filter((x) => x.sc >= min).sort((a, b) => b.rank - a.rank).slice(0, limit).map((x) => x.it);
+}
+
+/**
+ * Recorta páginas de um PDF (exige pdf-lib).
+ * @param {ArrayBuffer} bytes PDF original.
+ * @param {number[]} pages Páginas originais (1..N).
+ * @returns {Promise<Uint8Array>} PDF recortado.
+ */
+async function slicePdf(bytes, pages) {
+  const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const out = await PDFDocument.create();
+  (await out.copyPages(src, pages.map((n) => n - 1))).forEach((pg) => out.addPage(pg));
+  return out.save();
+}
+
+/** Gera um identificador curto e único. @returns {string} Identificador. */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+/**
+ * Converte bytes em base64, em blocos (seguro para arquivos grandes).
+ * @param {ArrayBuffer|Uint8Array} buf Bytes.
+ * @returns {string} Base64.
+ */
+function toBase64(buf) {
+  const u8 = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode(...u8.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+/**
+ * Interpreta "49,51,85-90" como páginas (1..total); vazio ou "todas" retorna null (todas).
+ * @param {string} sel Texto digitado.
+ * @param {number} total Total de páginas do PDF.
+ * @returns {number[]|null} Páginas ordenadas ou null.
+ */
+function parsePages(sel, total) {
+  const t = (sel || "").trim().toLowerCase();
+  if (!t || t === "todas") return null;
+  const set = new Set();
+  for (const part of t.split(/[,;\s]+/)) {
+    const m = part.match(/^(\d+)(?:-(\d+))?$/);
+    if (!m) continue;
+    const a = +m[1], b = +(m[2] || m[1]);
+    for (let n = Math.max(1, Math.min(a, b)); n <= Math.min(total, Math.max(a, b)); n++) set.add(n);
+  }
+  return set.size ? [...set].sort((x, y) => x - y) : null;
+}
+
+/**
+ * Conta as páginas de um PDF (0 se o pdf-lib não carregou).
+ * @param {ArrayBuffer} bytes Conteúdo do PDF.
+ * @returns {Promise<number>} Número de páginas.
+ */
+async function countPages(bytes) {
+  if (!PDFDocument) return 0;
+  try { return (await PDFDocument.load(bytes, { ignoreEncryption: true })).getPageCount(); } catch { return 0; }
+}
+
+/**
+ * Estimativa local de tokens (~258 por página de PDF; ~1290 por imagem). Use "Contar tokens (API)" para o valor exato.
+ * @param {object} doc Documento da sessão.
+ * @returns {number} Tokens estimados.
+ */
+function estTokens(doc) {
+  if (doc.mime !== "application/pdf") return 1290;
+  const pages = parsePages(doc.selection, doc.pageCount);
+  return (pages ? pages.length : doc.pageCount || 1) * 258;
+}
+
+/**
+ * Monta as partes do Gemini de um documento, recortando as páginas escolhidas e informando o mapeamento para a numeração original.
+ * @param {object} doc Documento da sessão.
+ * @returns {Promise<Array>} Partes (rótulo + inlineData).
+ */
+async function docParts(doc) {
+  let bytes = doc.bytes;
+  let note = `Arquivo completo: a página N do arquivo é a página original N.`;
+  const pages = doc.mime === "application/pdf" ? parsePages(doc.selection, doc.pageCount) : null;
+  if (pages && PDFDocument) {
+    try {
+      const src = await PDFDocument.load(doc.bytes, { ignoreEncryption: true });
+      const out = await PDFDocument.create();
+      (await out.copyPages(src, pages.map((n) => n - 1))).forEach((pg) => out.addPage(pg));
+      bytes = await out.save();
+      note = `Arquivo recortado. Posição no arquivo → página ORIGINAL: ${pages.map((n, k) => `${k + 1}→${n}`).join(", ")}.`;
+    } catch { /* envia o arquivo inteiro */ }
+  }
+  const label = doc.next ? "Desenho adicional na sequência (o sinal continua aqui)" : "Documento do projeto";
+  return [{ text: `${label}: ${doc.name}. Cite SEMPRE o número da página ORIGINAL de "${doc.name}". ${note}` }, { inlineData: { mimeType: doc.mime, data: toBase64(bytes) } }];
+}
+
+/**
+ * Indica se o erro permite tentar outro modelo (inexistente, sem cota ou indisponível).
+ * @param {unknown} err Erro lançado pelo SDK.
+ * @returns {boolean} Verdadeiro se vale o fallback.
+ */
+function isModelUnavailable(err) {
+  const m = String((err && err.message) || err);
+  return /got status: (404|429|503)/.test(m) || /NOT_FOUND|RESOURCE_EXHAUSTED|UNAVAILABLE/.test(m);
+}
+
+/**
+ * Traduz erros da API Gemini em orientação objetiva em português.
+ * @param {unknown} err Erro lançado pelo SDK ou pela aplicação.
+ * @returns {string} Mensagem para o usuário.
+ */
+function explainError(err) {
+  const m = String((err && err.message) || err);
+  if (/REFERRER_BLOCKED|referer/i.test(m)) return "Chave com restrição de referenciador. Em console.cloud.google.com/apis/credentials, defina Restrições de aplicativo = Nenhuma, ou crie outra chave no AI Studio.";
+  if (/API_KEY_INVALID|API key not valid/i.test(m)) return "Chave de API inválida. Gere outra em aistudio.google.com/apikey.";
+  if (/got status: 429|RESOURCE_EXHAUSTED/.test(m)) {
+    const delay = (m.match(/"retryDelay":"(\d+)s"/) || [])[1];
+    const zero = /limit: 0/.test(m) ? " O modelo não tem cota gratuita neste projeto." : "";
+    return `Cota esgotada.${zero}${delay ? ` Nova tentativa liberada em ~${Math.ceil(delay / 60)} min.` : ""} Use \"Detectar modelos\" ou ative o faturamento.`;
+  }
+  if (/got status: 404|NOT_FOUND/.test(m)) return "Modelo não encontrado. Use \"Detectar modelos\" para listar os disponíveis na sua chave.";
+  if (/got status: 413|too large|exceeds/i.test(m)) return "Arquivo grande demais para envio inline (~20 MB). Divida o PDF por folhas.";
+  return m.slice(0, 400);
+}
+
+/**
+ * Ordena nomes de modelos priorizando Flash (cota gratuita) e removendo variantes não textuais.
+ * @param {string[]} names Nomes retornados pela API.
+ * @returns {string[]} Até 6 modelos candidatos.
+ */
+function pickModels(names) {
+  const bad = /image|tts|live|embed|audio|robotics|computer-use|veo|imagen|learnlm|gemma|aqa/;
+  const score = (n) => (/flash/.test(n) && !/lite/.test(n) ? 0 : /lite/.test(n) ? 1 : 2);
+  return [...new Set(names)]
+    .filter((n) => /^gemini-/.test(n) && !bad.test(n))
+    .sort((a, b) => score(a) - score(b) || b.localeCompare(a))
+    .slice(0, 6);
+}
+
+/** Gateway de acesso ao Gemini; isola o SDK e aplica fallback entre modelos. */
+class GeminiGateway {
+  /**
+   * @param {string} apiKey Chave da API Gemini.
+   * @param {string[]} models Modelos em ordem de preferência.
+   */
+  constructor(apiKey, models) {
+    this.phase = () => {};
+    this.models = models;
+    this.lastModel = "";
+    this.ai = new GoogleGenAI({ apiKey });
+  }
+
+  /**
+   * Envia o histórico e retorna o texto, tentando o próximo modelo em caso de 404/429/503.
+   * @param {Array} contents Histórico no formato do Gemini.
+   * @param {string} [instruction] systemInstruction do turno (diagnóstico ou chat).
+   * @param {(partial:string)=>void} [onText] Callback com o texto acumulado (streaming).
+   * @returns {Promise<string>} Texto completo, ou parcial com aviso se houve parada, repetição ou silêncio do modelo.
+   */
+  async generate(contents, instruction = DIAG_INSTRUCTION, onText) {
+    let lastErr;
+    this.warn = "";
+    stopFlag = false;
+    for (const model of this.models) {
+      let acc = "";
+      this.phase(`Enviando ${payloadMB(contents)} MB para ${model} e aguardando a primeira resposta`);
+      try {
+        const stream = await withTimeout(
+          this.ai.models.generateContentStream({ model, contents, config: { systemInstruction: instruction } }),
+          LIMITS.first, `O modelo ${model} não respondeu em ${LIMITS.first / 1000} s. Tente "Detectar modelos".`);
+        const it = stream[Symbol.asyncIterator]();
+        const stopP = new Promise((res) => { stopHandle = () => res({ stop: true }); });
+        let end = "";
+        for (;;) {
+          const limit = acc ? LIMITS.idle : LIMITS.first;
+          let r;
+          try {
+            r = await withTimeout(Promise.race([it.next(), stopP]), limit, `O modelo ${model} parou de responder (${limit / 1000} s sem texto novo).`);
+          } catch (e) { if (!acc) throw e; end = IDLE_NOTE; break; }
+          if (r.stop) { if (!acc) throw new Error("Geração interrompida."); end = STOP_NOTE; break; }
+          if (r.done) break;
+          if (!acc) this.phase(`Recebendo resposta de ${model}`);
+          acc += r.value.text ?? "";
+          if (onText) onText(acc);
+          const cut = findRepetition(acc);
+          if (cut !== -1) { acc = acc.slice(0, cut); end = REPEAT_NOTE; break; }
+          if (acc.length > LIMITS.maxChars) { end = LIMIT_NOTE; break; }
+        }
+        if (end) {
+          Promise.resolve().then(() => it.return && it.return()).catch(() => {});
+          acc += end;
+          this.warn = end.replace(/^\s*⚠️\s*/, "").trim();
+          if (onText) onText(acc);
+        }
+        this.lastModel = model;
+        return acc;
+      } catch (err) {
+        lastErr = err;
+        if (acc || !isModelUnavailable(err)) throw err;
+      } finally { stopHandle = null; }
+    }
+    throw lastErr;
+  }
+
+  /**
+   * Teste rápido de chave, rede e modelo (prompt mínimo, limite de 30 s por modelo).
+   * @returns {Promise<{model:string,ms:number}>} Primeiro modelo que respondeu e a latência.
+   */
+  async ping() {
+    let lastErr;
+    for (const model of this.models) {
+      const t0 = Date.now();
+      try {
+        await withTimeout(this.ai.models.generateContent({ model, contents: [{ role: "user", parts: [{ text: "Responda apenas: ok" }] }] }), 30000, `O modelo ${model} não respondeu em 30 s.`);
+        return { model, ms: Date.now() - t0 };
+      } catch (err) {
+        lastErr = err;
+        if (!isModelUnavailable(err) && !/não respondeu/.test(String(err.message))) throw err;
+      }
+    }
+    throw lastErr;
+  }
+
+  /**
+   * Gera resposta JSON conforme um schema, com fallback de modelo.
+   * @param {Array} contents Conteúdos.
+   * @param {string} instruction systemInstruction.
+   * @param {object} schema responseSchema do Gemini.
+   * @returns {Promise<string>} JSON em texto.
+   */
+  async generateJson(contents, instruction, schema) {
+    let lastErr;
+    for (const model of this.models) {
+      try {
+        const res = await withTimeout(this.ai.models.generateContent({ model, contents, config: { systemInstruction: instruction, responseMimeType: "application/json", responseSchema: schema } }), LIMITS.first, `O modelo ${model} não respondeu em ${LIMITS.first / 1000} s.`);
+        this.lastModel = model;
+        return res.text ?? "";
+      } catch (err) { lastErr = err; if (!isModelUnavailable(err)) throw err; }
+    }
+    throw lastErr;
+  }
+
+  /**
+   * Conta tokens exatos do contexto, com fallback de modelo.
+   * @param {Array} contents Conteúdos.
+   * @returns {Promise<{n:number,model:string}>} Total e modelo usado.
+   */
+  async countTokens(contents) {
+    let lastErr;
+    for (const model of this.models) {
+      try { return { n: (await withTimeout(this.ai.models.countTokens({ model, contents }), LIMITS.first, "Tempo esgotado ao contar tokens.")).totalTokens, model }; }
+      catch (err) { lastErr = err; if (!isModelUnavailable(err)) throw err; }
+    }
+    throw lastErr;
+  }
+
+  /**
+   * Lista modelos da chave que suportam generateContent.
+   * @returns {Promise<string[]>} Nomes sem o prefixo "models/".
+   */
+  async listModels() {
+    const names = [];
+    for await (const m of await this.ai.models.list()) {
+      const acts = m.supportedActions;
+      if (!acts || acts.includes("generateContent")) names.push(String(m.name).replace(/^models\//, ""));
+    }
+    return names;
+  }
+}
+
+/** Persistência de casos no IndexedDB: metadados em "cases", arquivos em "files". */
+class CaseRepository {
+  /** Abre (ou cria) o banco local. */
+  constructor() {
+    this.dbp = new Promise((res, rej) => {
+      const r = indexedDB.open("hydrodiag", 2);
+      r.onupgradeneeded = () => {
+        const db = r.result;
+        if (!db.objectStoreNames.contains("cases")) db.createObjectStore("cases", { keyPath: "id" });
+        if (!db.objectStoreNames.contains("files")) db.createObjectStore("files");
+        if (!db.objectStoreNames.contains("catalog")) db.createObjectStore("catalog", { keyPath: "key" });
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  }
+
+  /**
+   * Aguarda a conclusão de uma transação.
+   * @param {IDBTransaction} t Transação.
+   * @returns {Promise<void>}
+   */
+  done(t) { return new Promise((res, rej) => { t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+
+  /**
+   * Grava metadados e arquivos novos do caso.
+   * @param {object} meta Metadados do caso.
+   * @param {Array<[string,ArrayBuffer]>} files Pares chave/bytes ainda não gravados.
+   * @returns {Promise<void>}
+   */
+  async save(meta, files) {
+    const t = (await this.dbp).transaction(["cases", "files"], "readwrite");
+    t.objectStore("cases").put(meta);
+    files.forEach(([k, v]) => t.objectStore("files").put(v, k));
+    return this.done(t);
+  }
+
+  /** @returns {Promise<object[]>} Casos, do mais recente ao mais antigo. */
+  async list() {
+    const db = await this.dbp;
+    const all = await new Promise((res, rej) => { const r = db.transaction("cases").objectStore("cases").getAll(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    return all.sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+
+  /**
+   * Lê os arquivos de um caso.
+   * @param {object} meta Metadados do caso.
+   * @returns {Promise<Object<string,ArrayBuffer>>} Bytes por id de documento.
+   */
+  async files(meta) {
+    const db = await this.dbp;
+    const out = {};
+    for (const d of meta.docs) {
+      out[d.id] = await new Promise((res, rej) => { const r = db.transaction("files").objectStore("files").get(`${meta.id}:${d.id}`); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    }
+    return out;
+  }
+
+  /** @returns {Promise<object[]>} Entradas do catálogo alarme → TAG. */
+  async catalogAll() {
+    const db = await this.dbp;
+    return new Promise((res, rej) => { const r = db.transaction("catalog").objectStore("catalog").getAll(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  }
+
+  /**
+   * Grava ou atualiza uma entrada do catálogo.
+   * @param {object} entry Entrada com campo "key".
+   * @returns {Promise<void>}
+   */
+  async catalogPut(entry) {
+    const t = (await this.dbp).transaction("catalog", "readwrite");
+    t.objectStore("catalog").put(entry);
+    return this.done(t);
+  }
+
+  /**
+   * Remove uma entrada do catálogo.
+   * @param {string} key Chave da entrada.
+   * @returns {Promise<void>}
+   */
+  async catalogDel(key) {
+    const t = (await this.dbp).transaction("catalog", "readwrite");
+    t.objectStore("catalog").delete(key);
+    return this.done(t);
+  }
+
+  /**
+   * Remove um caso e seus arquivos.
+   * @param {object} meta Metadados do caso.
+   * @returns {Promise<void>}
+   */
+  async remove(meta) {
+    const t = (await this.dbp).transaction(["cases", "files"], "readwrite");
+    t.objectStore("cases").delete(meta.id);
+    meta.docs.forEach((d) => t.objectStore("files").delete(`${meta.id}:${d.id}`));
+    return this.done(t);
+  }
+}
+
+/* ============ APPLICATION: sessão de diagnóstico ============ */
+
+/** Mantém documentos, histórico e contexto da falha entre turnos. */
+class DiagnosisSession {
+  /**
+   * @param {() => GeminiGateway} gatewayFactory Cria o gateway sob demanda (exige chave só ao consultar).
+   */
+  constructor(gatewayFactory) {
+    this.gatewayFactory = gatewayFactory;
+    this.reset();
+  }
+
+  /** Inicia um novo caso: novo id, sem documentos nem histórico. */
+  reset() {
+    Object.assign(this, { id: uid(), createdAt: Date.now(), title: "", documents: [], contents: [], turns: [], index: emptyIndex() });
+  }
+
+  /**
+   * Restaura um caso salvo; os documentos voltam como "não enviados" e seguem na próxima pergunta.
+   * @param {object} meta Metadados salvos.
+   * @param {Object<string,ArrayBuffer>} files Bytes por id de documento.
+   */
+  load(meta, files) {
+    Object.assign(this, { id: meta.id, createdAt: meta.createdAt, title: meta.title, turns: meta.turns || [], index: meta.index || emptyIndex() });
+    this.contents = this.turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] }));
+    this.documents = meta.docs.map((d) => ({ ...d, bytes: files[d.id], sent: false, stored: true })).filter((d) => d.bytes);
+  }
+
+  /**
+   * Adiciona arquivos à sessão (leitura de bytes e contagem de páginas).
+   * @param {File[]} files Arquivos selecionados.
+   * @param {boolean} isNext Indica continuação da sequência de desenhos.
+   * @returns {Promise<void>}
+   */
+  async addDocuments(files, isNext) {
+    for (const file of files) {
+      const bytes = await file.arrayBuffer();
+      const mime = resolveMime(file);
+      this.documents.push({ id: uid(), name: file.name, mime, bytes, pageCount: mime === "application/pdf" ? await countPages(bytes) : 1, selection: "", sent: false, next: isNext });
+    }
+  }
+
+  /**
+   * Monta as partes a enviar: documentos novos e, se informado, apenas as páginas ainda não enviadas indicadas pelo índice.
+   * @param {Object<string,number[]>} [pagesByDoc] Páginas desejadas por id de documento.
+   * @returns {Promise<{docs:{d:object,pages:number[]}[],parts:Array}>} Documentos incluídos e suas partes.
+   */
+  async freshParts(pagesByDoc) {
+    const docs = [], parts = [];
+    for (const d of this.documents) {
+      let target = d;
+      if (pagesByDoc && pagesByDoc[d.id]) {
+        const want = pagesByDoc[d.id].filter((n) => !(d.sentPages || []).includes(n));
+        if (!want.length) continue;
+        target = { ...d, selection: want.join(",") };
+      } else if (d.sent) continue;
+      const all = d.mime === "application/pdf" ? Array.from({ length: d.pageCount }, (_, k) => k + 1) : [1];
+      docs.push({ d, pages: parsePages(target.selection, d.pageCount) || all });
+      parts.push(...(await docParts(target)));
+    }
+    return { docs, parts };
+  }
+
+  /**
+   * Conta tokens exatos do contexto da próxima chamada.
+   * @returns {Promise<{n:number,model:string}>} Total e modelo.
+   */
+  async countTokens() {
+    const gateway = this.gatewayFactory();
+    const { parts } = await this.freshParts();
+    return gateway.countTokens([...this.contents, { role: "user", parts: [...parts, { text: "pergunta" }] }]);
+  }
+
+  /**
+   * Envia uma pergunta com os documentos novos e registra o turno.
+   * @param {string} text Pergunta do usuário.
+   * @param {string} [instruction] systemInstruction do turno.
+   * @param {(partial:string)=>void} [onText] Callback de streaming.
+   * @param {Object<string,number[]>} [pagesByDoc] Páginas a enviar por documento (modo índice).
+   * @returns {Promise<string>} Resposta do modelo.
+   */
+  async ask(text, instruction = DIAG_INSTRUCTION, onText, pagesByDoc) {
+    const gateway = this.gatewayFactory();
+    const { docs, parts } = await this.freshParts(pagesByDoc);
+    this.contents.push({ role: "user", parts: [...parts, { text }] });
+    try {
+      const answer = await gateway.generate(this.contents, instruction, onText);
+      this.contents.push({ role: "model", parts: [{ text: answer }] });
+      docs.forEach(({ d, pages }) => { d.sent = true; d.sentPages = [...new Set([...(d.sentPages || []), ...pages])]; });
+      const kind = instruction === CHAT_INSTRUCTION ? "chat" : "diag";
+      this.turns.push({ role: "user", text, kind }, { role: "model", text: answer, kind });
+      return answer;
+    } catch (err) {
+      this.contents.pop();
+      throw err;
+    }
+  }
+}
+
+/* ============ PRESENTATION: DOM e renderização ============ */
+const $ = (id) => document.getElementById(id);
+let lastGateway = null;
+let session = new DiagnosisSession(buildGateway);
+
+/**
+ * Cria o gateway com a chave atual; falha apenas quando a IA é consultada.
+ * @returns {GeminiGateway} Gateway pronto.
+ */
+function buildGateway() {
+  const key = $("apiKey").value.trim();
+  if (!key) throw new Error("Informe e salve a chave da API Gemini.");
+  const chosen = $("modelName").value.trim() || DEFAULT_MODEL;
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(FALLBACK_STORAGE) || "[]"); } catch {}
+  const models = [...new Set([chosen, ...saved, ...DEFAULT_MODELS])];
+  lastGateway = new GeminiGateway(key, models);
+  lastGateway.phase = phase;
+  return lastGateway;
+}
+
+/**
+ * Escapa caracteres HTML.
+ * @param {string} s Texto bruto.
+ * @returns {string} Texto seguro.
+ */
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/**
+ * Converte um subconjunto de Markdown (títulos, listas, negrito, código) em HTML seguro.
+ * @param {string} md Markdown retornado pelo modelo.
+ * @returns {string} HTML.
+ */
+function simpleMarkdown(md) {
+  const inline = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`([^`]+)`/g, "<code>$1</code>");
+  const out = [];
+  let list = null;
+  const close = () => { if (list) { out.push(`</${list}>`); list = null; } };
+  for (const line of md.split("\n")) {
+    const h = line.match(/^#{1,4}\s+(.*)/);
+    const ul = line.match(/^\s*[-*]\s+(.*)/);
+    const ol = line.match(/^\s*\d+\.\s+(.*)/);
+    if (h) { close(); out.push(`<h3>${inline(h[1])}</h3>`); }
+    else if (ul || ol) {
+      const tag = ul ? "ul" : "ol";
+      if (list !== tag) { close(); out.push(`<${tag}>`); list = tag; }
+      out.push(`<li>${inline((ul || ol)[1])}</li>`);
+    } else if (line.trim()) { close(); out.push(`<p>${inline(line)}</p>`); }
+    else close();
+  }
+  close();
+  return out.join("");
+}
+
+/**
+ * Renderiza Markdown completo (incluindo tabelas) com sanitização; cai no renderizador simples se as bibliotecas não carregarem.
+ * @param {string} md Markdown do modelo.
+ * @returns {string} HTML seguro.
+ */
+function renderMarkdown(md) {
+  if (!marked || !DOMPurify) return simpleMarkdown(md);
+  return DOMPurify.sanitize(marked.parse(linkifyRefs(md), { breaks: true, gfm: true }));
+}
+
+/**
+ * Atualiza a mensagem de status.
+ * @param {string} msg Texto exibido.
+ * @param {boolean} [isError] Estilo de erro.
+ */
+function setStatus(msg, isError = false) {
+  $("status").textContent = msg;
+  $("status").classList.toggle("err", isError);
+}
+
+let checklist = null, checks = {}, viewerUrl = "", repo = null;
+try { repo = new CaseRepository(); } catch { /* sem IndexedDB: casos não serão salvos */ }
+let catalog = [], glossary = [];
+
+let genTimer = null;
+
+/**
+ * Mostra o botão Parar com cronômetro enquanto há geração ou indexação em andamento.
+ * @param {boolean} on Ligar ou desligar.
+ */
+function setGenerating(on) {
+  const b = $("stopFab");
+  clearInterval(genTimer);
+  b.classList.toggle("hidden", !on);
+  if (!on) return;
+  b.disabled = false;
+  const t0 = Date.now();
+  genStatus = "Preparando os arquivos";
+  const tick = () => {
+    const secs = Math.round((Date.now() - t0) / 1000);
+    b.textContent = `⏹ Parar (${secs} s)`;
+    setStatus(`${genStatus} (${secs} s)${secs > 45 ? " — PDFs grandes podem levar alguns minutos; use ⏹ Parar se preferir" : ""}`);
+  };
+  tick();
+  genTimer = setInterval(tick, 1000);
+}
+
+let fieldStream = null, fieldNote = "", recog = null;
+const FIELD_NOTE = "\n\nFoto de campo anexada: descreva o que é visível no painel/equipamento (TAGs, bandeirolas, LEDs, posição de chaves e disjuntores) e relacione com os desenhos. Não afirme estados que não estejam visíveis na foto.";
+
+/** @returns {string} Nota sobre a foto de campo para o prompt (e a limpa, para valer só uma vez). */
+function takeFieldNote() { const n = fieldNote; fieldNote = ""; return n; }
+
+/** Liga ou desliga a câmera traseira do dispositivo. */
+async function toggleCamera() {
+  if (fieldStream) {
+    fieldStream.getTracks().forEach((t) => t.stop());
+    fieldStream = null;
+    $("fVideo").srcObject = null;
+    $("fCam").textContent = "🎥 Ligar câmera";
+    return;
+  }
+  try {
+    fieldStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+    $("fVideo").srcObject = fieldStream;
+    await $("fVideo").play();
+    $("fCam").textContent = "⏹ Desligar câmera";
+  } catch (err) {
+    $("fInfo").textContent = `Câmera indisponível (${err.name}). No celular, abra o app por HTTPS e permita a câmera.`;
+  }
+}
+
+/** Captura o quadro atual como JPEG (até 1600 px) e o anexa à sessão como foto de campo. */
+async function captureFrame() {
+  const v = $("fVideo");
+  if (!fieldStream || !v.videoWidth) { $("fInfo").textContent = "Ligue a câmera antes de capturar."; return; }
+  const scale = Math.min(1, 1600 / v.videoWidth);
+  const c = document.createElement("canvas");
+  c.width = Math.round(v.videoWidth * scale);
+  c.height = Math.round(v.videoHeight * scale);
+  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+  const blob = await new Promise((res) => c.toBlob(res, "image/jpeg", 0.85));
+  const file = new File([blob], `foto-campo-${new Date().toTimeString().slice(0, 8).replace(/:/g, "")}.jpg`, { type: "image/jpeg" });
+  await session.addDocuments([file], false);
+  renderFiles();
+  saveCase();
+  fieldNote = FIELD_NOTE;
+  $("fInfo").textContent = `Foto anexada: ${file.name}`;
+}
+
+/** Dita o alarme por reconhecimento de voz (pt-BR), quando o navegador suporta. */
+function listen() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $("fInfo").textContent = "Ditado por voz não suportado neste navegador. Digite ou use o microfone do teclado."; return; }
+  if (recog) { recog.stop(); return; }
+  recog = new SR();
+  recog.lang = "pt-BR";
+  recog.interimResults = true;
+  recog.onresult = (e) => { $("fQuery").value = [...e.results].map((r) => r[0].transcript).join(" "); };
+  recog.onerror = (e) => { $("fInfo").textContent = `Voz: ${e.error}`; };
+  recog.onend = () => { recog = null; $("fMic").textContent = "🎤 Falar alarme"; };
+  recog.start();
+  $("fMic").textContent = "⏹ Parar";
+  $("fInfo").textContent = "Ouvindo…";
+}
+
+/** Lê em voz alta um aviso de segurança e a seção 1 do diagnóstico (ou interrompe a leitura). */
+function speakAnswer() {
+  if (!("speechSynthesis" in window)) return;
+  if (speechSynthesis.speaking) { speechSynthesis.cancel(); $("fSpeak").textContent = "🔊 Ler resposta"; return; }
+  if (!lastAnswer) return;
+  const sec = lastAnswer.split(/^###\s/m).filter(Boolean)[0] || lastAnswer;
+  const clean = sec.replace(/\[(LIDO|INFERIDO)[^\]]*\]/g, "").replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, "").replace(/[*_`#>|]/g, " ").replace(/\s+/g, " ").trim().slice(0, 900);
+  const u = new SpeechSynthesisUtterance(`Atenção. Desenergize e bloqueie antes de qualquer teste, e confirme tudo no desenho oficial. ${clean}`);
+  u.lang = "pt-BR";
+  u.onend = () => { $("fSpeak").textContent = "🔊 Ler resposta"; };
+  $("fSpeak").textContent = "⏹ Parar leitura";
+  speechSynthesis.speak(u);
+}
+
+/** Roda o diagnóstico com o alarme falado/digitado no modo campo (e a foto capturada, se houver). */
+async function fieldDiagnose() {
+  const q = $("fQuery").value.trim();
+  if (!q) { $("fInfo").textContent = "Fale ou digite o alarme."; return; }
+  $("query").value = q;
+  $("fInfo").textContent = "Analisando…";
+  await runDiagnosis();
+  $("fInfo").textContent = lastAnswer ? "Concluído. Confira no desenho antes de agir." : "";
+  if ($("fAuto").checked) speakAnswer();
+}
+
+/** Fecha o modo campo: desliga câmera, microfone e leitura em voz alta. */
+function closeField() {
+  if (fieldStream) toggleCamera();
+  if (recog) recog.stop();
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  $("field").classList.add("hidden");
+}
+
+let audit = null;
+
+/**
+ * Descreve um item do índice em uma linha.
+ * @param {string} type Tipo (sinais, bornes, materiais).
+ * @param {object} x Item do índice.
+ * @returns {string} Texto curto.
+ */
+function describeItem(type, x) {
+  if (type === "sinais") return `${x.nome} | TAG ${x.tag || "?"} | ${x.coordenada || ""} | destino ${x.destino || "?"}`;
+  if (type === "bornes") return `${x.regua}:${x.borne} ${x.funcao || ""} → ${x.destino || ""}`;
+  return `${x.tag} ${x.fabricante || ""} ${x.modelo || ""} cód. ${x.codigo || ""}`;
+}
+
+/**
+ * Sorteia, por tipo, itens do índice ainda não confirmados (4 sinais, 3 bornes, 3 materiais).
+ * @param {object} ix Índice do caso.
+ * @returns {{type:string,item:object}[]} Amostra.
+ */
+function sampleIndex(ix) {
+  const out = [];
+  for (const [type, n] of Object.entries({ sinais: 4, bornes: 3, materiais: 3 })) {
+    const pool = ix[type].filter((it) => it.ok !== true);
+    for (let k = pool.length - 1; k > 0; k--) { const r = Math.floor(Math.random() * (k + 1)); [pool[k], pool[r]] = [pool[r], pool[k]]; }
+    pool.slice(0, n).forEach((item) => out.push({ type, item }));
+  }
+  return out;
+}
+
+/** Abre a auditoria: lista a amostra com link para a página e opções ✔/✘. */
+function startAudit() {
+  audit = sampleIndex(session.index);
+  if (!audit.length) { setStatus("Índice vazio ou já confirmado por completo. Indexe o projeto antes de auditar.", true); return; }
+  $("auditList").innerHTML = audit.map(({ type, item }, i) => {
+    const doc = session.documents.find((d) => d.name === item.arquivo);
+    const where = `${esc(item.arquivo)}, pág. ${item.pagina}`;
+    const link = doc ? `<a href="#pdf=${doc.id}&p=${item.pagina}">📄 ${where}</a>` : `${where} (anexe o arquivo para abrir)`;
+    return `<li><div><span class="tag">${type}</span> ${esc(describeItem(type, item))}<br>${link}</div><span class="fl"><label><input type="radio" name="a${i}" value="ok"> ✔ correto</label><label><input type="radio" name="a${i}" value="bad"> ✘ errado</label></span></li>`;
+  }).join("");
+  $("auditResult").textContent = "";
+  $("auditBox").classList.remove("hidden");
+  $("auditBox").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/** Aplica as marcações: confirma itens, remove os errados, calcula a taxa de acerto e marca páginas suspeitas. */
+function applyAudit() {
+  if (!audit) return;
+  const ix = session.index;
+  const suspect = new Set(ix.suspect || []);
+  const stats = {}, bad = [];
+  audit.forEach(({ type, item }, i) => {
+    const v = (document.querySelector(`input[name="a${i}"]:checked`) || {}).value;
+    if (!v) return;
+    const st = (stats[type] ||= { ok: 0, bad: 0 });
+    if (v === "ok") { item.ok = true; st.ok++; } else { st.bad++; bad.push({ type, item }); }
+  });
+  if (!Object.keys(stats).length) { setStatus("Marque ✔ ou ✘ em pelo menos um item.", true); return; }
+  bad.forEach(({ type, item }) => { ix[type] = ix[type].filter((x) => x !== item); suspect.add(`${item.arquivo}|${item.pagina}`); });
+  ix.suspect = [...suspect];
+  ix.audit = { date: new Date().toISOString(), stats };
+  const rate = (st) => Math.round((100 * st.ok) / (st.ok + st.bad));
+  const low = Object.entries(stats).filter(([, st]) => st.ok + st.bad >= 3 && rate(st) < 80).map(([t]) => t);
+  const line = Object.entries(stats).map(([t, st]) => `${t}: ${st.ok}/${st.ok + st.bad} corretos (${rate(st)}%)`).join(" · ");
+  const action = ix.suspect.length ? `<br>${low.length ? `Taxa baixa em ${esc(low.join(", "))}. ` : ""}Há ${ix.suspect.length} página(s) suspeita(s): <button id="reindexBtn">Reindexar páginas suspeitas (blocos de 2)</button>` : "<br>Nenhum erro encontrado na amostra (amostra pequena: não garante o índice inteiro).";
+  $("auditResult").innerHTML = `${esc(line)}.${bad.length ? ` ${bad.length} item(ns) errado(s) removido(s) do índice.` : ""}${action}`;
+  $("auditList").innerHTML = "";
+  audit = null;
+  updateIndexInfo();
+  saveCase();
+}
+
+/** Reindexa só as páginas marcadas como suspeitas, com blocos menores. */
+async function reindexSuspect() {
+  const ix = session.index;
+  const sus = new Set(ix.suspect || []);
+  if (!sus.size) return;
+  for (const k of ["folhas", "bornes", "materiais", "sinais"]) ix[k] = ix[k].filter((x) => !sus.has(`${x.arquivo}|${x.pagina}`));
+  for (const key of sus) {
+    const cut = key.lastIndexOf("|"), name = key.slice(0, cut), pg = Number(key.slice(cut + 1));
+    ix.done[name] = (ix.done[name] || []).filter((n) => n !== pg);
+  }
+  ix.suspect = [];
+  $("auditResult").textContent = "";
+  await indexProject(2);
+}
+
+/** Carrega o glossário (localStorage ou padrão) no editor e ativa os grupos. */
+function loadGlossary() {
+  let text = DEFAULT_GLOSSARY;
+  try { text = localStorage.getItem(GLOSSARY_KEY) || DEFAULT_GLOSSARY; } catch { /* usa o padrão */ }
+  $("glossary").value = text;
+  glossary = parseGlossary(text);
+  $("glossaryInfo").textContent = `${glossary.length} grupos ativos`;
+}
+
+/** Salva o texto do editor como glossário ativo. */
+function saveGlossary() {
+  try { localStorage.setItem(GLOSSARY_KEY, $("glossary").value); } catch { /* sem armazenamento */ }
+  glossary = parseGlossary($("glossary").value);
+  $("glossaryInfo").textContent = `${glossary.length} grupos ativos`;
+  setStatus("Glossário salvo.");
+}
+
+/** Restaura o glossário padrão de usina. */
+function resetGlossary() {
+  try { localStorage.removeItem(GLOSSARY_KEY); } catch { /* ignora */ }
+  loadGlossary();
+  setStatus("Glossário padrão restaurado.");
+}
+
+/** Mostra a contagem do índice do projeto atual. */
+function updateIndexInfo() {
+  const ix = session.index;
+  const pgs = Object.values(ix.done).reduce((a, v) => a + v.length, 0);
+  const okN = ["folhas", "bornes", "materiais", "sinais"].reduce((a, k) => a + ix[k].filter((x) => x.ok).length, 0);
+  $("indexInfo").textContent = pgs ? `Índice: ${ix.folhas.length} folhas, ${ix.bornes.length} bornes, ${ix.materiais.length} materiais, ${ix.sinais.length} sinais (${pgs} págs.)${okN ? ` · ${okN} confirmados` : ""}` : "";
+}
+
+/**
+ * Incorpora ao índice o resultado de um bloco, convertendo a posição no arquivo recortado para a página original.
+ * @param {object} ix Índice do caso.
+ * @param {object} data JSON retornado pelo modelo.
+ * @param {string} name Nome do arquivo.
+ * @param {number[]} pages Páginas originais do bloco.
+ */
+function mergeIndex(ix, data, name, pages) {
+  for (const k of ["folhas", "bornes", "materiais", "sinais"]) {
+    (data[k] || []).forEach((it) => { const pg = pages[Number(it.pagina) - 1]; if (pg) ix[k].push({ ...it, arquivo: name, pagina: pg }); });
+  }
+}
+
+/**
+ * Indexa os PDFs em blocos (retomável): extrai folhas, bornes, materiais e sinais para busca local.
+ * @param {number} [chunk] Páginas por bloco (blocos menores melhoram a leitura de páginas densas).
+ */
+async function indexProject(chunk = CHUNK_PAGES) {
+  chunk = Math.max(1, Math.floor(Number(chunk)) || CHUNK_PAGES);
+  const pdfs = session.documents.filter((d) => d.mime === "application/pdf" && d.pageCount);
+  if (!pdfs.length) { setStatus("Anexe um PDF para indexar (o pdf-lib precisa ter carregado).", true); return; }
+  const ix = session.index;
+  let failed = 0;
+  stopFlag = false;
+  setGenerating(true);
+  try {
+    const gw = buildGateway();
+    for (const d of pdfs) {
+      const all = parsePages(d.selection, d.pageCount) || Array.from({ length: d.pageCount }, (_, k) => k + 1);
+      const done = new Set(ix.done[d.name] || []);
+      const todo = all.filter((n) => !done.has(n));
+      for (let k = 0; k < todo.length; k += chunk) {
+        const pages = todo.slice(k, k + chunk);
+        if (stopFlag) throw new Error("Parada pedida.");
+        $("indexInfo").textContent = `Indexando ${d.name}: págs. ${pages[0]}–${pages[pages.length - 1]} (${all.length - todo.length + k}/${all.length})…`;
+        const bytes = await slicePdf(d.bytes, pages);
+        const parts = [{ text: `Arquivo com ${pages.length} páginas. Retorne 'pagina' como a posição neste arquivo (1 a ${pages.length}).` }, { inlineData: { mimeType: d.mime, data: toBase64(bytes) } }];
+        const raw = await gw.generateJson([{ role: "user", parts }], INDEX_INSTRUCTION, INDEX_SCHEMA);
+        try { mergeIndex(ix, JSON.parse(raw), d.name, pages); ix.done[d.name] = [...(ix.done[d.name] || []), ...pages]; } catch { failed++; }
+        saveCase();
+      }
+    }
+    setGenerating(false);
+    updateIndexInfo();
+    setStatus(failed ? `Indexação concluída com ${failed} bloco(s) ilegíveis; clique de novo para tentar só esses.` : "Indexação concluída.", !!failed);
+  } catch (err) {
+    setGenerating(false);
+    updateIndexInfo();
+    setStatus(`Indexação interrompida: ${explainError(err)} Clique de novo para continuar de onde parou.`, true);
+  }
+}
+
+/**
+ * Pede à IA termos equivalentes ao alarme (chamada curta, só texto, sem PDFs).
+ * @param {string} query Alarme digitado.
+ * @returns {Promise<string[]>} Termos normalizados (vazio em caso de erro).
+ */
+async function aiSynonyms(query) {
+  try {
+    const schema = { type: "OBJECT", properties: { termos: { type: "ARRAY", items: { type: "STRING" } } } };
+    const raw = await buildGateway().generateJson([{ role: "user", parts: [{ text: `Alarme/sintoma em usina hidrelétrica: "${query}"` }] }],
+      "Liste até 8 termos ou siglas equivalentes, como apareceriam em desenhos elétricos e listas de sinais de uma PCH/UHE, para o alarme informado. Termos curtos, minúsculos, sem explicações.", schema);
+    return (JSON.parse(raw).termos || []).map((t) => norm(t).trim()).filter((t) => t.length >= 2).slice(0, 8);
+  } catch { return []; }
+}
+
+/**
+ * Busca no índice do projeto e no catálogo (com glossário, apelidos por TAG e, opcionalmente, sinônimos da IA).
+ * @param {string} query Alarme digitado.
+ * @returns {Promise<{pagesByDoc:Object<string,number[]>,text:string}|null>} Contexto local ou null.
+ */
+async function buildLocalContext(query) {
+  const ix = session.index;
+  const ctx = { groups: glossary, concepts: [], boost: [] };
+  if ($("useAiSyn").checked) { const syn = await aiSynonyms(query); if (syn.length) ctx.concepts.push(syn); }
+  const aliases = searchList(catalog, query, 3, ctx);
+  ctx.boost = aliases.map((a) => norm(a.tag)).filter((t) => t.length >= 3);
+  const eq = [...buildConcepts(query, glossary), ...ctx.concepts].filter((c) => c.length > 1).map((c) => c.slice(0, 5).join(" / "));
+  const hits = [
+    ...searchList(ix.sinais, query, 6, ctx).map((x) => ({ k: "sinal", x, t: `${x.nome} | TAG ${x.tag || "?"} | ${x.coordenada || ""} | destino ${x.destino || "?"}` })),
+    ...searchList(ix.bornes, query, 6, ctx).map((x) => ({ k: "borne", x, t: `${x.regua}:${x.borne} ${x.funcao || ""} → ${x.destino || ""}` })),
+    ...searchList(ix.materiais, query, 4, ctx).map((x) => ({ k: "material", x, t: `${x.tag} ${x.fabricante || ""} ${x.modelo || ""} cód. ${x.codigo || ""}` })),
+    ...aliases.map((x) => ({ k: "catálogo", x, t: `${x.alarme} → TAG ${x.tag || "?"}; ${x.resolucao || ""}` }))
+  ];
+  if (!hits.length) return null;
+  const sets = {};
+  hits.forEach(({ x }) => {
+    const d = session.documents.find((q) => q.name === x.arquivo);
+    if (d && x.pagina) (sets[d.id] ||= new Set()).add(Number(x.pagina));
+  });
+  const pagesByDoc = {};
+  Object.keys(sets).forEach((k) => (pagesByDoc[k] = [...sets[k]].sort((a, b) => a - b).slice(0, 8)));
+  const lines = hits.map(({ k, t, x }) => `- [${k}] ${t}${x.arquivo ? ` (${x.arquivo}, pág. ${x.pagina})` : ""}`);
+  const eqLine = eq.length ? `\nEquivalências usadas na busca: ${eq.join("; ")}.` : "";
+  return { pagesByDoc, text: `\n\nContexto local (índice do projeto e catálogo de casos anteriores; pode conter erros, confirme nos desenhos):${eqLine}\n${lines.join("\n")}` };
+}
+
+/** Carrega o catálogo do IndexedDB e redesenha a lista. */
+async function loadCatalog() {
+  try { catalog = repo ? await repo.catalogAll() : []; } catch { catalog = []; }
+  $("catalog").innerHTML = catalog.length
+    ? catalog.map((c) => `<li><span>${esc(c.alarme || "")} → <strong>${esc(c.tag || "?")}</strong> <span class="tag">${esc([c.arquivo, c.pagina ? `pág. ${c.pagina}` : ""].filter(Boolean).join(", "))}</span></span><button data-key="${encodeURIComponent(c.key)}" aria-label="Excluir">✕</button></li>`).join("")
+    : "<li>Catálogo vazio: gere o checklist de um caso e salve o alarme.</li>";
+}
+
+/** Salva no catálogo o alarme → TAG extraído pelo checklist. */
+async function saveToCatalog() {
+  const c = checklist && checklist.catalogo;
+  if (!c || !(c.alarme || c.tag) || !repo) { setStatus("O checklist não trouxe alarme/TAG para o catálogo.", true); return; }
+  await repo.catalogPut({ ...c, key: norm(c.alarme || c.tag).slice(0, 120), fonte: session.title || "", updatedAt: Date.now() });
+  await loadCatalog();
+  setStatus("Alarme salvo no catálogo.");
+}
+
+/**
+ * Baixa um objeto como arquivo JSON.
+ * @param {string} name Nome do arquivo.
+ * @param {unknown} obj Conteúdo.
+ */
+function exportJson(name, obj) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" }));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+/** Abre um relatório de OS imprimível (diagnóstico, checklist com marcações e campos de assinatura). */
+function buildReport() {
+  if (!lastAnswer) return;
+  const os = prompt("Nº da OS / equipamento (opcional):", "") || "";
+  const rows = ((checklist && checklist.etapas) || []).map((e, i) => `<tr><td>${checks[i] ? "☑" : "☐"}</td><td><b>${esc(e.fase)}</b></td><td>${esc(e.acao)}${e.detalhe ? ". " + esc(e.detalhe) : ""}</td><td>${esc([e.arquivo, e.pagina ? `pág. ${e.pagina}` : "", e.referencia].filter(Boolean).join(" · "))}</td></tr>`).join("");
+  const extra = checklist ? `${checklist.peca ? `<p><b>Peça:</b> ${esc(checklist.peca)}</p>` : ""}${checklist.proximo_desenho ? `<p><b>Próximo desenho:</b> ${esc(checklist.proximo_desenho)}</p>` : ""}` : "";
+  const html = `<!doctype html><meta charset="utf-8"><title>Relatório ${esc(os)}</title><style>body{font:13px/1.5 Arial,sans-serif;margin:24px;color:#000}h1{font-size:18px}h2{font-size:15px;border-bottom:1px solid #000;margin-top:18px}table{border-collapse:collapse;width:100%}td{border:1px solid #888;padding:4px 6px;vertical-align:top}code{background:#eee}.sig{display:flex;gap:40px;margin-top:50px}.sig div{flex:1;border-top:1px solid #000;text-align:center;padding-top:4px}</style><h1>Relatório de Ocorrência / OS — HydroDiag AI</h1><p><b>OS/Equipamento:</b> ${esc(os)} &nbsp; <b>Emitido em:</b> ${new Date().toLocaleString("pt-BR")}<br>${esc($("caseLine").textContent)}</p><h2>Diagnóstico</h2>${renderMarkdown(lastAnswer).replace(/href="#pdf=[^"]*"/g, "")}<h2>Checklist de campo</h2><table>${rows || "<tr><td>Checklist não gerado.</td></tr>"}</table>${extra}<h2>Medições e observações de campo</h2><div style="height:150px;border:1px solid #888"></div><div class="sig"><div>Executante</div><div>Responsável</div></div><p style="color:#555;font-size:11px">Apoio técnico gerado por IA. Confirme bornes, folhas e revisão no projeto oficial e registre os valores medidos acima.</p><script>onload=()=>print()<\/script>`;
+  window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
+}
+
+/** Redesenha a lista de documentos: seleção de páginas, visualizador e estimativa de tokens. */
+function renderFiles() {
+  $("files").innerHTML = session.documents.map((d) => {
+    const sel = d.mime === "application/pdf" && !d.sent && d.pageCount > 1
+      ? `<input class="sel" data-id="${d.id}" value="${esc(d.selection)}" placeholder="todas (${d.pageCount} pág.) — ex.: 49,51,85-90" aria-label="Páginas a enviar">` : "";
+    const tag = d.sent ? "enviado ✓" : d.next ? "próximo na sequência" : "caderno";
+    return `<li><span>${esc(d.name)} <span class="tag">${tag}</span></span><span class="fl">${sel}<span class="est" data-est="${d.id}"></span><button data-act="view" data-id="${d.id}">👁 Ver</button>${d.sent ? "" : `<button data-act="del" data-id="${d.id}" aria-label="Remover">✕</button>`}</span></li>`;
+  }).join("");
+  updateTokenInfo();
+  updateIndexInfo();
+}
+
+/** Atualiza as estimativas locais de tokens dos documentos ainda não enviados. */
+function updateTokenInfo() {
+  let total = 0;
+  for (const d of session.documents.filter((x) => !x.sent)) {
+    const t = estTokens(d);
+    total += t;
+    const el = document.querySelector(`[data-est="${d.id}"]`);
+    if (el) el.textContent = `${(d.bytes.byteLength / 1048576).toFixed(1)} MB · ≈${t.toLocaleString("pt-BR")} tok`;
+  }
+  $("tokenInfo").textContent = total ? `Novos documentos: ≈${total.toLocaleString("pt-BR")} tokens (estimativa local)` : "";
+}
+
+/** Consulta a API para obter a contagem exata de tokens do contexto. */
+async function countExact() {
+  $("tokenInfo").textContent = "Contando tokens na API…";
+  try {
+    const r = await session.countTokens();
+    $("tokenInfo").textContent = `Contexto da próxima chamada: ${r.n.toLocaleString("pt-BR")} tokens (API, ${r.model})`;
+  } catch (err) { $("tokenInfo").textContent = `Erro: ${explainError(err)}`; }
+}
+
+/**
+ * Abre o visualizador na página indicada (PDF no leitor do navegador; imagens como <img>).
+ * @param {string} docId Id do documento.
+ * @param {number} [page] Página original.
+ */
+function openViewer(docId, page = 1) {
+  const d = session.documents.find((x) => x.id === docId);
+  if (!d) { setStatus("Documento não está mais na sessão. Anexe o arquivo novamente.", true); return; }
+  if (!d.url) d.url = URL.createObjectURL(new Blob([d.bytes], { type: d.mime }));
+  viewerUrl = `${d.url}#page=${page}`;
+  $("vTitle").textContent = `${d.name} — pág. ${page}`;
+  $("vBody").innerHTML = d.mime === "application/pdf" ? `<iframe src="${d.url}#page=${page}&view=FitH" title="${esc(d.name)}"></iframe>` : `<img src="${d.url}" alt="${esc(d.name)}">`;
+  $("viewer").classList.remove("hidden");
+}
+
+/**
+ * Intercepta cliques em links de página (#pdf=ID&p=N) e abre o visualizador.
+ * @param {MouseEvent} e Evento de clique.
+ */
+function onPdfLink(e) {
+  const a = e.target.closest("a[href^='#pdf=']");
+  if (!a) return;
+  e.preventDefault();
+  const q = new URLSearchParams(a.getAttribute("href").slice(1));
+  openViewer(q.get("pdf"), Number(q.get("p")) || 1);
+}
+
+/**
+ * Encontra o documento citado em um texto (pelo nome do arquivo); senão, o último PDF da sessão.
+ * @param {string} text Texto da citação.
+ * @returns {object|undefined} Documento.
+ */
+function matchDoc(text) {
+  const t = (text || "").toLowerCase();
+  const docs = session.documents;
+  return docs.find((d) => { const n = d.name.toLowerCase(); return t.includes(n) || t.includes(n.replace(/\.[^.]+$/, "")); })
+    || [...docs].reverse().find((d) => d.mime === "application/pdf");
+}
+
+/**
+ * Transforma citações [LIDO: arquivo, ..., pág. N, ...] em links que abrem a página no visualizador.
+ * @param {string} md Markdown do modelo.
+ * @returns {string} Markdown com links.
+ */
+function linkifyRefs(md) {
+  return md.replace(/\[LIDO:([^\]]*)\]/g, (all, inner) => {
+    const pg = inner.match(/p[áa]g(?:ina)?s?\.?\s*(\d+)/i);
+    const doc = matchDoc(inner);
+    return pg && doc ? `[📄 LIDO:${inner}](#pdf=${doc.id}&p=${pg[1]})` : all;
+  });
+}
+
+/** Desenha o checklist de campo (JSON) com caixas marcáveis e links para as páginas. */
+function renderChecklist() {
+  $("checklistBox").classList.toggle("hidden", !checklist);
+  if (!checklist) return;
+  const items = (checklist.etapas || []).map((e, i) => {
+    const doc = matchDoc(e.arquivo);
+    const ref = [e.referencia, e.pagina ? `pág. ${e.pagina}` : ""].filter(Boolean).join(", ");
+    const link = doc && e.pagina ? `<a href="#pdf=${doc.id}&p=${e.pagina}">📄 ${esc(ref)}</a>` : esc(ref);
+    const meta = [e.evidencia, e.risco ? `risco ${e.risco}` : ""].filter(Boolean).join(" · ");
+    return `<li><label><input type="checkbox" data-i="${i}" ${checks[i] ? "checked" : ""}><span><strong>${esc(e.fase)}</strong> — ${esc(e.acao)}${e.detalhe ? `. ${esc(e.detalhe)}` : ""} ${link} <span class="tag">${esc(meta)}</span></span></label></li>`;
+  }).join("");
+  $("checklist").innerHTML = `<p>${esc(checklist.resumo || "")}</p><ul class="cl">${items}</ul>`
+    + (checklist.peca ? `<p><strong>Peça:</strong> ${esc(checklist.peca)}</p>` : "")
+    + (checklist.proximo_desenho ? `<p><strong>Próximo desenho:</strong> ${esc(checklist.proximo_desenho)}</p>` : "")
+    + (checklist.catalogo && (checklist.catalogo.alarme || checklist.catalogo.tag) ? `<p><button data-act="cat">➕ Salvar no catálogo</button> ${esc(checklist.catalogo.alarme || "")} → ${esc(checklist.catalogo.tag || "?")}</p>` : "");
+}
+
+/** Converte o último diagnóstico em checklist estruturado (envia só o texto, sem reenviar os PDFs). */
+async function generateChecklist() {
+  if (!lastAnswer) return;
+  setStatus("Gerando checklist de campo (JSON)…");
+  try {
+    const raw = await buildGateway().generateJson([{ role: "user", parts: [{ text: "Converta o diagnóstico abaixo em checklist de campo.\n\n" + lastAnswer }] }], CHECKLIST_INSTRUCTION, CHECKLIST_SCHEMA);
+    checklist = JSON.parse(raw);
+    checks = {};
+    renderChecklist();
+    saveCase();
+    setStatus("Checklist gerado.");
+  } catch (err) { setStatus(`Erro: ${explainError(err)}`, true); }
+}
+
+/** @returns {object} Metadados do caso atual para persistência. */
+function caseMeta() {
+  return {
+    id: session.id, title: session.title || "Sem título", createdAt: session.createdAt, updatedAt: Date.now(),
+    query: $("query").value, turns: session.turns, index: session.index, lastAnswer, caseLine: $("caseLine").textContent, checklist, checks,
+    docs: session.documents.map(({ id, name, mime, pageCount, selection }) => ({ id, name, mime, pageCount, selection }))
+  };
+}
+
+/** Salva o caso atual (metadados + arquivos novos) no IndexedDB. */
+async function saveCase() {
+  if (!repo || (!session.documents.length && !lastAnswer)) return;
+  try {
+    const files = session.documents.filter((d) => !d.stored).map((d) => [`${session.id}:${d.id}`, d.bytes]);
+    await repo.save(caseMeta(), files);
+    session.documents.forEach((d) => (d.stored = true));
+    renderCases();
+  } catch { /* armazenamento indisponível */ }
+}
+
+/** Lista os casos salvos. */
+async function renderCases() {
+  if (!repo) return;
+  try {
+    const list = await repo.list();
+    $("cases").innerHTML = list.length
+      ? list.map((c) => `<li><span>${esc(c.title)} <span class="tag">${new Date(c.updatedAt).toLocaleString("pt-BR")}</span></span><span class="fl"><button data-case="open" data-id="${c.id}">Abrir</button><button data-case="del" data-id="${c.id}" aria-label="Excluir">✕</button></span></li>`).join("")
+      : "<li>Nenhum caso salvo ainda.</li>";
+  } catch { /* ignora */ }
+}
+
+/**
+ * Restaura um caso salvo na interface.
+ * @param {string} id Id do caso.
+ * @returns {Promise<void>}
+ */
+async function openCase(id) {
+  const meta = (await repo.list()).find((c) => c.id === id);
+  if (!meta) return;
+  session.load(meta, await repo.files(meta));
+  $("query").value = meta.query || "";
+  lastAnswer = meta.lastAnswer || "";
+  checklist = meta.checklist || null;
+  checks = meta.checks || {};
+  chatAttached = [];
+  renderChatChips();
+  renderFiles();
+  $("chat").innerHTML = "";
+  if (lastAnswer) {
+    showResult();
+    $("caseLine").textContent = meta.caseLine || "";
+    $("result").innerHTML = renderMarkdown(lastAnswer);
+    session.turns.filter((t) => t.kind === "chat").forEach((t) => appendChat(t.role, t.text));
+  }
+  renderChecklist();
+  setStatus("Caso restaurado. Os documentos serão reenviados junto com a próxima pergunta.");
+}
+
+/**
+ * Retorna a sessão única da aplicação (independente da chave).
+ * @returns {DiagnosisSession} Sessão ativa.
+ */
+function getSession() {
+  return session;
+}
+
+/**
+ * Trata arquivos escolhidos e os adiciona à sessão.
+ * @param {FileList|File[]} fileList Arquivos.
+ * @param {boolean} isNext Continuação da sequência.
+ * @returns {Promise<void>}
+ */
+async function handleFiles(fileList, isNext) {
+  const files = [...fileList].filter((f) => /^(application\/pdf|image\/(jpeg|png))$/.test(resolveMime(f)));
+  if (!files.length) { setStatus("Use apenas PDF, JPG ou PNG.", true); return; }
+  try {
+    await session.addDocuments(files, isNext);
+    renderFiles();
+    saveCase();
+    setStatus(`${files.length} arquivo(s) anexado(s). Descreva a falha e clique em Diagnosticar.`);
+  } catch (err) {
+    setStatus(`Erro ao ler arquivo: ${err.message}`, true);
+  }
+}
+
+/** Último diagnóstico completo (usado por copiar/imprimir). */
+let lastAnswer = "";
+
+/** Exibe o painel de diagnóstico e o chat, ocultando o placeholder. */
+function showResult() {
+  $("placeholder").classList.add("hidden");
+  $("resultBox").classList.remove("hidden");
+  $("chatBox").classList.remove("hidden");
+}
+
+/**
+ * Copia o último diagnóstico para a área de transferência.
+ * @returns {Promise<void>}
+ */
+async function copyResult() {
+  if (!lastAnswer) return;
+  try {
+    await navigator.clipboard.writeText(lastAnswer);
+  } catch {
+    const t = document.createElement("textarea");
+    t.value = lastAnswer;
+    document.body.append(t);
+    t.select();
+    document.execCommand("copy");
+    t.remove();
+  }
+  setStatus("Diagnóstico copiado.");
+}
+
+/**
+ * Executa o diagnóstico inicial com streaming, com modificador opcional de foco.
+ * @param {string} [quick] Chave de QUICK_ACTIONS.
+ * @returns {Promise<void>}
+ */
+async function runDiagnosis(quick) {
+  const query = $("query").value.trim();
+  if (!query) { setStatus("Descreva o alarme ou sintoma.", true); return; }
+  setStatus("Buscando no índice e no catálogo…");
+  let ctx = null;
+  try { ctx = $("useIndex").checked ? await buildLocalContext(query) : null; } catch { /* segue sem contexto local */ }
+  const big = session.documents.filter((d) => !d.sent && d.mime === "application/pdf" && !(ctx && ctx.pagesByDoc[d.id]) && (parsePages(d.selection, d.pageCount) || { length: d.pageCount }).length > 40);
+  if (big.length) {
+    const n = (parsePages(big[0].selection, big[0].pageCount) || { length: big[0].pageCount }).length;
+    if (!confirm(`"${big[0].name}" será enviado com ${n} páginas (≈${(n * 258).toLocaleString("pt-BR")} tokens). Pode levar minutos e consumir muita cota. Dica: indexe o projeto ou escolha as páginas. Enviar mesmo assim?`)) {
+      setStatus("Envio cancelado. Escolha as páginas ou indexe o projeto.", true);
+      return;
+    }
+  }
+  const text = `Falha/alarme consultado: ${query}${quick ? "\n\nFoco: " + QUICK_ACTIONS[quick] : ""}\n\nResponda no formato obrigatório.${ctx ? ctx.text : ""}${takeFieldNote()}`;
+  setStatus("Analisando desenhos com Gemini…");
+  document.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  setGenerating(true);
+  showResult();
+  checklist = null;
+  checks = {};
+  renderChecklist();
+  $("caseLine").textContent = `Falha consultada: ${query} — ${new Date().toLocaleString("pt-BR")}`;
+  $("result").innerHTML = "<p>Analisando…</p>";
+  try {
+    lastAnswer = await session.ask(text, DIAG_INSTRUCTION, (acc) => { $("result").innerHTML = renderMarkdown(acc); }, ctx ? ctx.pagesByDoc : undefined);
+    $("result").innerHTML = renderMarkdown(lastAnswer);
+    session.title = session.title || query.slice(0, 80);
+    saveCase();
+    setStatus(`Diagnóstico concluído (modelo: ${lastGateway ? lastGateway.lastModel : "?"}).${lastGateway && lastGateway.warn ? ` ⚠️ ${lastGateway.warn}` : ""}`);
+  } catch (err) {
+    $("result").innerHTML = `<p>⚠️ ${esc(explainError(err))}</p>`;
+    setStatus(`Erro: ${explainError(err)}`, true);
+  } finally {
+    setGenerating(false);
+    document.querySelectorAll("button").forEach((b) => (b.disabled = false));
+  }
+}
+
+/**
+ * Adiciona uma mensagem ao chat de investigação.
+ * @param {"user"|"model"} role Autor.
+ * @param {string} text Conteúdo.
+ * @returns {HTMLElement} Elemento da mensagem (permite atualização por streaming).
+ */
+function appendChat(role, text) {
+  const div = document.createElement("div");
+  div.className = `msg ${role === "user" ? "user" : "md"}`;
+  div.innerHTML = role === "user" ? esc(text) : renderMarkdown(text);
+  $("chat").append(div);
+  $("chat").scrollTop = $("chat").scrollHeight;
+  return div;
+}
+
+/** Nomes dos arquivos anexados no chat que aguardam envio. */
+let chatAttached = [];
+
+/** Redesenha os chips dos anexos pendentes do chat. */
+function renderChatChips() {
+  $("chatChips").innerHTML = chatAttached.map((n) => `<li><span>📎 ${esc(n)}</span><span class="tag">aguardando envio</span></li>`).join("");
+}
+
+/**
+ * Anexa arquivos ao próximo envio do chat, mantendo o histórico da investigação.
+ * @param {FileList|File[]} fileList Arquivos escolhidos ou soltos no chat.
+ * @returns {Promise<void>}
+ */
+async function attachToChat(fileList) {
+  const before = session.documents.length;
+  await handleFiles(fileList, true);
+  chatAttached.push(...session.documents.slice(before).map((d) => d.name));
+  renderChatChips();
+}
+
+/**
+ * Envia pergunta e/ou anexos ao chat de engenharia, mantendo o contexto da falha.
+ * @returns {Promise<void>}
+ */
+async function sendChat() {
+  const typed = $("chatInput").value.trim();
+  if (!typed && !chatAttached.length) return;
+  const text = typed || "Analise o(s) documento(s) anexado(s) e informe como contribui(em) para a investigação da falha em andamento.";
+  const names = [...chatAttached];
+  appendChat("user", (names.length ? names.map((n) => `📎 ${n}`).join("\n") + "\n" : "") + text);
+  $("chatInput").value = "";
+  $("chatSend").disabled = true;
+  $("attachChat").disabled = true;
+  setGenerating(true);
+  let box = null;
+  try {
+    box = appendChat("model", "…");
+    await session.ask(text, CHAT_INSTRUCTION, (acc) => {
+      box.innerHTML = renderMarkdown(acc);
+      $("chat").scrollTop = $("chat").scrollHeight;
+    });
+    chatAttached = [];
+    renderChatChips();
+    saveCase();
+  } catch (err) {
+    if (box) box.remove();
+    appendChat("model", `⚠️ ${explainError(err)}`);
+    $("chatInput").value = typed;
+  } finally {
+    setGenerating(false);
+    $("chatSend").disabled = false;
+    $("attachChat").disabled = false;
+  }
+}
+
+/** Testa chave, rede e modelo com um prompt mínimo e informa a latência. */
+async function pingModel() {
+  setStatus("Testando conexão com o Gemini…");
+  try {
+    const r = await buildGateway().ping();
+    setStatus(`Conexão OK: ${r.model} respondeu em ${(r.ms / 1000).toFixed(1)} s. Se o diagnóstico demorar muito, o gargalo é o tamanho dos arquivos ou o tempo de raciocínio do modelo.`);
+  } catch (err) { setStatus(`Erro: ${explainError(err)}`, true); }
+}
+
+/**
+ * Consulta a API, escolhe modelos compatíveis e salva a lista de fallback.
+ * @returns {Promise<void>}
+ */
+async function detectModels() {
+  try {
+    setStatus("Consultando modelos disponíveis na sua chave…");
+    const names = pickModels(await buildGateway().listModels());
+    if (!names.length) throw new Error("Nenhum modelo compatível retornado.");
+    $("modelName").value = names[0];
+    try {
+      localStorage.setItem(MODEL_STORAGE, names[0]);
+      localStorage.setItem(FALLBACK_STORAGE, JSON.stringify(names));
+    } catch {}
+    setStatus(`Modelos detectados: ${names.join(", ")}. Principal: ${names[0]}.`);
+  } catch (err) {
+    setStatus(`Erro: ${explainError(err)}`, true);
+  }
+}
+
+/** Registra todos os listeners da interface. */
+function bindEvents() {
+  $("modelName").value = DEFAULT_MODEL;
+  try {
+    $("apiKey").value = localStorage.getItem(KEY_STORAGE) || "";
+    $("modelName").value = localStorage.getItem(MODEL_STORAGE) || DEFAULT_MODEL;
+  } catch {}
+  $("saveKey").onclick = () => {
+    try {
+      localStorage.setItem(KEY_STORAGE, $("apiKey").value.trim());
+      localStorage.setItem(MODEL_STORAGE, $("modelName").value.trim() || DEFAULT_MODEL);
+    } catch {}
+    setStatus("Chave e modelo salvos neste navegador.");
+  };
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => e.preventDefault());
+  const drop = $("drop");
+  drop.onclick = () => $("fileMain").click();
+  drop.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") $("fileMain").click(); };
+  drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); handleFiles(e.dataTransfer.files, false); };
+  $("fileMain").onchange = (e) => { handleFiles(e.target.files, false); e.target.value = ""; };
+  $("detect").onclick = detectModels;
+  $("addNext").onclick = () => $("fileNext").click();
+  $("fileNext").onchange = (e) => { handleFiles(e.target.files, true); e.target.value = ""; };
+  $("reset").onclick = () => {
+    session.reset();
+    chatAttached = []; renderChatChips();
+    checklist = null; checks = {}; renderChecklist(); renderFiles();
+    $("files").innerHTML = ""; $("chat").innerHTML = ""; $("result").innerHTML = "";
+    $("resultBox").classList.add("hidden"); $("chatBox").classList.add("hidden"); $("placeholder").classList.remove("hidden"); lastAnswer = "";
+    setStatus("Histórico limpo.");
+  };
+  $("diagnose").onclick = () => runDiagnosis();
+  document.querySelectorAll("[data-quick]").forEach((b) => (b.onclick = () => runDiagnosis(b.dataset.quick)));
+  $("chatSend").onclick = sendChat;
+  $("copyBtn").onclick = copyResult;
+  $("listBtn").onclick = generateChecklist;
+  $("countTok").onclick = countExact;
+  $("vClose").onclick = () => $("viewer").classList.add("hidden");
+  $("vNew").onclick = () => { if (viewerUrl) window.open(viewerUrl, "_blank"); };
+  document.addEventListener("click", onPdfLink);
+  $("files").oninput = (e) => {
+    const d = session.documents.find((x) => x.id === e.target.dataset.id);
+    if (d && e.target.classList.contains("sel")) { d.selection = e.target.value; updateTokenInfo(); }
+  };
+  $("files").onclick = (e) => {
+    const b = e.target.closest("button[data-act]");
+    if (!b) return;
+    if (b.dataset.act === "view") openViewer(b.dataset.id, 1);
+    else { session.documents = session.documents.filter((x) => x.id !== b.dataset.id); renderFiles(); }
+  };
+  $("checklist").onchange = (e) => { if (e.target.dataset.i !== undefined) { checks[e.target.dataset.i] = e.target.checked; saveCase(); } };
+  $("cases").onclick = async (e) => {
+    const b = e.target.closest("button[data-case]");
+    if (!b || !repo) return;
+    if (b.dataset.case === "open") { await openCase(b.dataset.id); return; }
+    const meta = (await repo.list()).find((c) => c.id === b.dataset.id);
+    if (meta && confirm(`Excluir o caso "${meta.title}" e seus arquivos?`)) { await repo.remove(meta); renderCases(); }
+  };
+  renderCases();
+  loadCatalog();
+  loadGlossary();
+  $("glossarySave").onclick = saveGlossary;
+  $("glossaryReset").onclick = resetGlossary;
+  $("fieldBtn").onclick = () => { $("fQuery").value = $("query").value; $("field").classList.remove("hidden"); };
+  $("fClose").onclick = closeField;
+  $("fCam").onclick = toggleCamera;
+  $("fShot").onclick = captureFrame;
+  $("fMic").onclick = listen;
+  $("fGo").onclick = fieldDiagnose;
+  $("fSpeak").onclick = speakAnswer;
+  new MutationObserver(() => { $("fResult").innerHTML = $("result").innerHTML; }).observe($("result"), { childList: true, subtree: true });
+  $("ping").onclick = pingModel;
+  $("stopFab").onclick = requestStop;
+  new MutationObserver(() => { if (!$("field").classList.contains("hidden")) $("fInfo").textContent = $("status").textContent; }).observe($("status"), { childList: true, subtree: true, characterData: true });
+  $("auditBtn").onclick = startAudit;
+  $("auditApply").onclick = applyAudit;
+  $("auditClose").onclick = () => $("auditBox").classList.add("hidden");
+  $("auditResult").onclick = (e) => { if (e.target.id === "reindexBtn") reindexSuspect(); };
+  $("indexBtn").onclick = () => indexProject();
+  $("indexExport").onclick = () => exportJson(`indice-${session.title || "caso"}.json`, session.index);
+  $("catExport").onclick = () => exportJson("catalogo-alarmes.json", catalog);
+  $("catalog").onclick = async (e) => {
+    const b = e.target.closest("button[data-key]");
+    if (b && repo) { await repo.catalogDel(decodeURIComponent(b.dataset.key)); loadCatalog(); }
+  };
+  $("reportBtn").onclick = buildReport;
+  $("checklist").onclick = (e) => { if (e.target.closest("button[data-act='cat']")) saveToCatalog(); };
+  $("printBtn").onclick = () => window.print();
+  $("photo").onclick = () => $("filePhoto").click();
+  $("filePhoto").onchange = (e) => { handleFiles(e.target.files, false); e.target.value = ""; };
+  $("attachChat").onclick = () => $("fileChat").click();
+  $("fileChat").onchange = (e) => { attachToChat(e.target.files); e.target.value = ""; };
+  $("chatInput").onkeydown = (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) sendChat(); };
+  $("chatBox").ondrop = (e) => { e.preventDefault(); attachToChat(e.dataTransfer.files); };
+}
+
+bindEvents();
+</script>
+</body>
+</html>
